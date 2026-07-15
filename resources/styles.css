@@ -148,6 +148,12 @@ body {
   -webkit-app-region: no-drag;
 }
 
+.header-version {
+  color: var(--text-dim);
+  font-size: 0.62rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
 /* Logo */
 .logo {
   font-family: 'JetBrains Mono', monospace;

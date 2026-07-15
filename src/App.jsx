@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Header from './components/Header.jsx'
 import HubMenu from './components/HubMenu.jsx'
-import ConverterView from './components/ConverterView.jsx'
+import { ConverterApp } from 'sorai-toolkit-converter'
 import { useTheme } from './hooks/useTheme.js'
 
 // TOOLS labels shown in the header breadcrumb -- kept in sync with
@@ -29,7 +29,7 @@ function App() {
         onToggleTheme={toggleTheme}
       />
       {currentTool === 'hub' && <HubMenu onSelectTool={setCurrentTool} />}
-      {currentTool === 'converter' && <ConverterView />}
+      {currentTool === 'converter' && <ConverterApp />}
     </div>
   )
 }
