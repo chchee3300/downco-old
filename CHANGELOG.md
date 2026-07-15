@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/chchee3300/sorai-toolkit/compare/v1.1.0...v1.1.1) (2026-07-15)
+
+
+### Bug Fixes
+
+* LiquidSelect dropdown background bleed-through ([e1fe39f](https://github.com/chchee3300/sorai-toolkit/commit/e1fe39f51f75e3bd35cdfd1d451119da0de2aaf0)), closes [#1](https://github.com/chchee3300/sorai-toolkit/issues/1) [#2](https://github.com/chchee3300/sorai-toolkit/issues/2)
+
 # [1.1.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.0.0...v1.1.0) (2026-07-15)
 
 
