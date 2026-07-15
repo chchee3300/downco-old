@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SORAI Toolkit</title>
+    <!-- Prevent flash of wrong theme -->
+    <script>
+      (function () {
+        var t = localStorage.getItem('sorai-theme') || 'dark'
+        document.documentElement.setAttribute('data-theme', t)
+      })()
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <!-- Must be a real <script src>, not bundled — neu's dev server injects
+         window.NL_PORT/NL_TOKEN/etc. into its response for this exact path
+         (neutralino.config.json's "clientLibrary"), triggered by the
+         browser's own HTTP request. Bundling neutralino.js at build time
+         skips that request entirely, so the globals never get set. -->
+    <script src="/js/neutralino.js"></script>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
