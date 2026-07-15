@@ -11,7 +11,8 @@
   "dependencies": {
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "sorai-toolkit-converter": "github:chchee3300/sorai-toolkit-converter"
+    "sorai-toolkit-converter": "github:chchee3300/sorai-toolkit-converter",
+    "sorai-toolkit-downloader": "github:chchee3300/sorai-toolkit-downloader"
   },
   "devDependencies": {
     "@semantic-release/changelog": "^6.0.3",

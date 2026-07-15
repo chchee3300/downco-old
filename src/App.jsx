@@ -2,6 +2,7 @@ import { useState } from 'react'
 import Header from './components/Header.jsx'
 import HubMenu from './components/HubMenu.jsx'
 import { ConverterApp } from 'sorai-toolkit-converter'
+import { DownloaderApp } from 'sorai-toolkit-downloader'
 import { useTheme } from './hooks/useTheme.js'
 
 // TOOLS labels shown in the header breadcrumb -- kept in sync with
@@ -9,6 +10,7 @@ import { useTheme } from './hooks/useTheme.js'
 // not worth a shared registry yet.
 const TOOL_LABELS = {
   converter: 'Converter',
+  downloader: 'Downloader',
 }
 
 // Hub shell: owns which tool is currently shown. Plain conditional
@@ -30,6 +32,7 @@ function App() {
       />
       {currentTool === 'hub' && <HubMenu onSelectTool={setCurrentTool} />}
       {currentTool === 'converter' && <ConverterApp />}
+      {currentTool === 'downloader' && <DownloaderApp />}
     </div>
   )
 }

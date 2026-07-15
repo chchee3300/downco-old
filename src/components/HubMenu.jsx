@@ -11,6 +11,11 @@ const TOOLS = [
     label: 'Converter',
     description: 'Convert video, image, audio, and PDF files locally.',
   },
+  {
+    id: 'downloader',
+    label: 'Downloader',
+    description: 'Download videos from a URL, pick a format, and save them locally.',
+  },
 ]
 
 export default function HubMenu({ onSelectTool }) {
