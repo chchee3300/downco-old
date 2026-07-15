@@ -52,6 +52,19 @@
     return isWindows() ? joinPath(binPath, 'binaries', 'win_x64', 'img2pdf.exe') : 'img2pdf';
   }
 
+  // yt-dlp: bundled on every platform (single binary, no zip, see
+  // setup.mjs's setupYtDlp). macOS ships one universal build for both Intel
+  // and Apple Silicon -- same one-build-covers-both-arches pattern as
+  // ffmpeg's evermeet.cx build above.
+  function ytdlpPath(binPath) {
+    if (isWindows()) return joinPath(binPath, 'binaries', 'win_x64', 'yt-dlp.exe');
+    if (getOS() === 'Darwin') {
+      const arch = global.NL_ARCH === 'arm64' ? 'mac_arm64' : 'mac_x64';
+      return joinPath(binPath, 'binaries', arch, 'yt-dlp');
+    }
+    return joinPath(binPath, 'binaries', 'linux_x64', 'yt-dlp');
+  }
+
   // Direct replacement for the old `window.NL_PATH.replace(/\//g, '\\')`
   // literal -- normalizes NL_PATH (which Neutralino may report with forward
   // slashes even on Windows) to the *current* OS's native separator instead
@@ -82,6 +95,7 @@
     ffmpegPath,
     qpdfCommand,
     img2pdfCommand,
+    ytdlpPath,
     resolveBinPath,
     checkToolAvailable,
   };

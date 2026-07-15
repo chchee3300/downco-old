@@ -132,16 +132,19 @@ jobs:
       - run: npm run build
       - run: node setup.mjs
       - name: Populate the other mac arch folder
-        # evermeet.cx publishes one ffmpeg build advertised as covering both
-        # Intel and Apple Silicon (see setup.mjs) -- setup.mjs only downloads
-        # it into the runner's own arch folder, so copy it into the other
-        # arch's folder too rather than downloading it twice.
+        # evermeet.cx (ffmpeg) and yt-dlp's own release both publish one
+        # universal macOS build covering both Intel and Apple Silicon (see
+        # setup.mjs) -- setup.mjs only downloads into the runner's own arch
+        # folder, so copy each into the other arch's folder too rather than
+        # downloading twice.
         run: |
-          if [ -f binaries/mac_arm64/ffmpeg ] && [ ! -f binaries/mac_x64/ffmpeg ]; then
-            mkdir -p binaries/mac_x64 && cp binaries/mac_arm64/ffmpeg binaries/mac_x64/ffmpeg
-          elif [ -f binaries/mac_x64/ffmpeg ] && [ ! -f binaries/mac_arm64/ffmpeg ]; then
-            mkdir -p binaries/mac_arm64 && cp binaries/mac_x64/ffmpeg binaries/mac_arm64/ffmpeg
-          fi
+          for bin in ffmpeg yt-dlp; do
+            if [ -f "binaries/mac_arm64/$bin" ] && [ ! -f "binaries/mac_x64/$bin" ]; then
+              mkdir -p binaries/mac_x64 && cp "binaries/mac_arm64/$bin" "binaries/mac_x64/$bin"
+            elif [ -f "binaries/mac_x64/$bin" ] && [ ! -f "binaries/mac_arm64/$bin" ]; then
+              mkdir -p binaries/mac_arm64 && cp "binaries/mac_x64/$bin" "binaries/mac_arm64/$bin"
+            fi
+          done
       - run: neu build --release --embed-resources
       - run: bash packaging/macos/build.sh "${{ needs.get-next-version.outputs.version }}"
       - uses: actions/upload-artifact@v4

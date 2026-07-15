@@ -1,7 +1,9 @@
 // Cross-platform replacement for setup.ps1. Run with `node setup.mjs` on
 // Windows, macOS, or Linux.
 //
-// ffmpeg is bundled on every platform (static build downloaded here). qpdf
+// ffmpeg and yt-dlp are bundled on every platform (static builds downloaded
+// here) -- ffmpeg for Converter, and shared with Downloader (yt-dlp calls
+// it via --ffmpeg-location to merge separate video/audio streams). qpdf
 // and img2pdf are bundled on Windows only -- on macOS/Linux they're
 // system-installed dependencies (brew/apt/pip), so this script only probes
 // for them and prints install hints rather than downloading anything. See
@@ -125,7 +127,38 @@ async function setupWindows() {
     path.join(dir, 'img2pdf.exe'),
   );
 
+  await setupYtDlp('win_x64', 'yt-dlp.exe', 'yt-dlp.exe');
+
   console.log('All Windows binaries downloaded successfully!');
+}
+
+// Resolved live via yt-dlp's own GitHub releases API (not a pinned version),
+// same reasoning as the ffmpeg URLs below -- yt-dlp cuts releases often and
+// a hardcoded tag would go stale fast.
+async function latestYtDlpAssetUrl(assetName) {
+  const res = await fetch('https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest');
+  if (!res.ok) throw new Error(`yt-dlp releases lookup failed (${res.status})`);
+  const info = await res.json();
+  const asset = info.assets.find((a) => a.name === assetName);
+  if (!asset) throw new Error(`yt-dlp release asset not found: ${assetName}`);
+  return asset.browser_download_url;
+}
+
+// yt-dlp ships a single binary per platform (no zip) -- unlike ffmpeg/qpdf
+// there's nothing to unpack, just download straight to its final path.
+async function setupYtDlp(dirName, assetName, destName) {
+  const dir = path.join(BIN_DIR, dirName);
+  mkdirSync(dir, { recursive: true });
+  const destPath = path.join(dir, destName);
+  if (existsSync(destPath)) {
+    console.log(`yt-dlp already present at binaries/${dirName}/${destName}, skipping download.`);
+    return;
+  }
+  console.log(`Downloading yt-dlp (${dirName})...`);
+  const url = await latestYtDlpAssetUrl(assetName);
+  await downloadTo(url, destPath);
+  if (destName !== 'yt-dlp.exe') chmodSync(destPath, 0o755);
+  console.log(`yt-dlp installed to binaries/${dirName}/${destName}`);
 }
 
 // Both resolved live (not a pinned version) so this script doesn't go stale
@@ -184,6 +217,7 @@ function probeSystemTool(command, versionFlag = '--version') {
 
 async function setupUnix(dirName, osLabel, os, cpu) {
   await setupFfmpegUnix(dirName, os, cpu);
+  await setupYtDlp(dirName, os === 'darwin' ? 'yt-dlp_macos' : 'yt-dlp_linux', 'yt-dlp');
 
   console.log(`\nChecking system dependencies for PDF features (${osLabel})...`);
   const hasQpdf = probeSystemTool('qpdf');
