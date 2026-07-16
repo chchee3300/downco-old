@@ -110,7 +110,7 @@ const LANG_FLAG_ICONS = {
 // Close/open animation timings must match the CSS keyframe durations for
 // .hamburger-dropdown--open/--closing (see styles.css) -- the dropdown stays
 // mounted through the closing animation instead of disappearing instantly.
-const CLOSE_ANIM_MS = 120
+const CLOSE_ANIM_MS = 100
 
 export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onToggleTheme }) {
   const { t, lang } = useTranslation()

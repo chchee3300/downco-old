@@ -264,15 +264,30 @@ body {
   top: calc(100% + 6px);
   right: 0;
   z-index: 50;
-  transform-origin: top right;
   border-radius: 12px;              /* match the LiquidGlass cornerRadius */
   background: rgba(13, 16, 22, 0.45);
   backdrop-filter: blur(24px) saturate(1.6);
   -webkit-backdrop-filter: blur(24px) saturate(1.6);
 }
 
+/* Same frost strength as the app's other light-mode glass panels
+   (.glass-lens__frost is 0.82, the flat dropdown variant 0.88) -- the
+   first pass used 0.55 and the blurred gray text underneath washed the
+   whole panel gray. */
 [data-theme="light"] .hamburger-dropdown {
-  background: rgba(245, 246, 250, 0.55);
+  background: rgba(248, 249, 252, 0.85);
+}
+
+/* liquid-glass-react puts inline `transition: all 0.2s` on its container,
+   overlay spans, and inner .glass. Our synthetic resize (see the
+   ResizeObserver in HamburgerMenu.jsx) re-measures the library DURING the
+   open pop, so those transitions animated a second, slower resize on top
+   of the pop -- a mushy settle no other dropdown has. The pop keyframes
+   below are the only motion we want; kill the library's own. */
+.hamburger-dropdown > div,
+.hamburger-dropdown > span,
+.hamburger-dropdown .glass {
+  transition: none !important;
 }
 
 /* liquid-glass-react renders two black wash divs ahead of the glass,
@@ -295,14 +310,16 @@ body {
   }
 }
 
-/* Open/close animation -- same pop language as .lg-dropdown (see its
-   comment): eased-out on the way in AND out, never ease-in on UI motion. */
+/* Open/close animation -- IDENTICAL to .lg-dropdown (same keyframes, same
+   durations, same easings, default center transform-origin) so the
+   hamburger pops exactly like every other dropdown in the app. If
+   .lg-dropdown's timings change, change these too. */
 .hamburger-dropdown--open {
-  animation: lg-pop-down 0.16s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: lg-pop-down 0.14s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 .hamburger-dropdown--closing {
-  animation: lg-pop-up-out 0.12s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  animation: lg-pop-up-out 0.1s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
 
 /* Uniform icon-left row -- every hamburger menu item (language, appearance,
