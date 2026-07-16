@@ -1,3 +1,10 @@
+## [1.3.2](https://github.com/chchee3300/sorai-toolkit/compare/v1.3.1...v1.3.2) (2026-07-16)
+
+
+### Bug Fixes
+
+* make the hamburger dropdown's backdrop blur actually render ([06d082b](https://github.com/chchee3300/sorai-toolkit/commit/06d082b519d71121b5875170e28475ed2b9a05b5))
+
 ## [1.3.1](https://github.com/chchee3300/sorai-toolkit/compare/v1.3.0...v1.3.1) (2026-07-16)
 
 
