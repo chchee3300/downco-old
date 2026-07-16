@@ -267,7 +267,15 @@ body {
   animation: lg-pop-up-out 0.12s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
 
+/* Uniform icon-left row -- every hamburger menu item (language, appearance,
+   main menu) is one of these: a plain full-width clickable button, so
+   there's no dead zone the way the old sliding .theme-switch control had
+   (the whole row is the click target, not just a small thumb/handle). */
 .hamburger-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
   text-align: left;
   padding: 0.5rem 0.625rem;
   border-radius: 6px;
@@ -288,76 +296,36 @@ body {
   color: var(--danger);
 }
 
-/* ── Theme switch (sun/moon toggle, replaces the old text-row item) ──── */
-.theme-switch-row {
+/* Fixed-size slot so a flag emoji, an SVG icon, or a symbol font glyph all
+   align identically across rows regardless of the icon's native size. */
+.hamburger-item__icon {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.4rem 0.625rem;
-}
-
-.theme-switch-label {
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-}
-
-.theme-switch {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 48px;
-  height: 24px;
-  padding: 0 5px;
-  flex-shrink: 0;
-  border-radius: 999px;
-  border: 1px solid var(--glass-border);
-  background: var(--surface-2);
-  cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-}
-
-.theme-switch:hover {
-  border-color: var(--glass-border-hi);
-}
-
-.theme-switch:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.theme-switch__icon {
-  position: relative;
-  z-index: 1;
-  width: 12px;
-  height: 12px;
-  color: var(--text-dim);
-  transition: color 0.2s;
-}
-
-.theme-switch[aria-checked="false"] .theme-switch__icon--sun {
-  color: #e8a838;
-}
-
-.theme-switch[aria-checked="true"] .theme-switch__icon--moon {
-  color: #c9cfe8;
-}
-
-.theme-switch__thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
+  justify-content: center;
   width: 18px;
   height: 18px;
-  border-radius: 50%;
-  background: var(--surface-0);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35), inset 0 0 0 1px var(--glass-border-hi);
-  transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  line-height: 1;
 }
 
-.theme-switch[aria-checked="true"] .theme-switch__thumb {
-  transform: translateX(24px);
+.hamburger-item__icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+/* Flag SVGs are 3:2 (viewBox 24x16) -- forcing them into the square 15x15
+   default above would squash the aspect ratio, so they get their own size. */
+.hamburger-item__icon svg.hb-icon-flag {
+  width: 18px;
+  height: 12px;
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+.hamburger-item__label {
+  flex: 1;
+  min-width: 0;
 }
 
 /* ── Hub menu (main tool-picker screen) ───────────────────────────── */

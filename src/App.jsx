@@ -4,14 +4,7 @@ import HubMenu from './components/HubMenu.jsx'
 import { ConverterApp } from 'sorai-toolkit-converter'
 import { DownloaderApp } from 'sorai-toolkit-downloader'
 import { useTheme } from './hooks/useTheme.js'
-
-// TOOLS labels shown in the header breadcrumb -- kept in sync with
-// HubMenu.jsx's own TOOLS array by hand for this small a list (2-3 tools);
-// not worth a shared registry yet.
-const TOOL_LABELS = {
-  converter: 'Converter',
-  downloader: 'Downloader',
-}
+import { useTranslation } from './hooks/useTranslation.js'
 
 // Hub shell: owns which tool is currently shown. Plain conditional
 // rendering, not a router -- there's no history/deep-linking need for a
@@ -19,12 +12,18 @@ const TOOL_LABELS = {
 // more branch here plus one more HubMenu.TOOLS entry, not a rework.
 function App() {
   const { theme, toggleTheme } = useTheme()
+  const { t } = useTranslation()
   const [currentTool, setCurrentTool] = useState('hub')
+
+  // Reuses HubMenu.jsx's own `hub.tool.<id>.label` dict keys instead of a
+  // separate TOOL_LABELS map, so the breadcrumb and the hub card never
+  // drift out of sync the way two hand-duplicated literal strings could.
+  const toolLabel = currentTool === 'hub' ? undefined : t(`hub.tool.${currentTool}.label`)
 
   return (
     <div className="app-shell">
       <Header
-        toolLabel={TOOL_LABELS[currentTool]}
+        toolLabel={toolLabel}
         showBackToHub={currentTool !== 'hub'}
         onBackToHub={() => setCurrentTool('hub')}
         theme={theme}
