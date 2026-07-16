@@ -117,7 +117,19 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const rootRef = useRef(null)
+  const refractRef = useRef(null)
   const closeTimeoutRef = useRef(null)
+
+  // Liquid-glass backdrop (blur + saturation + edge refraction + specular
+  // as one combined SVG filter) applied to the dropdown element itself --
+  // see liquid-glass.js's attachRefraction and .hamburger-dropdown's CSS
+  // comment for why it's a single filter on a single element. Attached
+  // per-mount (the dropdown unmounts after its closing animation),
+  // detached on unmount.
+  useEffect(() => {
+    if (!mounted || !refractRef.current || !window.LiquidGlass) return undefined
+    return window.LiquidGlass.attachRefraction(refractRef.current, { radius: 10, gain: 60, blur: 12, saturate: 1.7 })
+  }, [mounted])
 
   const requestClose = () => {
     setOpen(false)
@@ -161,7 +173,7 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
         <HamburgerIcon />
       </button>
       {mounted && (
-        <div className={`hamburger-dropdown ${open ? 'hamburger-dropdown--open' : 'hamburger-dropdown--closing'}`} role="menu">
+        <div ref={refractRef} className={`hamburger-dropdown ${open ? 'hamburger-dropdown--open' : 'hamburger-dropdown--closing'}`} role="menu">
           <button
             type="button"
             className="hamburger-item"

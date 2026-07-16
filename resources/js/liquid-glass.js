@@ -565,6 +565,131 @@ const LiquidSelect = {
   }
 }
 
+// ─── Refraction-only attachment ───────────────────────────────────────────────
+
+/**
+ * Attaches a full liquid-glass backdrop chain -- blur + saturation +
+ * Snell's-law edge refraction (the same displacement map createGlassLens
+ * uses) + specular rim -- as ONE combined SVG filter applied directly to
+ * the element via `backdrop-filter: url(#filter)`. Same reference
+ * technique as the iOS-26-style liquid-glass demos (physics displacement
+ * map + backdrop-filter).
+ *
+ * Everything lives in a single filter on a single element on purpose:
+ * splitting blur and refraction across two stacked child layers (the
+ * .glass-lens structure) does not paint on a GPU-promoted host in this
+ * engine -- verified directly on the hamburger dropdown, whose open/close
+ * keyframe animation promotes it: children's backdrop-filters computed
+ * fine but painted nothing, while a backdrop-filter on the animated
+ * element itself paints reliably. Related to the compositing bug
+ * documented at .glass-lens--flat in styles.css.
+ *
+ * The element MUST NOT sit under an ancestor that itself has
+ * backdrop-filter (that ancestor becomes the backdrop root and this filter
+ * would sample nothing -- the exact bug that silently disabled the
+ * hamburger dropdown's plain blur before). `backdrop-filter: url()` is
+ * Chromium-only; on engines that don't support it this leaves the caller's
+ * own CSS backdrop-filter fallback (plain blur) untouched and returns a
+ * no-op destroy -- same degradation the reference implementations accept.
+ *
+ * Returns a destroy() function.
+ */
+function attachRefraction(layerEl, { radius = 10, gain = 60, blur = 12, saturate = 1.7 } = {}) {
+  if (!(typeof CSS !== 'undefined' && CSS.supports && CSS.supports('backdrop-filter', 'url(#x)'))) {
+    return function destroy() {}
+  }
+
+  const svgNS = 'http://www.w3.org/2000/svg'
+  const svgEl = document.createElementNS(svgNS, 'svg')
+  svgEl.classList.add('glass-svg-filters')
+  svgEl.setAttribute('aria-hidden', 'true')
+  const defs = document.createElementNS(svgNS, 'defs')
+  svgEl.appendChild(defs)
+  document.body.appendChild(svgEl)
+
+  const ro = new ResizeObserver(() => {
+    const rect = layerEl.getBoundingClientRect()
+    const w = Math.round(rect.width)
+    const h = Math.round(rect.height)
+    if (w < 1 || h < 1) return
+
+    const r = Math.min(radius, w / 2, h / 2)
+    const mapUrl = getOrCreateMap(w, h, r, gain)
+    const fId = nextFilterId()
+
+    defs.innerHTML = ''
+    const filter = document.createElementNS(svgNS, 'filter')
+    filter.id = fId
+    filter.setAttribute('x', '0')
+    filter.setAttribute('y', '0')
+    filter.setAttribute('width', '100%')
+    filter.setAttribute('height', '100%')
+    filter.setAttribute('color-interpolation-filters', 'sRGB')
+
+    // Frost first: blur + saturate the sampled backdrop, THEN refract the
+    // frosted result -- matches how physical frosted glass reads (the
+    // distortion bends already-diffused light at the rim).
+    const feBlur = document.createElementNS(svgNS, 'feGaussianBlur')
+    feBlur.setAttribute('in', 'SourceGraphic')
+    feBlur.setAttribute('stdDeviation', String(blur))
+    feBlur.setAttribute('result', 'blurred')
+
+    const feSat = document.createElementNS(svgNS, 'feColorMatrix')
+    feSat.setAttribute('in', 'blurred')
+    feSat.setAttribute('type', 'saturate')
+    feSat.setAttribute('values', String(saturate))
+    feSat.setAttribute('result', 'frosted')
+
+    const feImg = document.createElementNS(svgNS, 'feImage')
+    feImg.setAttribute('href', mapUrl)
+    feImg.setAttribute('result', 'dispMap')
+    feImg.setAttribute('x', '0'); feImg.setAttribute('y', '0')
+    feImg.setAttribute('width', '100%'); feImg.setAttribute('height', '100%')
+    feImg.setAttribute('preserveAspectRatio', 'none')
+
+    const feDisp = document.createElementNS(svgNS, 'feDisplacementMap')
+    feDisp.setAttribute('in', 'frosted')
+    feDisp.setAttribute('in2', 'dispMap')
+    feDisp.setAttribute('scale', '50')
+    feDisp.setAttribute('xChannelSelector', 'R')
+    feDisp.setAttribute('yChannelSelector', 'G')
+    feDisp.setAttribute('result', 'refracted')
+
+    const feColor = document.createElementNS(svgNS, 'feColorMatrix')
+    feColor.setAttribute('in', 'dispMap')
+    feColor.setAttribute('type', 'matrix')
+    feColor.setAttribute('values', '0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 1 0 0')
+    feColor.setAttribute('result', 'specAlpha')
+
+    const feFlood = document.createElementNS(svgNS, 'feFlood')
+    feFlood.setAttribute('flood-color', 'white')
+    feFlood.setAttribute('flood-opacity', '0.28')
+    feFlood.setAttribute('result', 'specColor')
+
+    const feComp1 = document.createElementNS(svgNS, 'feComposite')
+    feComp1.setAttribute('in', 'specColor'); feComp1.setAttribute('in2', 'specAlpha')
+    feComp1.setAttribute('operator', 'in'); feComp1.setAttribute('result', 'specular')
+
+    const feComp2 = document.createElementNS(svgNS, 'feComposite')
+    feComp2.setAttribute('in', 'specular'); feComp2.setAttribute('in2', 'refracted')
+    feComp2.setAttribute('operator', 'over')
+
+    filter.append(feBlur, feSat, feImg, feDisp, feColor, feFlood, feComp1, feComp2)
+    defs.appendChild(filter)
+
+    layerEl.style.backdropFilter = `url(#${fId})`
+    layerEl.style.webkitBackdropFilter = `url(#${fId})`
+  })
+  ro.observe(layerEl)
+
+  return function destroy() {
+    ro.disconnect()
+    svgEl.remove()
+    layerEl.style.backdropFilter = ''
+    layerEl.style.webkitBackdropFilter = ''
+  }
+}
+
 // ─── Init ──────────────────────────────────────────────────────────────────────
 
 function initLiquidGlass() {
@@ -573,3 +698,4 @@ function initLiquidGlass() {
 
 window.LiquidSelect = LiquidSelect
 window.initLiquidGlass = initLiquidGlass
+window.LiquidGlass = { attachRefraction }

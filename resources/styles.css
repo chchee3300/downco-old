@@ -243,20 +243,28 @@ body {
   opacity: 1;
 }
 
+/* Liquid-glass dropdown: a see-through tint here, plus ONE combined SVG
+   backdrop filter (blur + saturate + edge refraction + specular) applied
+   inline by LiquidGlass.attachRefraction (HamburgerMenu.jsx) -- reference
+   technique: physics displacement map + backdrop-filter, per the iOS-26
+   liquid-glass demos. Deliberately a single filter on this single element,
+   NOT the .glass-lens child-layer structure: children's backdrop-filters
+   compute but don't paint on a GPU-promoted host in this engine (verified
+   here -- the open/close keyframe animation promotes the dropdown), while
+   a backdrop-filter on the animated element itself paints reliably. The
+   blur(24px) below is only the fallback for engines without
+   backdrop-filter: url() support; attachRefraction replaces it inline.
+   Also: no ancestor of this element may carry backdrop-filter (see
+   .header's comment -- an ancestor filter becomes the backdrop root and
+   blinds this one entirely). */
 .hamburger-dropdown {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
   min-width: 180px;
-  /* Real frosted glass: a light tint + strong blur, so content behind
-     shows through as an illegible soft haze rather than being hidden by a
-     dark opaque backdrop. The blur only actually works because .header
-     (this dropdown's ancestor) no longer carries its own backdrop-filter --
-     see .header's comment for the backdrop-root gotcha that made any blur
-     radius here render as zero blur before. */
   background: var(--glass-bg-thin);
-  backdrop-filter: blur(32px) saturate(1.7);
-  -webkit-backdrop-filter: blur(32px) saturate(1.7);
+  backdrop-filter: blur(24px) saturate(1.7);
+  -webkit-backdrop-filter: blur(24px) saturate(1.7);
   border: 1px solid var(--glass-border-hi);
   border-radius: var(--glass-radius);
   box-shadow:
@@ -268,6 +276,14 @@ body {
   gap: 0.125rem;
   z-index: 50;
   transform-origin: top right;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .hamburger-dropdown {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--surface-1);
+  }
 }
 
 /* Open/close animation -- same pop language as .lg-dropdown (see its
@@ -298,6 +314,10 @@ body {
   font-size: 0.8rem;
   cursor: pointer;
   transition: background 0.12s, color 0.12s;
+  /* Above the dropdown's absolutely-positioned __refract/__frost glass
+     layers (z-index 0) -- see .hamburger-dropdown's comment. */
+  position: relative;
+  z-index: 1;
 }
 
 .hamburger-item:hover {
