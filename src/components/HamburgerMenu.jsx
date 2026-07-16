@@ -207,7 +207,14 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
       {mounted && (
         <div
           ref={shellRef}
-          className={`hamburger-dropdown ${open ? (settled ? '' : 'hamburger-dropdown--open') : 'hamburger-dropdown--closing'}`}
+          // The --open pop animation is gated on glassSize: before the
+          // measurement lands the shell is visibility:hidden, and an
+          // animation started then would finish while invisible -- the
+          // dropdown would just blink in with no pop once sized (the
+          // "weird" open feel). Gating means the same lg-pop-down the
+          // app's other dropdowns use plays on the fully-sized, visible
+          // dropdown.
+          className={`hamburger-dropdown ${open ? (glassSize && !settled ? 'hamburger-dropdown--open' : '') : 'hamburger-dropdown--closing'}`}
           role="menu"
           style={glassSize ? { width: glassSize.w, height: glassSize.h } : { visibility: 'hidden' }}
           onAnimationEnd={(e) => {
@@ -232,7 +239,15 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
             saturation={160}
             aberrationIntensity={1}
             elasticity={0}
-            overLight={theme === 'light'}
+            // ALWAYS false. The library's two bg-black wash divs ignore
+            // this prop in our build anyway (their opacity-0/20/100 gating
+            // classes never get compiled -- Tailwind doesn't scan
+            // node_modules -- so styles.css display:none's them instead),
+            // but overLight also halves displacementScale and swaps in a
+            // heavier shadow, neither of which we want. Theme-appropriate
+            // tinting is the shell's job (see .hamburger-dropdown /
+            // [data-theme="light"] in styles.css).
+            overLight={false}
             style={{ position: 'absolute', top: '50%', left: '50%' }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem', minWidth: 168 }}>

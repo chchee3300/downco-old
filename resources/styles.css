@@ -275,6 +275,18 @@ body {
   background: rgba(245, 246, 250, 0.55);
 }
 
+/* liquid-glass-react renders two black wash divs ahead of the glass,
+   meant to be opacity-0 whenever overLight is false. But Tailwind v4's
+   auto content detection never scans node_modules, so the gating
+   utilities (opacity-0/20/100, mix-blend-overlay) don't exist in the
+   compiled CSS while .bg-black happens to -- both divs paint fully
+   opaque black no matter what overLight says. That was the light-mode
+   black wash. overLight is pinned false here, so the washes should
+   never show: remove them outright. */
+.hamburger-dropdown > .bg-black {
+  display: none;
+}
+
 @media (prefers-reduced-transparency: reduce) {
   .hamburger-dropdown {
     backdrop-filter: none !important;
