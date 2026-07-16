@@ -262,19 +262,20 @@ body {
   top: calc(100% + 6px);
   right: 0;
   min-width: 180px;
-  /* Mid-density tint, between --glass-bg-thin (0.38) and --glass-bg
-     (0.65). At 0.38 the glass was SO transparent that large luminance
-     boundaries behind it (e.g. a panel's right edge ending mid-dropdown)
-     read as a broken/unrendered band -- verified in the real WebView2
-     window: hiding the panel behind produced a perfectly uniform dropdown,
-     i.e. the "artifact" was backdrop content, not a paint bug. Blur can't
-     hide a 40px-wide luminance step (it only softens texture), so density
-     is the only lever; 0.58 keeps blur/refraction clearly visible while
-     muting what's behind -- the same reason iOS's menu material is denser
-     than its window material. */
-  background: rgba(13, 16, 22, 0.58);
-  backdrop-filter: blur(24px) saturate(1.7);
-  -webkit-backdrop-filter: blur(24px) saturate(1.7);
+  /* Plain LARGE-radius CSS blur + mid-density tint -- deliberately no SVG
+     refraction filter and no contrast-compression stage (see
+     HamburgerMenu.jsx's comment: both produced their own artifacts on
+     this surface after several rounds). The radius matters more than it
+     looks: at 24px, a panel border/edge behind the dropdown still read as
+     a distinct line/band through the glass; at 64px any 1px line or
+     luminance step behind spreads into a >100px-wide gradient across a
+     ~180px dropdown, i.e. gentle shading -- uniform frosted glass that is
+     still visibly transparent (content behind shows as soft color haze).
+     Tint at 0.55 sits between --glass-bg-thin (0.38, too revealing) and
+     --glass-bg (0.65, read as "just dark"). */
+  background: rgba(13, 16, 22, 0.55);
+  backdrop-filter: blur(64px) saturate(1.6);
+  -webkit-backdrop-filter: blur(64px) saturate(1.6);
   border: 1px solid var(--glass-border-hi);
   border-radius: var(--glass-radius);
   box-shadow:
@@ -289,7 +290,7 @@ body {
 }
 
 [data-theme="light"] .hamburger-dropdown {
-  background: rgba(245, 246, 250, 0.68);
+  background: rgba(245, 246, 250, 0.62);
 }
 
 @media (prefers-reduced-transparency: reduce) {

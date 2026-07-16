@@ -117,32 +117,17 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const rootRef = useRef(null)
-  const refractRef = useRef(null)
   const closeTimeoutRef = useRef(null)
 
-  // Liquid-glass backdrop (blur + saturation + edge refraction + specular
-  // as one combined SVG filter) applied to the dropdown element itself --
-  // see liquid-glass.js's attachRefraction and .hamburger-dropdown's CSS
-  // comment for why it's a single filter on a single element. Attached
-  // per-mount (the dropdown unmounts after its closing animation),
-  // detached on unmount.
-  // gain kept moderate (rim magnification of thin bright lines behind --
-  // e.g. a panel's 1px border -- was concentrating them into visible
-  // streaks at the dropdown's edge); contrast/lift compress the backdrop's
-  // luminance range so panel borders and panel-vs-page steps melt into the
-  // frost instead of reading as artifacts through the glass.
-  useEffect(() => {
-    if (!mounted || !refractRef.current || !window.LiquidGlass) return undefined
-    return window.LiquidGlass.attachRefraction(refractRef.current, {
-      radius: 10,
-      gain: 40,
-      blur: 16,
-      saturate: 1.6,
-      contrast: 0.55,
-      lift: 0.16,
-    })
-  }, [mounted])
-
+  // NOTE: no LiquidGlass.attachRefraction here anymore, on purpose. The
+  // SVG-filter glass (displacement refraction, then contrast compression
+  // on top) went through several rounds of visible artifacts on this
+  // surface -- rim displacement magnified 1px panel-border lines behind
+  // the dropdown into visible streaks, and the compensating contrast/lift
+  // stage produced uneven milky blotches. Plain large-radius CSS blur (see
+  // .hamburger-dropdown in styles.css) achieves the actual goal -- blur +
+  // transparency + edge-to-edge uniformity -- with none of those failure
+  // modes.
   const requestClose = () => {
     setOpen(false)
     clearTimeout(closeTimeoutRef.current)
@@ -185,7 +170,7 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
         <HamburgerIcon />
       </button>
       {mounted && (
-        <div ref={refractRef} className={`hamburger-dropdown ${open ? 'hamburger-dropdown--open' : 'hamburger-dropdown--closing'}`} role="menu">
+        <div className={`hamburger-dropdown ${open ? 'hamburger-dropdown--open' : 'hamburger-dropdown--closing'}`} role="menu">
           <button
             type="button"
             className="hamburger-item"
