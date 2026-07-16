@@ -126,9 +126,21 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
   // comment for why it's a single filter on a single element. Attached
   // per-mount (the dropdown unmounts after its closing animation),
   // detached on unmount.
+  // gain kept moderate (rim magnification of thin bright lines behind --
+  // e.g. a panel's 1px border -- was concentrating them into visible
+  // streaks at the dropdown's edge); contrast/lift compress the backdrop's
+  // luminance range so panel borders and panel-vs-page steps melt into the
+  // frost instead of reading as artifacts through the glass.
   useEffect(() => {
     if (!mounted || !refractRef.current || !window.LiquidGlass) return undefined
-    return window.LiquidGlass.attachRefraction(refractRef.current, { radius: 10, gain: 60, blur: 12, saturate: 1.7 })
+    return window.LiquidGlass.attachRefraction(refractRef.current, {
+      radius: 10,
+      gain: 40,
+      blur: 16,
+      saturate: 1.6,
+      contrast: 0.55,
+      lift: 0.16,
+    })
   }, [mounted])
 
   const requestClose = () => {

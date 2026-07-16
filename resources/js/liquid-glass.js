@@ -594,7 +594,7 @@ const LiquidSelect = {
  *
  * Returns a destroy() function.
  */
-function attachRefraction(layerEl, { radius = 10, gain = 60, blur = 12, saturate = 1.7 } = {}) {
+function attachRefraction(layerEl, { radius = 10, gain = 60, blur = 12, saturate = 1.7, contrast = 1, lift = 0 } = {}) {
   if (!(typeof CSS !== 'undefined' && CSS.supports && CSS.supports('backdrop-filter', 'url(#x)'))) {
     return function destroy() {}
   }
@@ -649,7 +649,25 @@ function attachRefraction(layerEl, { radius = 10, gain = 60, blur = 12, saturate
     feSat.setAttribute('in', 'blurred')
     feSat.setAttribute('type', 'saturate')
     feSat.setAttribute('values', String(saturate))
-    feSat.setAttribute('result', 'frosted')
+    feSat.setAttribute('result', 'saturated')
+
+    // Contrast compression (vibrancy-style): linear transfer y = C*x + L
+    // per channel. Backdrop STRUCTURE -- panel border lines, panel-vs-page
+    // luminance steps -- is what reads as "broken glass" through a thin
+    // tint; blur alone can't erase a luminance step, but compressing the
+    // range does. C < 1 pulls highlights down (a 1px light border line
+    // fades into the haze), L > 0 lifts blacks so the result stays a
+    // mid-toned frost rather than going muddy.
+    const feContrast = document.createElementNS(svgNS, 'feComponentTransfer')
+    feContrast.setAttribute('in', 'saturated')
+    feContrast.setAttribute('result', 'frosted')
+    for (const ch of ['feFuncR', 'feFuncG', 'feFuncB']) {
+      const fn = document.createElementNS(svgNS, ch)
+      fn.setAttribute('type', 'linear')
+      fn.setAttribute('slope', String(contrast))
+      fn.setAttribute('intercept', String(lift))
+      feContrast.appendChild(fn)
+    }
 
     const feImg = document.createElementNS(svgNS, 'feImage')
     feImg.setAttribute('href', mapUrl)
@@ -685,7 +703,7 @@ function attachRefraction(layerEl, { radius = 10, gain = 60, blur = 12, saturate
     feComp2.setAttribute('in', 'specular'); feComp2.setAttribute('in2', 'refracted')
     feComp2.setAttribute('operator', 'over')
 
-    filter.append(feBlur, feSat, feImg, feDisp, feColor, feFlood, feComp1, feComp2)
+    filter.append(feBlur, feSat, feContrast, feImg, feDisp, feColor, feFlood, feComp1, feComp2)
     defs.appendChild(filter)
 
     layerEl.style.backdropFilter = `url(#${fId})`
