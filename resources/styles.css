@@ -241,9 +241,14 @@ body {
   top: calc(100% + 6px);
   right: 0;
   min-width: 180px;
-  background: var(--glass-bg-thin);
-  backdrop-filter: blur(40px) saturate(1.7);
-  -webkit-backdrop-filter: blur(40px) saturate(1.7);
+  /* Heavier frost than the original --glass-bg-thin + blur(40px): page text
+     directly behind the dropdown was still legible through it (user
+     feedback). The denser --glass-bg tint does most of the work -- alpha,
+     not blur radius, is what stops high-contrast text from reading
+     through; the blur bump softens whatever still shows. */
+  background: var(--glass-bg);
+  backdrop-filter: blur(64px) saturate(1.7);
+  -webkit-backdrop-filter: blur(64px) saturate(1.7);
   border: 1px solid var(--glass-border-hi);
   border-radius: var(--glass-radius);
   box-shadow:
