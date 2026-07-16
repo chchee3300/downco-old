@@ -9,6 +9,9 @@
 #   binaries/mac_x64/ffmpeg                      (node setup.mjs, or copied --
 #     evermeet.cx ships one build used for both arches, see setup.mjs)
 #   binaries/mac_arm64/ffmpeg
+#   binaries/mac_x64/yt-dlp                       (node setup.mjs -- yt-dlp's
+#   binaries/mac_arm64/yt-dlp                      own release is also one
+#     universal build used for both arches, same as ffmpeg above)
 #
 # macOS-only (sips/iconutil/hdiutil) -- must run on a real Mac or macos-latest CI.
 set -euo pipefail
@@ -37,12 +40,17 @@ iconutil -c icns "$ICONSET" -o "$ICNS_PATH"
 for ARCH in x64 arm64; do
   EXE="$REPO_ROOT/dist/sorai-toolkit/sorai-toolkit-mac_${ARCH}"
   FFMPEG_BIN="$REPO_ROOT/binaries/mac_${ARCH}/ffmpeg"
+  YTDLP_BIN="$REPO_ROOT/binaries/mac_${ARCH}/yt-dlp"
   if [ ! -f "$EXE" ]; then
     echo "Missing $EXE -- run 'neu build --release --embed-resources' first" >&2
     exit 1
   fi
   if [ ! -f "$FFMPEG_BIN" ]; then
     echo "Missing $FFMPEG_BIN -- run 'node setup.mjs' first (see packaging note on copying to both arches)" >&2
+    exit 1
+  fi
+  if [ ! -f "$YTDLP_BIN" ]; then
+    echo "Missing $YTDLP_BIN -- run 'node setup.mjs' first (see packaging note on copying to both arches)" >&2
     exit 1
   fi
 
@@ -55,6 +63,7 @@ for ARCH in x64 arm64; do
   cp "$ICNS_PATH" "$APP_DIR/Contents/Resources/AppIcon.icns"
   install -m 755 "$EXE" "$APP_DIR/Contents/MacOS/sorai-toolkit"
   install -m 755 "$FFMPEG_BIN" "$APP_DIR/Contents/MacOS/binaries/mac_${ARCH}/ffmpeg"
+  install -m 755 "$YTDLP_BIN" "$APP_DIR/Contents/MacOS/binaries/mac_${ARCH}/yt-dlp"
 
   # Drag-to-Applications layout: the .app plus a symlink to /Applications,
   # both inside the volume hdiutil packages into the .dmg.

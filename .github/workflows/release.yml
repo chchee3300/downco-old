@@ -118,6 +118,19 @@ jobs:
     if: needs.get-next-version.outputs.will-release == 'true'
     runs-on: macos-latest
     steps:
+      # macos-latest hosted runners ship with several old Xcode versions and
+      # a full Android SDK pre-installed, none of which this build ever
+      # touches (packaging only uses sips/iconutil/hdiutil, all separate
+      # from Xcode.app itself) -- reclaims tens of GB before anything else
+      # runs. Without this, building two arches' worth of embedded-resources
+      # app bundles + DMG staging can exhaust the runner's default free
+      # space (observed: hdiutil failing with "No space left on device").
+      - name: Free up disk space
+        run: |
+          echo "Before cleanup:"; df -h /
+          sudo rm -rf /Users/runner/Library/Android
+          sudo rm -rf /Applications/Xcode_1[0-5]*.app
+          echo "After cleanup:"; df -h /
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:

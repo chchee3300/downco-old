@@ -5,6 +5,7 @@
 # Expects (already built by the caller):
 #   dist/sorai-toolkit/sorai-toolkit-linux_x64  (neu build --release --embed-resources)
 #   binaries/linux_x64/ffmpeg                    (node setup.mjs)
+#   binaries/linux_x64/yt-dlp                    (node setup.mjs)
 #
 # Requires: fpm (gem install fpm), and rpmbuild/dpkg-deb on PATH.
 set -euo pipefail
@@ -17,6 +18,7 @@ OUT_DIR="$REPO_ROOT/release-assets"
 
 APP_EXE="$REPO_ROOT/dist/sorai-toolkit/sorai-toolkit-linux_x64"
 FFMPEG_BIN="$REPO_ROOT/binaries/linux_x64/ffmpeg"
+YTDLP_BIN="$REPO_ROOT/binaries/linux_x64/yt-dlp"
 
 if [ ! -f "$APP_EXE" ]; then
   echo "Missing $APP_EXE -- run 'neu build --release --embed-resources' first" >&2
@@ -24,6 +26,10 @@ if [ ! -f "$APP_EXE" ]; then
 fi
 if [ ! -f "$FFMPEG_BIN" ]; then
   echo "Missing $FFMPEG_BIN -- run 'node setup.mjs' first" >&2
+  exit 1
+fi
+if [ ! -f "$YTDLP_BIN" ]; then
+  echo "Missing $YTDLP_BIN -- run 'node setup.mjs' first" >&2
   exit 1
 fi
 
@@ -37,6 +43,7 @@ mkdir -p "$STAGE_DIR/usr/share/pixmaps"
 
 install -m 755 "$APP_EXE" "$STAGE_DIR/opt/sorai-toolkit/sorai-toolkit"
 install -m 755 "$FFMPEG_BIN" "$STAGE_DIR/opt/sorai-toolkit/binaries/linux_x64/ffmpeg"
+install -m 755 "$YTDLP_BIN" "$STAGE_DIR/opt/sorai-toolkit/binaries/linux_x64/yt-dlp"
 install -m 755 "$PKG_DIR/launcher.sh" "$STAGE_DIR/usr/bin/sorai-toolkit"
 install -m 644 "$PKG_DIR/sorai-toolkit.desktop" "$STAGE_DIR/usr/share/applications/sorai-toolkit.desktop"
 install -m 644 "$REPO_ROOT/resources/icons/appIcon.png" "$STAGE_DIR/usr/share/pixmaps/sorai-toolkit.png"
