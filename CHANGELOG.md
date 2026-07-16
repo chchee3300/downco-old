@@ -1,3 +1,10 @@
+## [1.3.1](https://github.com/chchee3300/sorai-toolkit/compare/v1.3.0...v1.3.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* heavier frost on the hamburger dropdown ([2caa4a4](https://github.com/chchee3300/sorai-toolkit/commit/2caa4a425ecdbdced9477bb2b30b3ddede7db66a)), closes [hi#contrast](https://github.com/hi/issues/contrast)
+
 # [1.3.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.2.0...v1.3.0) (2026-07-16)
 
 
