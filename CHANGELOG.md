@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.3.2...v1.4.0) (2026-07-16)
+
+
+### Features
+
+* liquid-glass refraction on the hamburger dropdown ([8cb6731](https://github.com/chchee3300/sorai-toolkit/commit/8cb673192eaebbdd6b4bbada9c088c9c13c64adb))
+
 ## [1.3.2](https://github.com/chchee3300/sorai-toolkit/compare/v1.3.1...v1.3.2) (2026-07-16)
 
 
