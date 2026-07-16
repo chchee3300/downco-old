@@ -270,12 +270,24 @@ body {
   -webkit-backdrop-filter: blur(24px) saturate(1.6);
 }
 
-/* Same frost strength as the app's other light-mode glass panels
-   (.glass-lens__frost is 0.82, the flat dropdown variant 0.88) -- the
-   first pass used 0.55 and the blurred gray text underneath washed the
-   whole panel gray. */
+/* Near-opaque, same hue as --bg (#f2f3f7): per design feedback the panel
+   should read almost identical to the page background -- earlier passes
+   (0.55, then 0.85 white) still let the blurred content underneath gray
+   it down. The last 5% of translucency + the blur is all that's left of
+   the glass look here. */
 [data-theme="light"] .hamburger-dropdown {
-  background: rgba(248, 249, 252, 0.85);
+  background: rgba(242, 243, 247, 0.95);
+}
+
+/* The library's warp span contributes no frost here (descendant
+   backdrop-filters compute but never paint in this engine -- the shell's
+   own backdrop-filter is the frost), yet its `filter: url(#...)` chain
+   still composites a uniform dark veil over the panel: bisected live in
+   the WebView2 window, hiding this one span moved the interior from
+   (229,231,236) to exactly the page background (242,243,247). Dead
+   weight that only darkens -- remove it. */
+.hamburger-dropdown .glass__warp {
+  display: none;
 }
 
 /* liquid-glass-react puts inline `transition: all 0.2s` on its container,
