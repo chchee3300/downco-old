@@ -70,6 +70,8 @@ jobs:
           sudo apt-get install -y -qq unzip ruby ruby-dev build-essential rpm
           sudo gem install --no-document fpm
       - run: node setup.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: neu build --release --embed-resources
       - run: bash packaging/linux/build.sh "${{ needs.get-next-version.outputs.version }}"
       - uses: actions/upload-artifact@v4
@@ -100,6 +102,8 @@ jobs:
       - run: node scripts/write-version.mjs "${{ needs.get-next-version.outputs.version }}"
       - run: npm run build
       - run: node setup.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - run: neu build --release --embed-resources
       - run: pwsh packaging/windows/install-innosetup.ps1
       - run: pwsh packaging/windows/build.ps1 -Version "${{ needs.get-next-version.outputs.version }}"
@@ -131,6 +135,8 @@ jobs:
       - run: node scripts/write-version.mjs "${{ needs.get-next-version.outputs.version }}"
       - run: npm run build
       - run: node setup.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Populate the other mac arch folder
         # evermeet.cx (ffmpeg) and yt-dlp's own release both publish one
         # universal macOS build covering both Intel and Apple Silicon (see

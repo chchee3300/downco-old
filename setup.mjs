@@ -134,9 +134,17 @@ async function setupWindows() {
 
 // Resolved live via yt-dlp's own GitHub releases API (not a pinned version),
 // same reasoning as the ffmpeg URLs below -- yt-dlp cuts releases often and
-// a hardcoded tag would go stale fast.
+// a hardcoded tag would go stale fast. Authenticated when GITHUB_TOKEN is
+// set (CI passes it in) -- unauthenticated api.github.com requests are
+// capped at 60/hour per IP, and GitHub Actions runners share IP pools
+// across many concurrent workflows, so this intermittently 403s without a
+// token (observed failing build-macos while build-linux/build-windows
+// succeeded in the same run, purely on timing). A token raises the cap to
+// 5000/hour. Harmless to omit locally -- api.github.com allows anonymous
+// reads, just at the lower rate.
 async function latestYtDlpAssetUrl(assetName) {
-  const res = await fetch('https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest');
+  const headers = process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {};
+  const res = await fetch('https://api.github.com/repos/yt-dlp/yt-dlp/releases/latest', { headers });
   if (!res.ok) throw new Error(`yt-dlp releases lookup failed (${res.status})`);
   const info = await res.json();
   const asset = info.assets.find((a) => a.name === assetName);
