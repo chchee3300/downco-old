@@ -608,13 +608,24 @@ function attachRefraction(layerEl, { radius = 10, gain = 60, blur = 12, saturate
   document.body.appendChild(svgEl)
 
   const ro = new ResizeObserver(() => {
-    const rect = layerEl.getBoundingClientRect()
-    const w = Math.round(rect.width)
-    const h = Math.round(rect.height)
+    // offsetWidth/Height (layout size), NOT getBoundingClientRect: the
+    // dropdown mounts mid-pop-animation (scale 0.97 -> 1), and a bounding
+    // rect taken then bakes the transform into the map dimensions, leaving
+    // the displacement map slightly smaller than the settled element.
+    const w = layerEl.offsetWidth
+    const h = layerEl.offsetHeight
     if (w < 1 || h < 1) return
 
     const r = Math.min(radius, w / 2, h / 2)
-    const mapUrl = getOrCreateMap(w, h, r, gain)
+    // NEGATIVE gain -> the rim displaces sampling INWARD (right edge
+    // samples from the element's interior, not past its right edge).
+    // Outward displacement reads beyond the backdrop region Chromium
+    // provides (clipped to the element's bounds), which renders as a dead
+    // unfilled band along the edges -- observed as a dark stripe down the
+    // dropdown's right side. Inward sampling stays within the region by
+    // construction, and matches the edge-magnification look of a real
+    // convex lens rim anyway.
+    const mapUrl = getOrCreateMap(w, h, r, -gain)
     const fId = nextFilterId()
 
     defs.innerHTML = ''
