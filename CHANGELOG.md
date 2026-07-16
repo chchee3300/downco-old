@@ -1,3 +1,10 @@
+## [1.4.2](https://github.com/chchee3300/sorai-toolkit/compare/v1.4.1...v1.4.2) (2026-07-16)
+
+
+### Bug Fixes
+
+* denser dropdown tint -- the "unrendered" right band was backdrop content ([6638cb7](https://github.com/chchee3300/sorai-toolkit/commit/6638cb7375a2bf400c706dbaa2000f54ad5a13c8))
+
 ## [1.4.1](https://github.com/chchee3300/sorai-toolkit/compare/v1.4.0...v1.4.1) (2026-07-16)
 
 
