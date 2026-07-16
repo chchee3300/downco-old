@@ -251,32 +251,37 @@ body {
    the component centers itself at 50%/50% -- which exactly equals filling
    the shell.
 
-   The FROST (blur + tint) lives HERE on the shell, not on the library's
-   own .glass__warp span: in this engine a backdrop-filter paints ONLY
-   when applied to this top dropdown element -- on any descendant it
-   computes but paints nothing (bisected live in the real WebView2 window:
-   the library's warp span produced zero frost with or without its url()
+   The glass tint lives HERE on the shell, not on the library's own
+   .glass__warp span: in this engine a backdrop-filter paints ONLY when
+   applied to this top dropdown element -- on any descendant it computes
+   but paints nothing (bisected live in the real WebView2 window: the
+   library's warp span produced zero frost with or without its url()
    displacement filter; same engine bug family as .glass-lens--flat).
    This also makes the shell the backdrop root, which is fine -- every
-   descendant backdrop-filter is dead here regardless. */
+   descendant backdrop-filter is dead here regardless.
+
+   The look landed on after live A/B rounds with the user: a LIGHT tint
+   over near-sharp backdrop -- blur is 1px on purpose (24px read as a
+   frosted slab; the panel felt "right" only once the blur was nearly
+   gone), the low-alpha tints keep the content behind legible through
+   the panel. */
 .hamburger-dropdown {
   position: absolute;
   top: calc(100% + 6px);
   right: 0;
   z-index: 50;
   border-radius: 12px;              /* match the LiquidGlass cornerRadius */
-  background: rgba(13, 16, 22, 0.38);
-  backdrop-filter: blur(24px) saturate(1.6);
-  -webkit-backdrop-filter: blur(24px) saturate(1.6);
+  background: rgba(13, 16, 22, 0.3);
+  backdrop-filter: blur(1px) saturate(1.6);
+  -webkit-backdrop-filter: blur(1px) saturate(1.6);
 }
 
-/* Same hue as --bg (#f2f3f7) so the panel reads like the page background
-   (design feedback), with just enough translucency for the blur to show
-   as glass. Earlier grayness at lower alphas turned out to be the
-   library's warp veil (removed below), not the alpha itself -- 0.88
-   holds the background-colored look now that the veil is gone. */
+/* Same hue as --bg (#f2f3f7) so the panel stays in the page's own color
+   family. NOTE: earlier grayness at low alphas turned out to be the
+   library's warp veil (removed below), not the alpha itself -- don't
+   reflexively raise this if the panel ever grays again, bisect first. */
 [data-theme="light"] .hamburger-dropdown {
-  background: rgba(242, 243, 247, 0.88);
+  background: rgba(242, 243, 247, 0.6);
 }
 
 /* The library's warp span contributes no frost here (descendant
