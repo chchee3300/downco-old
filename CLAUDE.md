@@ -6,7 +6,7 @@
 - `src/App.jsx` 是 hub 殼層：`currentTool` state 切換 `HubMenu`/`ConverterApp`/`DownloaderApp`，沒有 router。兩個工具都從各自的 npm 套件 import（`sorai-toolkit-converter`、`sorai-toolkit-downloader`），不是本地檔案。
 - Converter/Downloader 的所有元件/hooks 都不在這個 repo 裡——分別活在各自的 repo，透過 `node_modules/<pkg>/dist/index.js`（Vite library build）提供。`package.json` 的 `dependencies` 有兩個 `github:chchee3300/...` 條目，npm install 時會自動觸發各自的 `prepare` script 建置。
 - `resources/js/lib/*.js`（`platform.js`、`ffmpeg-commands.js` 等）**仍然留在這裡**——這些是 `window.EstellaLib.*` 執行期全域變數，兩個工具的元件執行時都會呼叫它們，由 hub 統一提供這些 runtime globals。`platform.js` 已經有 `ytdlpPath()`（Phase D prep 加的），跟 `ffmpegPath()`/`qpdfCommand()`/`img2pdfCommand()` 同一套模式。
-- `src/components/HamburgerMenu.jsx` 取代原本的 `#theme-toggle`：語言切換 + 深色/淺色切換 +「回到主選單」三項，設定頁之後再做。下拉面板用 `liquid-glass-react`，相關的坑見下面「Hamburger 下拉選單」一節。
+- `src/components/HamburgerMenu.jsx` 取代原本的 `#theme-toggle`：語言切換 + 深色/淺色切換 +「回到主選單」三項，設定頁之後再做。下拉面板用 `liquid-glass-react`，是玻璃面板的參考實作——做任何玻璃 UI 前先讀下面的「Liquid glass 製作指南」。
 - Header 的麵包屑現在顯示**工具名稱**（如「Converter」/「Downloader」），不是舊版動態的檔案類型徽章。版本號顯示也搬到這裡的 `Header.jsx`（`.header-version`，讀 hub 自己的 `src/version.json`）——兩個工具套件都沒有自己的版本號顯示，避免組合後顯示錯誤版本。
 - `useTheme.js`/`useUpdateChecker.js`/`UpdateBanner.jsx` 都在這裡（hub 層級關注點）。`localStorage` key 是 `sorai-theme`。`useUpdateChecker.js` 的 `REPO` 常數指向 `chchee3300/sorai-toolkit`。
 - **`binaries/<platform>/`** 現在同時有 ffmpeg（Converter 用）跟 yt-dlp（Downloader 用，透過 `--ffmpeg-location` 共用同一份 ffmpeg，合併分離的 video/audio 串流）。`setup.mjs` 的 `setupYtDlp()` 從 yt-dlp 自己的 GitHub releases API 動態抓最新版（不是釘死版本），macOS 兩個 arch 資料夾共用一份 universal build（跟 ffmpeg 的 evermeet.cx build 同一套邏輯，CI 的 macOS job 也有對應的「populate other arch」複製步驟）。
@@ -30,13 +30,18 @@
 - **`playwright` 必須是 `devDependencies`**，且 CI 全域設 `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'`——沒有的話每個 job 的 `npm ci` 都會下載瀏覽器，曾在 macOS runner 上因此炸硬碟。
 - **`installer.iss` 的 `[Run]` 項目不能有 `skipifsilent`**——應用內更新用 `/VERYSILENT` 跑安裝檔，`skipifsilent` 會讓「安裝完自動開啟」完全不執行。
 
-## Hamburger 下拉選單（liquid-glass-react）注意事項
-- **最終定案外觀（使用者實機 A/B 過好幾輪才選定的，不要自作主張改回去）**：`blur(1px) saturate(1.6)` + 淡 tint（深色 `rgba(13,16,22,0.3)`、淺色 `rgba(242,243,247,0.6)`，淺色跟 `--bg` 同色系）。24px 的重霧面不管 tint 調多少都像一塊實心板，blur 幾乎歸零後才是使用者要的「近乎透明、後面內容看得到」的感覺。
-- **這個 WebView2 引擎的 backdrop-filter 只在最上層的 `.hamburger-dropdown` 元素上會真的畫出來**——放在任何後代元素上都是「computed 正確但完全不繪製」（實機 bisect 驗證過，跟 `.glass-lens--flat` 同一族引擎 bug）。所以玻璃 tint/blur 全部放在殼層，不靠 library 自己的層。
-- **library 的 `.glass__warp` 已用 CSS `display:none` 移除**：它的 backdrop-filter 畫不出東西，但它的 `filter: url(#...)` SVG 濾鏡鏈仍會合成一層均勻暗紗（實機逐層 bisect：藏掉這一層,面板從 (229,231,236) 變成跟頁面背景一模一樣的 (242,243,247)）。**面板如果再變灰，先 bisect 找元兇，不要反射性調高 tint alpha**——上次的灰就不是 alpha 的問題。
-- **Tailwind v4 的自動內容偵測不掃 node_modules**：library 原始碼裡的 `opacity-0/20/100`、`mix-blend-overlay` 等 gating class 不會被編譯進 CSS，但 `.bg-black` 碰巧有——結果它的兩個黑色 wash div 永遠全不透明（`overLight` prop 形同虛設，深色模式黑疊黑看不出來、淺色模式直接一塊黑）。已用 `.hamburger-dropdown > .bg-black { display:none }` 移除；`overLight` 固定傳 `false`。
-- **開關動畫必須跟 `.lg-dropdown` 完全同參數**（同 keyframes、0.14s/0.1s、置中 transform-origin），而且 library 行內的 `transition: all 0.2s` 已全部 `transition: none !important` 關掉——不關的話，開啟 pop 播放中途的重新量測會疊一段慢速尺寸過渡，變成其他 dropdown 沒有的黏糊感。pop 動畫 gate 在 `glassSize` 量測完成之後才開始（不然會在 `visibility:hidden` 期間播完、看起來像直接閃現）；動畫結束後 class 會被拆掉（forwards-fill 會讓殼層永久 GPU-promoted，而 promoted 元素的後代 backdrop-filter 在這個引擎不繪製）。
-- 實機驗證這類視覺改動的做法：`neu run` + `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9229` + Playwright `connectOverCDP`,截圖後用 System.Drawing 取樣像素比對（模板參考 git history 裡的 `tests/_verify_*.js`,用完即刪）。
+## Liquid glass 製作指南（app 內所有玻璃面板都必須 follow）
+目前的參考實作是 hamburger 下拉選單（`src/components/HamburgerMenu.jsx` + `resources/styles.css` 的 `.hamburger-dropdown` 區塊）。之後任何新的玻璃面板（設定頁、新 dropdown、popover 等）都照這套規則做：
+
+1. **玻璃語言（使用者實機 A/B 過好幾輪才定案的，不要自作主張改）**：`backdrop-filter: blur(1px) saturate(1.6)` + 淡 tint（深色 `rgba(13,16,22,0.3)`、淺色 `rgba(242,243,247,0.6)`，淺色必須跟 `--bg` 同色系）。重點是「近乎透明、後面內容看得到」——重霧面（如 blur 24px）不管 tint 調多少都像一塊實心板，一律不用。
+2. **backdrop-filter 一律放在面板最上層的殼層元素**。這個 WebView2 引擎裡，backdrop-filter 放在任何後代元素上都是「computed 正確但完全不繪製」（實機 bisect 驗證過，`.glass-lens--flat` 跟 `.glass__warp` 都中過同一族 bug）。玻璃的 tint/blur 全部自己在殼層做，永遠不要依賴 library 內部的層。
+3. **用 liquid-glass-react 時必須加的三個 CSS 修正**（照抄 `.hamburger-dropdown` 的做法）：
+   - `.glass__warp` → `display:none`：它畫不出霧面，但它的 `filter: url(#...)` SVG 濾鏡鏈會合成一層均勻暗紗（bisect 實測：藏掉它面板從 (229,231,236) 回到跟背景一致的 (242,243,247)）。
+   - `> .bg-black` → `display:none`：Tailwind v4 自動內容偵測不掃 node_modules，library 的 `opacity-0/20/100`、`mix-blend-overlay` gating class 都不存在、`.bg-black` 卻碰巧存在——兩個黑色 wash div 永遠全不透明（`overLight` prop 形同虛設；深色模式黑疊黑看不出來，淺色模式直接一塊黑）。`overLight` 固定傳 `false`。
+   - library 行內的 `transition: all 0.2s` 全部 `transition: none !important` 關掉——不關的話，開啟動畫播放中途的重新量測會疊一段慢速尺寸過渡，變成黏糊感。
+4. **開關動畫必須跟 `.lg-dropdown` 完全同參數**：同 keyframes（`lg-pop-down`/`lg-pop-up-out`）、0.14s/0.1s、置中 transform-origin。進出都用 ease-out，永遠不用 ease-in。動畫要 gate 在尺寸量測完成之後才開始（不然會在 `visibility:hidden` 期間播完、看起來像直接閃現）；動畫結束後要把 class 拆掉——forwards-fill 會讓殼層永久 GPU-promoted，而 promoted 元素的後代 backdrop-filter 在這個引擎不繪製。
+5. **面板顏色不對（變灰/變暗）時，先實機逐層 bisect 找元兇，不要反射性調 tint alpha**——歷史上的灰就是 `.glass__warp` 暗紗造成的，跟 alpha 無關。
+6. **驗證一律在真實 WebView2 視窗做**：`neu run` + `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9229` + Playwright `connectOverCDP`，截圖後用 System.Drawing 取樣像素比對（模板參考 git history 裡的 `tests/_verify_*.js`，用完即刪）。瀏覽器裡測不出這個引擎的 backdrop-filter 行為。
 
 ## 測試
 - **Converter**：`node tests/test_conversion.js`、`test_drop.js`、`test_crop_ui.js`、`test_image_crop_commands.js`（每個瀏覽器導向的測試在 `page.goto` 後多了一步「先點 `.hub-card` 進入 Converter」，因為現在 hub-grid 有兩張卡片，Converter 卡片的點擊選擇器要小心不要跟 Downloader 的搞混）。改 Converter 邏輯要在 `sorai-toolkit-converter` repo 那邊改，這裡的 `node_modules` 需要重新 `npm install` 才會抓到新版。
