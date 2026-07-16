@@ -1,3 +1,17 @@
+# [1.2.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.1.1...v1.2.0) (2026-07-16)
+
+
+### Bug Fixes
+
+* authenticate yt-dlp releases lookup to avoid CI rate-limit 403s ([837e2d8](https://github.com/chchee3300/sorai-toolkit/commit/837e2d8ad400b944860022e2c4e7bcc10bf6046f))
+* free macOS runner disk space; bundle yt-dlp in macOS/Linux packages ([0ee7351](https://github.com/chchee3300/sorai-toolkit/commit/0ee7351eb138c46635e7eff570284e8585639f2b))
+
+
+### Features
+
+* Downloader queue header, add-video relabel, right-panel scroll fix ([0ba5734](https://github.com/chchee3300/sorai-toolkit/commit/0ba5734620030b37e00e5de33c56d603088dc9b9)), closes [download-settings/#download-intro](https://github.com/chchee3300/sorai-toolkit/issues/download-intro)
+* redesign hub menu cards, add Downloader batch-queue support, polish hamburger menu + LiquidSelect ([557e953](https://github.com/chchee3300/sorai-toolkit/commit/557e9538634767468333af06261160474ccc6b03)), closes [mount-throu#closing-animation](https://github.com/mount-throu/issues/closing-animation)
+
 ## [1.1.1](https://github.com/chchee3300/sorai-toolkit/compare/v1.1.0...v1.1.1) (2026-07-15)
 
 
