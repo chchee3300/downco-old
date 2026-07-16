@@ -1,3 +1,10 @@
+## [1.4.1](https://github.com/chchee3300/sorai-toolkit/compare/v1.4.0...v1.4.1) (2026-07-16)
+
+
+### Bug Fixes
+
+* dead unrendered band along the liquid-glass dropdown's right edge ([bf39d85](https://github.com/chchee3300/sorai-toolkit/commit/bf39d856dcca821f5db84061070b48d1559a4650))
+
 # [1.4.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.3.2...v1.4.0) (2026-07-16)
 
 
