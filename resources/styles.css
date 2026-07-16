@@ -262,7 +262,17 @@ body {
   top: calc(100% + 6px);
   right: 0;
   min-width: 180px;
-  background: var(--glass-bg-thin);
+  /* Mid-density tint, between --glass-bg-thin (0.38) and --glass-bg
+     (0.65). At 0.38 the glass was SO transparent that large luminance
+     boundaries behind it (e.g. a panel's right edge ending mid-dropdown)
+     read as a broken/unrendered band -- verified in the real WebView2
+     window: hiding the panel behind produced a perfectly uniform dropdown,
+     i.e. the "artifact" was backdrop content, not a paint bug. Blur can't
+     hide a 40px-wide luminance step (it only softens texture), so density
+     is the only lever; 0.58 keeps blur/refraction clearly visible while
+     muting what's behind -- the same reason iOS's menu material is denser
+     than its window material. */
+  background: rgba(13, 16, 22, 0.58);
   backdrop-filter: blur(24px) saturate(1.7);
   -webkit-backdrop-filter: blur(24px) saturate(1.7);
   border: 1px solid var(--glass-border-hi);
@@ -276,6 +286,10 @@ body {
   gap: 0.125rem;
   z-index: 50;
   transform-origin: top right;
+}
+
+[data-theme="light"] .hamburger-dropdown {
+  background: rgba(245, 246, 250, 0.68);
 }
 
 @media (prefers-reduced-transparency: reduce) {
