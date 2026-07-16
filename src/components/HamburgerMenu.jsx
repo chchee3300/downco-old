@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import LiquidGlass from 'liquid-glass-react'
 import { useTranslation } from '../hooks/useTranslation.js'
 
 // Three uniform icon-left rows: language (click cycles through
@@ -116,20 +117,53 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
   const FlagIcon = LANG_FLAG_ICONS[lang]
   const [open, setOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  // True once the open pop animation finished -- the animation class is
+  // then REMOVED (no forwards-fill lingering) because a filled keyframe
+  // animation keeps the shell GPU-promoted forever, and a backdrop-filter
+  // on a DESCENDANT of a promoted element computes but never paints in
+  // this engine (verified earlier on this exact surface) -- which blanked
+  // liquid-glass-react's frost layer. With the class stripped after the
+  // 140ms pop, promotion ends and the library's backdrop sampling paints.
+  const [settled, setSettled] = useState(false)
   const rootRef = useRef(null)
+  const shellRef = useRef(null)
   const closeTimeoutRef = useRef(null)
+  // Rendered size of liquid-glass-react's inner .glass element. The
+  // library positions every one of its layers around a CENTER point (its
+  // transform hardcodes translate(-50%,-50%)), so the anchoring shell
+  // (.hamburger-dropdown, absolute top/right below the toggle) must be
+  // given the glass's own size explicitly for "centered in the shell" to
+  // equal "filling the shell". Measured after mount + tracked with a
+  // ResizeObserver (row widths change when the language cycles).
+  const [glassSize, setGlassSize] = useState(null)
 
-  // NOTE: no LiquidGlass.attachRefraction here anymore, on purpose. The
-  // SVG-filter glass (displacement refraction, then contrast compression
-  // on top) went through several rounds of visible artifacts on this
-  // surface -- rim displacement magnified 1px panel-border lines behind
-  // the dropdown into visible streaks, and the compensating contrast/lift
-  // stage produced uneven milky blotches. Plain large-radius CSS blur (see
-  // .hamburger-dropdown in styles.css) achieves the actual goal -- blur +
-  // transparency + edge-to-edge uniformity -- with none of those failure
-  // modes.
+  useEffect(() => {
+    if (!mounted || !shellRef.current) return undefined
+    const glassEl = shellRef.current.querySelector('.glass')
+    if (!glassEl) return undefined
+    const ro = new ResizeObserver(() => {
+      const w = Math.ceil(glassEl.offsetWidth)
+      const h = Math.ceil(glassEl.offsetHeight)
+      if (w > 0 && h > 0) {
+        setGlassSize((prev) => (prev && prev.w === w && prev.h === h ? prev : { w, h }))
+        // liquid-glass-react measures its own glassSize exactly once on
+        // mount (then only on window resize) -- and its SVG filter region,
+        // overlay border spans, and rim layers are all sized from that
+        // internal measurement. The mount-time measure lands before our
+        // rows/fonts settle, freezing the filter region too small, which
+        // CLIPS the glass paint (rows below ~69px rendered with no frost
+        // at all). A synthetic resize event is the library's only
+        // re-measure hook.
+        window.dispatchEvent(new Event('resize'))
+      }
+    })
+    ro.observe(glassEl)
+    return () => ro.disconnect()
+  }, [mounted])
+
   const requestClose = () => {
     setOpen(false)
+    setSettled(false)
     clearTimeout(closeTimeoutRef.current)
     closeTimeoutRef.current = setTimeout(() => setMounted(false), CLOSE_ANIM_MS)
   }
@@ -138,6 +172,7 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
     clearTimeout(closeTimeoutRef.current)
     setMounted(true)
     setOpen(true)
+    setSettled(false)
   }
 
   useEffect(() => () => clearTimeout(closeTimeoutRef.current), [])
@@ -170,45 +205,77 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
         <HamburgerIcon />
       </button>
       {mounted && (
-        <div className={`hamburger-dropdown ${open ? 'hamburger-dropdown--open' : 'hamburger-dropdown--closing'}`} role="menu">
-          <button
-            type="button"
-            className="hamburger-item"
-            role="menuitem"
-            onClick={() => window.EstellaLib.i18n.cycleLang()}
+        <div
+          ref={shellRef}
+          className={`hamburger-dropdown ${open ? (settled ? '' : 'hamburger-dropdown--open') : 'hamburger-dropdown--closing'}`}
+          role="menu"
+          style={glassSize ? { width: glassSize.w, height: glassSize.h } : { visibility: 'hidden' }}
+          onAnimationEnd={(e) => {
+            if (e.animationName === 'lg-pop-down') setSettled(true)
+          }}
+        >
+          <LiquidGlass
+            cornerRadius={12}
+            padding="6px"
+            // Kept LOW on purpose: the library composites its displacement
+            // map as a regular filter over the backdrop-filter output, and
+            // its map warps the WHOLE surface (not just the rim). At the
+            // default-ish 60-70 the interior content of a ~120px-tall
+            // panel gets displaced so far that the bottom region samples
+            // from outside the painted backdrop and renders as a dead
+            // transparent band (verified in the real WebView2 window; the
+            // library's own demos are ~69px pill buttons where that scale
+            // works). ~18 gives visible edge bending without evacuating
+            // the interior.
+            displacementScale={18}
+            blurAmount={0.625}
+            saturation={160}
+            aberrationIntensity={1}
+            elasticity={0}
+            overLight={theme === 'light'}
+            style={{ position: 'absolute', top: '50%', left: '50%' }}
           >
-            <span className="hamburger-item__icon" aria-hidden="true">
-              <FlagIcon />
-            </span>
-            <span className="hamburger-item__label">{t(`hamburger.lang.${lang}`)}</span>
-          </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.125rem', minWidth: 168 }}>
+              <button
+                type="button"
+                className="hamburger-item"
+                role="menuitem"
+                onClick={() => window.EstellaLib.i18n.cycleLang()}
+              >
+                <span className="hamburger-item__icon" aria-hidden="true">
+                  <FlagIcon />
+                </span>
+                <span className="hamburger-item__label">{t(`hamburger.lang.${lang}`)}</span>
+              </button>
 
-          <button
-            type="button"
-            className="hamburger-item"
-            role="menuitem"
-            aria-label={t('hamburger.themeAria', { theme })}
-            onClick={onToggleTheme}
-          >
-            <span className="hamburger-item__icon" aria-hidden="true">
-              {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
-            </span>
-            <span className="hamburger-item__label">{t('hamburger.appearance')}</span>
-          </button>
+              <button
+                type="button"
+                className="hamburger-item"
+                role="menuitem"
+                aria-label={t('hamburger.themeAria', { theme })}
+                onClick={onToggleTheme}
+              >
+                <span className="hamburger-item__icon" aria-hidden="true">
+                  {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
+                </span>
+                <span className="hamburger-item__label">{t('hamburger.appearance')}</span>
+              </button>
 
-          {showBackToHub && (
-            <button
-              className="hamburger-item hamburger-item--danger"
-              role="menuitem"
-              onClick={() => {
-                requestClose()
-                onBackToHub()
-              }}
-            >
-              <span className="hamburger-item__icon" aria-hidden="true"><HomeIcon /></span>
-              <span className="hamburger-item__label">{t('hamburger.mainMenu')}</span>
-            </button>
-          )}
+              {showBackToHub && (
+                <button
+                  className="hamburger-item hamburger-item--danger"
+                  role="menuitem"
+                  onClick={() => {
+                    requestClose()
+                    onBackToHub()
+                  }}
+                >
+                  <span className="hamburger-item__icon" aria-hidden="true"><HomeIcon /></span>
+                  <span className="hamburger-item__label">{t('hamburger.mainMenu')}</span>
+                </button>
+              )}
+            </div>
+          </LiquidGlass>
         </div>
       )}
     </div>

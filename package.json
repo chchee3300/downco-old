@@ -9,6 +9,7 @@
     "setup": "npm install -g @neutralinojs/neu@11.7.1 && neu update && node scripts/copy-neutralino-client.mjs && node setup.mjs"
   },
   "dependencies": {
+    "liquid-glass-react": "^1.1.1",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "sorai-toolkit-converter": "github:chchee3300/sorai-toolkit-converter",
