@@ -265,18 +265,18 @@ body {
   right: 0;
   z-index: 50;
   border-radius: 12px;              /* match the LiquidGlass cornerRadius */
-  background: rgba(13, 16, 22, 0.45);
+  background: rgba(13, 16, 22, 0.38);
   backdrop-filter: blur(24px) saturate(1.6);
   -webkit-backdrop-filter: blur(24px) saturate(1.6);
 }
 
-/* Near-opaque, same hue as --bg (#f2f3f7): per design feedback the panel
-   should read almost identical to the page background -- earlier passes
-   (0.55, then 0.85 white) still let the blurred content underneath gray
-   it down. The last 5% of translucency + the blur is all that's left of
-   the glass look here. */
+/* Same hue as --bg (#f2f3f7) so the panel reads like the page background
+   (design feedback), with just enough translucency for the blur to show
+   as glass. Earlier grayness at lower alphas turned out to be the
+   library's warp veil (removed below), not the alpha itself -- 0.88
+   holds the background-colored look now that the veil is gone. */
 [data-theme="light"] .hamburger-dropdown {
-  background: rgba(242, 243, 247, 0.95);
+  background: rgba(242, 243, 247, 0.88);
 }
 
 /* The library's warp span contributes no frost here (descendant
