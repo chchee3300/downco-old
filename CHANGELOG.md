@@ -1,3 +1,10 @@
+## [1.4.4](https://github.com/chchee3300/sorai-toolkit/compare/v1.4.3...v1.4.4) (2026-07-16)
+
+
+### Bug Fixes
+
+* drop the SVG glass filter for plain large-radius blur on the dropdown ([24358cb](https://github.com/chchee3300/sorai-toolkit/commit/24358cb98af5657e525e440ef045cd8de7168ed7))
+
 ## [1.4.3](https://github.com/chchee3300/sorai-toolkit/compare/v1.4.2...v1.4.3) (2026-07-16)
 
 
