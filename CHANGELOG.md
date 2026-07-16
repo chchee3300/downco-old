@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.2.0...v1.3.0) (2026-07-16)
+
+
+### Features
+
+* multi-language architecture (i18n), Traditional Chinese support in hub shell ([306944f](https://github.com/chchee3300/sorai-toolkit/commit/306944f2c280278ca988b40fb41753ecff53885e))
+
 # [1.2.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.1.1...v1.2.0) (2026-07-16)
 
 
