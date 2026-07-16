@@ -132,8 +132,15 @@ body {
   justify-content: space-between;
   padding: 0 1rem;
   background: rgba(7, 8, 9, 0.82);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  /* NO backdrop-filter here, on purpose. It was a no-op visually (the
+     header is a grid row -- .main scrolls internally, nothing ever passes
+     under it, so there was nothing to blur) but it silently broke the
+     hamburger dropdown's own backdrop-filter: an ancestor with
+     backdrop-filter becomes the backdrop root for its descendants, so the
+     dropdown (a .header descendant that overhangs .main) could only sample
+     the header's empty backdrop, never the page content below -- text
+     behind the dropdown rendered pin-sharp through the tint no matter what
+     blur radius the dropdown asked for. */
   border-bottom: 1px solid var(--glass-border);
   z-index: 40;
 }
@@ -241,14 +248,15 @@ body {
   top: calc(100% + 6px);
   right: 0;
   min-width: 180px;
-  /* Heavier frost than the original --glass-bg-thin + blur(40px): page text
-     directly behind the dropdown was still legible through it (user
-     feedback). The denser --glass-bg tint does most of the work -- alpha,
-     not blur radius, is what stops high-contrast text from reading
-     through; the blur bump softens whatever still shows. */
-  background: var(--glass-bg);
-  backdrop-filter: blur(64px) saturate(1.7);
-  -webkit-backdrop-filter: blur(64px) saturate(1.7);
+  /* Real frosted glass: a light tint + strong blur, so content behind
+     shows through as an illegible soft haze rather than being hidden by a
+     dark opaque backdrop. The blur only actually works because .header
+     (this dropdown's ancestor) no longer carries its own backdrop-filter --
+     see .header's comment for the backdrop-root gotcha that made any blur
+     radius here render as zero blur before. */
+  background: var(--glass-bg-thin);
+  backdrop-filter: blur(32px) saturate(1.7);
+  -webkit-backdrop-filter: blur(32px) saturate(1.7);
   border: 1px solid var(--glass-border-hi);
   border-radius: var(--glass-radius);
   box-shadow:
