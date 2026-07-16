@@ -75,34 +75,42 @@ async function main() {
     }, outDir);
 
     console.log('\n--- METADATA FETCH ---');
+    // Downloader now queues videos rather than handling one at a time --
+    // adding a URL appends it to a queue list and auto-selects it; the
+    // right panel (with the video/audio format selects, split into two
+    // independent dropdowns) shows whichever item is selected. Metadata
+    // lands on the queue row (.queue-item-*), not a standalone #metadata-*
+    // block. waitForFunction, not waitForSelector, on the format selects --
+    // the native <select> is display:none by design (GlassSelect replaces
+    // it with a LiquidSelect overlay), so a visibility-based wait would hang.
     await page.fill('#video-url', TEST_URL);
     await page.click('#btn-fetch');
-    await page.waitForSelector('#metadata-title', { timeout: 30000 });
-    const title = await page.$eval('#metadata-title', (el) => el.textContent);
+    await page.waitForFunction(
+      () => document.querySelectorAll('#video-format-select option').length > 0,
+      null,
+      { timeout: 30000 },
+    );
+    const title = await page.$eval('.queue-item-title', (el) => el.textContent);
     check('M1: title fetched', title && title.length > 0, title);
-    const hasThumb = (await page.$('#metadata-thumbnail')) !== null;
+    const hasThumb = await page.$eval('.queue-item-thumb', (el) => el.tagName === 'IMG');
     check('M2: thumbnail element present', hasThumb);
-    const durationText = await page.$eval('#metadata-duration', (el) => el.textContent).catch(() => null);
-    check('M3: duration text present', !!durationText, durationText);
-    const formatCount = await page.$$eval('#format-select option', (opts) => opts.length);
-    check('M4: format options populated', formatCount > 0, formatCount);
+    const channelText = await page.$eval('.queue-item-channel', (el) => el.textContent).catch(() => null);
+    check('M3: duration text present', !!channelText, channelText);
+    const videoFormatCount = await page.$$eval('#video-format-select option', (opts) => opts.length);
+    check('M4: video format options populated', videoFormatCount > 0, videoFormatCount);
+    const audioFormatCount = await page.$$eval('#audio-format-select option', (opts) => opts.length);
+    check('M4b: audio format options populated', audioFormatCount > 0, audioFormatCount);
 
-    // Force a video-only format so this run actually exercises the
-    // --ffmpeg-location merge path against the hub's own bundled ffmpeg
-    // (shared with Converter), not just a plain single-stream download.
-    const videoOnlyId = await page.evaluate(() => {
-      const opts = Array.from(document.querySelectorAll('#format-select option'));
-      const match = opts.find((o) => /video only/.test(o.textContent));
-      return match ? match.value : null;
-    });
-    check('M5: a video-only (merge-required) format is offered', !!videoOnlyId, videoOnlyId);
-    if (videoOnlyId) {
-      await page.evaluate((id) => {
-        const el = document.getElementById('format-select');
-        el.value = id;
-        el.dispatchEvent(new Event('change', { bubbles: true }));
-      }, videoOnlyId);
-    }
+    // No need to force a specific format here -- the video/audio selects
+    // only ever list video-only/audio-only formats respectively, so leaving
+    // the default best-quality picks (both streams + auto-merge, all on by
+    // default) already exercises the --ffmpeg-location merge path against
+    // the hub's own bundled ffmpeg (shared with Converter).
+    check('M5: both streams included and auto-merge on by default', await page.evaluate(() => (
+      document.getElementById('include-video-checkbox').checked &&
+      document.getElementById('include-audio-checkbox').checked &&
+      document.getElementById('auto-merge-checkbox').checked
+    )));
 
     console.log('\n--- DOWNLOAD ---');
     await page.click('#btn-select-output');
@@ -110,8 +118,14 @@ async function main() {
     check('D1: output path set', true);
 
     await page.click('#btn-download');
+    // waitForFunction's 3-arg form is (pageFunction, arg, options) -- pass
+    // `null` for the unused arg so `{ timeout }` lands as options and not as
+    // arg (a callback that takes no parameter silently swallows a 2-arg
+    // `{ timeout }` as its arg instead, falling back to Playwright's default
+    // 30s timeout regardless of what's requested here).
     await page.waitForFunction(
       () => /Download complete|Cancelled|Error/.test(document.querySelector('.statusbar-text')?.textContent || ''),
+      null,
       { timeout: 120000 },
     );
     const statusText = await page.$eval('.statusbar-text', (el) => el.textContent);

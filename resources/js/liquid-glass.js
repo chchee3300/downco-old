@@ -247,6 +247,7 @@ function createGlassLens({ radius = 12, gain = 80, className = '', glass = true 
  */
 const LiquidSelect = {
   _instances: new WeakMap(),
+  _uidCounter: 0,
 
   create(selectEl) {
     if (this._instances.has(selectEl)) return
@@ -293,6 +294,24 @@ const LiquidSelect = {
     // position is computed from the trigger's own rect in openDropdown().
     document.body.appendChild(dropPanel)
 
+    // Unique id prefix for this instance's option elements, so the trigger
+    // can point aria-activedescendant at one of them -- selectEl.id isn't
+    // guaranteed unique across every GlassSelect caller in the tree, but
+    // this counter always is.
+    const uidPrefix = `lg-opt-${++LiquidSelect._uidCounter}`
+
+    // Commits opt as the selected value and closes -- shared by the mouse
+    // path (mousedown below) and the keyboard path (Enter/Space in
+    // openDropdown's keydown handler), so both stay in sync by construction
+    // instead of two copies of the same three lines drifting apart.
+    const commitOption = (opt) => {
+      selectEl.value = opt.value
+      selectEl.dispatchEvent(new Event('change', { bubbles: true }))
+      selectEl.dispatchEvent(new Event('input', { bubbles: true }))
+      syncTrigger()
+      closeDropdown()
+    }
+
     // ── Build option list ──
     const rebuildOptions = () => {
       dropContent.innerHTML = ''
@@ -300,18 +319,16 @@ const LiquidSelect = {
       options.forEach((opt, i) => {
         const item = document.createElement('div')
         item.className = 'lg-option'
+        item.id = `${uidPrefix}-${i}`
         item.setAttribute('role', 'option')
         item.setAttribute('data-value', opt.value)
+        item.setAttribute('aria-selected', opt.selected ? 'true' : 'false')
         item.textContent = opt.text
         if (opt.selected) item.classList.add('is-selected')
 
         item.addEventListener('mousedown', (e) => {
           e.preventDefault()
-          selectEl.value = opt.value
-          selectEl.dispatchEvent(new Event('change', { bubbles: true }))
-          selectEl.dispatchEvent(new Event('input', { bubbles: true }))
-          syncTrigger()
-          closeDropdown()
+          commitOption(opt)
         })
         dropContent.appendChild(item)
       })
@@ -323,7 +340,31 @@ const LiquidSelect = {
       // Sync is-selected on items
       dropContent.querySelectorAll('.lg-option').forEach(el => {
         el.classList.toggle('is-selected', el.dataset.value === selectEl.value)
+        el.setAttribute('aria-selected', el.dataset.value === selectEl.value ? 'true' : 'false')
       })
+    }
+
+    // ── Keyboard roving highlight ── separate from is-selected (which
+    // tracks the persisted <select> value): this is "which option would
+    // Enter commit right now", following aria-activedescendant's usual
+    // combobox/listbox pattern instead of moving real DOM focus off the
+    // trigger button.
+    let highlightedIndex = -1
+    const setHighlighted = (idx) => {
+      const items = dropContent.querySelectorAll('.lg-option')
+      highlightedIndex = idx
+      items.forEach((el, i) => el.classList.toggle('is-highlighted', i === idx))
+      if (idx >= 0 && items[idx]) {
+        trigger.setAttribute('aria-activedescendant', items[idx].id)
+        items[idx].scrollIntoView({ block: 'nearest' })
+      } else {
+        trigger.removeAttribute('aria-activedescendant')
+      }
+    }
+    const moveHighlighted = (delta) => {
+      const items = dropContent.querySelectorAll('.lg-option')
+      if (!items.length) return
+      setHighlighted(Math.min(items.length - 1, Math.max(0, highlightedIndex + delta)))
     }
 
     // ── Open / close ──
@@ -385,9 +426,13 @@ const LiquidSelect = {
 
       dropPanel.classList.add('lg-dropdown--open')
       trigger.setAttribute('aria-expanded', 'true')
-      // Scroll selected option into view
-      const sel = dropContent.querySelector('.is-selected')
-      if (sel) sel.scrollIntoView({ block: 'nearest' })
+      // Start keyboard roving-highlight on the current value (falls back to
+      // the first option) so ArrowDown/ArrowUp/Enter work immediately after
+      // opening without a mouse ever touching the list.
+      const items = dropContent.querySelectorAll('.lg-option')
+      let startIndex = Array.prototype.findIndex.call(items, el => el.classList.contains('is-selected'))
+      if (startIndex < 0) startIndex = 0
+      setHighlighted(items.length ? startIndex : -1)
     }
 
     const closeDropdown = () => {
@@ -396,6 +441,7 @@ const LiquidSelect = {
       dropPanel.classList.remove('lg-dropdown--open')
       dropPanel.classList.add('lg-dropdown--closing')
       trigger.setAttribute('aria-expanded', 'false')
+      trigger.removeAttribute('aria-activedescendant')
       closeTimeout = setTimeout(() => {
         if (SUPPORTS_POPOVER) {
           if (dropPanel.matches(':popover-open')) dropPanel.hidePopover()
@@ -440,11 +486,34 @@ const LiquidSelect = {
     if (mainContentEl && !scrollParents.includes(mainContentEl)) scrollParents.push(mainContentEl)
     scrollParents.forEach((el) => el.addEventListener('scroll', onMainScroll, { passive: true }))
 
-    // Keyboard nav
+    // Keyboard nav — full roving-highlight combobox pattern so the list is
+    // actually usable without a mouse (previously Enter/Space only toggled
+    // open/closed and there was no way to move through or commit an option
+    // from the keyboard at all).
     trigger.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleDropdown() }
-      if (e.key === 'Escape') closeDropdown()
-      if (e.key === 'ArrowDown') { e.preventDefault(); openDropdown() }
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault()
+        if (!isOpen) { openDropdown(); return }
+        const opt = selectEl.options[highlightedIndex]
+        if (opt) commitOption(opt)
+        else closeDropdown()
+      } else if (e.key === 'Escape') {
+        closeDropdown()
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        if (!isOpen) openDropdown()
+        else moveHighlighted(1)
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        if (!isOpen) openDropdown()
+        else moveHighlighted(-1)
+      } else if (e.key === 'Home' && isOpen) {
+        e.preventDefault()
+        setHighlighted(0)
+      } else if (e.key === 'End' && isOpen) {
+        e.preventDefault()
+        setHighlighted(dropContent.querySelectorAll('.lg-option').length - 1)
+      }
     })
 
     // Sync when underlying select changes externally
