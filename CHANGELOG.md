@@ -1,3 +1,10 @@
+## [1.4.3](https://github.com/chchee3300/sorai-toolkit/compare/v1.4.2...v1.4.3) (2026-07-16)
+
+
+### Bug Fixes
+
+* backdrop contrast compression -- panel borders no longer show through the glass ([4d10751](https://github.com/chchee3300/sorai-toolkit/commit/4d107513738b3e0578527ac72ef7cb62e37d203b))
+
 ## [1.4.2](https://github.com/chchee3300/sorai-toolkit/compare/v1.4.1...v1.4.2) (2026-07-16)
 
 
