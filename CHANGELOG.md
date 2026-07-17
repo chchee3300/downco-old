@@ -1,3 +1,10 @@
+## [1.5.4](https://github.com/chchee3300/sorai-toolkit/compare/v1.5.3...v1.5.4) (2026-07-17)
+
+
+### Bug Fixes
+
+* cut a release for the trim/clip scrubber fixes ([cf4a2aa](https://github.com/chchee3300/sorai-toolkit/commit/cf4a2aa14865750c96b2f1c977982b45ac91b19f))
+
 ## [1.5.3](https://github.com/chchee3300/sorai-toolkit/compare/v1.5.2...v1.5.3) (2026-07-17)
 
 
