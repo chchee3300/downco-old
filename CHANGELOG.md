@@ -1,3 +1,10 @@
+## [1.5.1](https://github.com/chchee3300/sorai-toolkit/compare/v1.5.0...v1.5.1) (2026-07-17)
+
+
+### Bug Fixes
+
+* mount the update checker in the hub and add a manual check menu item ([a2587bc](https://github.com/chchee3300/sorai-toolkit/commit/a2587bc49bae430d8ba8acd8f70da210030bb19c))
+
 # [1.5.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.4.4...v1.5.0) (2026-07-17)
 
 
