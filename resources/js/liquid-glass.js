@@ -269,10 +269,23 @@ const LiquidSelect = {
 
     trigger.append(triggerText, triggerChevron)
 
-    // ── Dropdown panel (glass lens, flat/no-blur — see createGlassLens) ──
+    // ── Dropdown panel (glass lens; see styles.css .lg-dropdown for the
+    // shell-level backdrop-filter — the CLAUDE.md liquid-glass guide's fix
+    // for the descendant-backdrop-filter-doesn't-paint bug) ──
     const { lensEl: dropPanel, contentEl: dropContent, destroy } =
       createGlassLens({ radius: 10, gain: 55, className: 'lg-dropdown', glass: false })
     dropPanel.setAttribute('role', 'listbox')
+    // --open/--closing only trigger the pop keyframes and are stripped once
+    // their own animation ends (see the listener below and
+    // closeDropdown()) — a forwards-fill keyframe left applied for the
+    // dropdown's entire open lifetime keeps it GPU-promoted the whole time,
+    // which is the same engine bug family that made a descendant's own
+    // backdrop-filter never paint (guide rule 4). --visible is the plain,
+    // non-animating class that actually keeps the panel on screen while
+    // it's open.
+    dropPanel.addEventListener('animationend', (e) => {
+      if (e.animationName === 'lg-pop-down') dropPanel.classList.remove('lg-dropdown--open')
+    })
     if (SUPPORTS_POPOVER) {
       // "manual" — we drive open/close ourselves (outside-click, scroll,
       // Escape); the browser won't light-dismiss it on its own. Do NOT also
@@ -424,7 +437,7 @@ const LiquidSelect = {
         dropPanel.style.display = ''
       }
 
-      dropPanel.classList.add('lg-dropdown--open')
+      dropPanel.classList.add('lg-dropdown--visible', 'lg-dropdown--open')
       trigger.setAttribute('aria-expanded', 'true')
       // Start keyboard roving-highlight on the current value (falls back to
       // the first option) so ArrowDown/ArrowUp/Enter work immediately after
@@ -438,7 +451,7 @@ const LiquidSelect = {
     const closeDropdown = () => {
       if (!isOpen) return
       isOpen = false
-      dropPanel.classList.remove('lg-dropdown--open')
+      dropPanel.classList.remove('lg-dropdown--open', 'lg-dropdown--visible')
       dropPanel.classList.add('lg-dropdown--closing')
       trigger.setAttribute('aria-expanded', 'false')
       trigger.removeAttribute('aria-activedescendant')

@@ -1617,6 +1617,14 @@ select.input { display: none; }
   .glass-lens__rim,
   .glass-lens__tint { display: none !important; }
   .glass-lens { background: var(--surface-1) !important; }
+  .lg-dropdown,
+  .player-overlay,
+  .trim-slider-track,
+  .trim-actions .btn-outline,
+  .trim-actions .btn-icon {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -1730,17 +1738,46 @@ select.input { display: none; }
   display: none;
   margin: 0;
   padding: 0;
-  background: transparent;
   color: inherit;
+  /* Glass tint/blur live HERE on the shell, not on .glass-lens__frost below —
+     same root cause and same fix as .hamburger-dropdown in the CLAUDE.md
+     liquid-glass guide: backdrop-filter on any DESCENDANT of this element
+     computes but never paints in this engine, which is exactly what forced
+     .glass-lens__frost into a fully-opaque no-blur fallback originally (see
+     .glass-lens--flat's comment above). Identical tokens to
+     .hamburger-dropdown so every glass panel in the app reads as one
+     material. */
+  background: rgba(13, 16, 22, 0.3);
+  backdrop-filter: blur(1px) saturate(1.6);
+  -webkit-backdrop-filter: blur(1px) saturate(1.6);
 }
 
-.lg-dropdown.lg-dropdown--open,
+[data-theme="light"] .lg-dropdown {
+  background: rgba(242, 243, 247, 0.6);
+}
+
+/* .glass-lens__frost's own opaque fallback background (see
+   .glass-lens--flat below) would otherwise paint a solid slab UNDER the
+   shell's new translucent tint, defeating it — the shell owns the glass
+   now. Selector specificity matched to the light-theme flat-frost rule
+   (0,0,3,0) plus later source order, so this wins in both themes. */
+.lg-dropdown.glass-lens--flat .glass-lens__frost {
+  background: transparent;
+}
+
+.lg-dropdown.lg-dropdown--visible,
 .lg-dropdown.lg-dropdown--closing {
   display: flex;
   flex-direction: column;
 }
 
-/* Open / close animation */
+/* Open / close animation. --open/--closing are transient — added only to
+   trigger a keyframe animation, then removed (--open on animationend,
+   --closing via the JS close timeout below) so this element isn't
+   GPU-promoted for its entire open lifetime (guide rule 4: a forwards-fill
+   keyframe promotes its host forever, which is the same bug family as the
+   descendant-paint issue above). --visible is the plain, non-animating
+   class that actually keeps the panel on screen while open. */
 .lg-dropdown--open {
   animation: lg-pop-down 0.14s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
@@ -1945,10 +1982,20 @@ select.input { display: none; }
   gap: 6px;
 }
 
+/* backdrop-filter added here, not changed elsewhere: these controls sit
+   directly over the playing video (a sibling painted just before them, same
+   local stacking context) with the same dark-tint-plus-text-shadow
+   legibility approach CropModal's crop handles already use for arbitrary
+   content behind glass — kept as-is on purpose (that alpha was tuned for
+   contrast against arbitrary video frames, not app chrome, so it does not
+   match .hamburger-dropdown's tokens). Only the blur/saturate ingredient
+   from the guide's recipe is added, for the same glassy diffusion quality. */
 .trim-actions .btn-outline {
   color: #fff;
   border-color: rgba(255,255,255,0.4);
   background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(1px) saturate(1.6);
+  -webkit-backdrop-filter: blur(1px) saturate(1.6);
 }
 .trim-actions .btn-outline:hover {
   background: rgba(255,255,255,0.2);
@@ -1961,6 +2008,8 @@ select.input { display: none; }
 .trim-actions .btn-icon {
   color: #fff;
   background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(1px) saturate(1.6);
+  -webkit-backdrop-filter: blur(1px) saturate(1.6);
   border: 1px solid rgba(255,255,255,0.4);
   width: 26px;
   height: 26px;
@@ -2007,6 +2056,8 @@ select.input { display: none; }
   width: 100%;
   height: 100%;
   background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(1px) saturate(1.6);
+  -webkit-backdrop-filter: blur(1px) saturate(1.6);
   border-radius: 6px;
   position: relative;
   cursor: pointer;
@@ -2109,6 +2160,8 @@ select.input { display: none; }
   left: 0;
   right: 0;
   background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%);
+  backdrop-filter: blur(1px) saturate(1.6);
+  -webkit-backdrop-filter: blur(1px) saturate(1.6);
   padding: 24px 12px 12px 12px;
   opacity: 0;
   transition: opacity 0.25s;
