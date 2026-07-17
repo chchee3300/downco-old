@@ -1,3 +1,10 @@
+## [1.5.2](https://github.com/chchee3300/sorai-toolkit/compare/v1.5.1...v1.5.2) (2026-07-17)
+
+
+### Bug Fixes
+
+* bring GlassSelect dropdown and trim/clip scrubber up to the liquid-glass guide ([1f787da](https://github.com/chchee3300/sorai-toolkit/commit/1f787da7e6c7242764aeaf8f26239bc1db33a572))
+
 ## [1.5.1](https://github.com/chchee3300/sorai-toolkit/compare/v1.5.0...v1.5.1) (2026-07-17)
 
 
