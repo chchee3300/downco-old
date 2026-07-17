@@ -112,6 +112,19 @@ async function main() {
       document.getElementById('auto-merge-checkbox').checked
     )));
 
+    // Smoke check for the clip feature (full drag/save/download coverage
+    // lives in sorai-toolkit-downloader's own tests/test_download.js) --
+    // just confirms the composed hub package renders ClipModal and its
+    // slider correctly, then cancels without saving so it doesn't affect
+    // the download below.
+    console.log('\n--- CLIP SMOKE CHECK ---');
+    await page.click('.queue-item .btn-trim');
+    await page.waitForSelector('#clip-modal:not(.hidden)');
+    check('CLIP1: clip modal opens with slider present', !!(await page.$('#clip-slider-container')));
+    await page.click('#btn-cancel-clip');
+    await page.waitForSelector('#clip-modal', { state: 'hidden' });
+    check('CLIP2: clip modal closes on cancel', true);
+
     console.log('\n--- DOWNLOAD ---');
     await page.click('#btn-select-output');
     await page.waitForFunction((dir) => document.getElementById('output-path').value === dir, outDir);
