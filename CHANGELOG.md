@@ -1,3 +1,19 @@
+# [1.5.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.4.4...v1.5.0) (2026-07-17)
+
+
+### Bug Fixes
+
+* hamburger dropdown gray light-mode frost + off-brand pop timing ([98dd6b9](https://github.com/chchee3300/sorai-toolkit/commit/98dd6b98e853c4ba2199771f8e9e5d896cc08661))
+* hamburger dropdown light-mode black wash + open pop gating ([7df89f8](https://github.com/chchee3300/sorai-toolkit/commit/7df89f89c54d974a925c4861d23dad3823919c2d))
+* light-mode hamburger dropdown now reads as the page background color ([e0b9af9](https://github.com/chchee3300/sorai-toolkit/commit/e0b9af9c8778fdeb6a1a761c8f5a2a8568d45d6c))
+
+
+### Features
+
+* adopt liquid-glass-react for the hamburger dropdown ([599f11b](https://github.com/chchee3300/sorai-toolkit/commit/599f11b17c226bfe6ba9379726cb9e5f2220d5d9))
+* hamburger dropdown goes near-clear -- 1px blur, light tints ([4d7f93d](https://github.com/chchee3300/sorai-toolkit/commit/4d7f93de84c4708d15ed480e8fcd8b241860753d))
+* slightly more translucent hamburger dropdown in both themes ([cc65cc9](https://github.com/chchee3300/sorai-toolkit/commit/cc65cc9d60f752c93f8575afb087bc918fcc867c))
+
 ## [1.4.4](https://github.com/chchee3300/sorai-toolkit/compare/v1.4.3...v1.4.4) (2026-07-16)
 
 
