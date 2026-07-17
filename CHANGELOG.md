@@ -1,3 +1,10 @@
+## [1.5.3](https://github.com/chchee3300/sorai-toolkit/compare/v1.5.2...v1.5.3) (2026-07-17)
+
+
+### Bug Fixes
+
+* keep the trim/clip playhead visible when a thumb drag reaches it ([8b9cd93](https://github.com/chchee3300/sorai-toolkit/commit/8b9cd93ad7c87d6a6f249a9edb003f5fc362dc54))
+
 ## [1.5.2](https://github.com/chchee3300/sorai-toolkit/compare/v1.5.1...v1.5.2) (2026-07-17)
 
 
