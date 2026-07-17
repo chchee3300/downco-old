@@ -10,14 +10,37 @@ import { useTranslation } from '../hooks/useTranslation.js'
 // (network errors, release notes) -- left untranslated, same "alerts and
 // external error text stay English for now" scope decision as the other
 // two repos' alert()/OS-dialog strings.
-export default function UpdateBanner({ status, latestRelease, updateError, onInstall, onDismiss }) {
+export default function UpdateBanner({ status, latestRelease, updateError, manualCheck, currentVersion, onInstall, onDismiss }) {
   const { t } = useTranslation()
-  if (status === 'idle' || status === 'checking' || status === 'none') return null
+  // The automatic on-mount check stays silent unless it finds an update or
+  // errors; a user-initiated check (hamburger's "Check for updates") also
+  // gets "checking…" and "you're up to date" feedback, otherwise the click
+  // would appear to do nothing at all when already current.
+  if (status === 'idle') return null
+  if ((status === 'checking' || status === 'none') && !manualCheck) return null
 
   const version = latestRelease?.tag_name?.replace(/^v/, '')
 
   return (
     <div className="update-toast" role="status" aria-live="polite">
+      {status === 'checking' && (
+        <>
+          <div className="update-toast-title">{t('updateBanner.checking')}</div>
+          <div className="progress-track">
+            <div className="progress-bar progress-bar--indeterminate" />
+          </div>
+        </>
+      )}
+
+      {status === 'none' && (
+        <>
+          <div className="update-toast-title">{t('updateBanner.upToDate', { version: currentVersion })}</div>
+          <div className="update-toast-actions">
+            <button className="btn btn-ghost btn-xs" onClick={onDismiss}>{t('updateBanner.dismiss')}</button>
+          </div>
+        </>
+      )}
+
       {status === 'available' && (
         <>
           <div className="update-toast-title">{t('updateBanner.available', { version })}</div>

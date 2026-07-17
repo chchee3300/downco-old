@@ -11,7 +11,7 @@ import versionInfo from '../version.json'
 // breadcrumb; toolLabel is looked up by the caller (App.jsx) since
 // HubMenu's TOOLS array is the single source of truth for tool display
 // names.
-export default function Header({ toolLabel, showBackToHub, onBackToHub, theme, onToggleTheme }) {
+export default function Header({ toolLabel, showBackToHub, onBackToHub, theme, onToggleTheme, onCheckUpdate }) {
   return (
     <header className="header">
       <div className="header-left">
@@ -28,6 +28,7 @@ export default function Header({ toolLabel, showBackToHub, onBackToHub, theme, o
           onBackToHub={onBackToHub}
           theme={theme}
           onToggleTheme={onToggleTheme}
+          onCheckUpdate={onCheckUpdate}
         />
       </div>
     </header>

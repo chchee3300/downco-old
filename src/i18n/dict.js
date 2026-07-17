@@ -13,6 +13,7 @@ export const dict = {
 
     'hamburger.menu': 'Menu',
     'hamburger.appearance': 'Appearance',
+    'hamburger.checkUpdate': 'Check for updates',
     'hamburger.mainMenu': 'Main menu',
     // A language's own name is always shown in itself, never translated by
     // whichever language is currently active -- how a user finds their
@@ -31,6 +32,8 @@ export const dict = {
     'updateBanner.downloadedBody': 'Opened your Downloads folder — finish the install from there.',
     'updateBanner.dismiss': 'Dismiss',
     'updateBanner.checkFailed': 'Update check failed',
+    'updateBanner.checking': 'Checking for updates…',
+    'updateBanner.upToDate': ({ version }) => `You're up to date — v${version}`,
   },
   'zh-TW': {
     'hub.tool.converter.label': '轉檔工具',
@@ -40,6 +43,7 @@ export const dict = {
 
     'hamburger.menu': '選單',
     'hamburger.appearance': '外觀',
+    'hamburger.checkUpdate': '檢查更新',
     'hamburger.mainMenu': '主選單',
     'hamburger.lang.en': 'English',
     'hamburger.lang.zh-TW': '繁體中文',
@@ -55,5 +59,7 @@ export const dict = {
     'updateBanner.downloadedBody': '已開啟下載資料夾，請於該處完成安裝。',
     'updateBanner.dismiss': '關閉',
     'updateBanner.checkFailed': '檢查更新失敗',
+    'updateBanner.checking': '正在檢查更新…',
+    'updateBanner.upToDate': ({ version }) => `目前已是最新版本－v${version}`,
   },
 }

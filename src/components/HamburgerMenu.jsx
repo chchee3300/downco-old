@@ -54,6 +54,15 @@ function MoonIcon() {
   )
 }
 
+function UpdateIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01" />
+      <path d="M20.5 3.5v4h-4" />
+    </svg>
+  )
+}
+
 function HomeIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -112,7 +121,7 @@ const LANG_FLAG_ICONS = {
 // mounted through the closing animation instead of disappearing instantly.
 const CLOSE_ANIM_MS = 100
 
-export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onToggleTheme }) {
+export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onToggleTheme, onCheckUpdate }) {
   const { t, lang } = useTranslation()
   const FlagIcon = LANG_FLAG_ICONS[lang]
   const [open, setOpen] = useState(false)
@@ -274,6 +283,19 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
                   {theme === 'dark' ? <MoonIcon /> : <SunIcon />}
                 </span>
                 <span className="hamburger-item__label">{t('hamburger.appearance')}</span>
+              </button>
+
+              <button
+                type="button"
+                className="hamburger-item"
+                role="menuitem"
+                onClick={() => {
+                  requestClose()
+                  onCheckUpdate?.()
+                }}
+              >
+                <span className="hamburger-item__icon" aria-hidden="true"><UpdateIcon /></span>
+                <span className="hamburger-item__label">{t('hamburger.checkUpdate')}</span>
               </button>
 
               {showBackToHub && (

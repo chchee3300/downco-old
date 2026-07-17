@@ -72,8 +72,15 @@ export function useUpdateChecker() {
   const [status, setStatus] = useState('idle') // idle | checking | available | none | error | downloading | downloaded | installing
   const [latestRelease, setLatestRelease] = useState(null)
   const [updateError, setUpdateError] = useState(null)
+  // Whether the in-flight/last check was user-initiated (hamburger's
+  // "Check for updates") rather than the automatic on-mount check. Manual
+  // checks surface "checking…"/"up to date" feedback in UpdateBanner;
+  // the silent auto check only ever surfaces when an update exists or the
+  // check errors.
+  const [manualCheck, setManualCheck] = useState(false)
 
-  const checkForUpdate = useCallback(async () => {
+  const checkForUpdate = useCallback(async (manual = false) => {
+    setManualCheck(manual === true)
     setStatus('checking')
     setUpdateError(null)
     try {
@@ -126,13 +133,22 @@ export function useUpdateChecker() {
     }
   }, [latestRelease])
 
-  const dismiss = useCallback(() => setStatus('none'), [])
+  const dismiss = useCallback(() => {
+    setStatus('none')
+    setManualCheck(false)
+  }, [])
+
+  // Wrapped (not checkForUpdate itself) so an onClick's event object can't
+  // be mistaken for the `manual` flag.
+  const checkForUpdateManually = useCallback(() => checkForUpdate(true), [checkForUpdate])
 
   return {
     currentVersion: versionInfo.version,
     status,
     latestRelease,
     updateError,
+    manualCheck,
+    checkForUpdate: checkForUpdateManually,
     installUpdate,
     dismiss,
   }
