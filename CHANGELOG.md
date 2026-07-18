@@ -1,3 +1,10 @@
+# [1.7.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.6.0...v1.7.0) (2026-07-18)
+
+
+### Features
+
+* add About modal, theme-aware brand mark, and new app icon ([68b2c8c](https://github.com/chchee3300/sorai-toolkit/commit/68b2c8c44fa3c040173ad581f79bf02fcba514db))
+
 # [1.6.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.5.4...v1.6.0) (2026-07-18)
 
 
