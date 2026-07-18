@@ -247,6 +247,12 @@ body {
   gap: 0;
 }
 
+.logo-mark {
+  height: 26px;
+  width: auto;
+  margin-right: 0.5rem;
+}
+
 .logo-text  { color: var(--text-primary); }
 
 .logo-sep   {
@@ -408,6 +414,158 @@ body {
 
 .hamburger-dropdown--closing {
   animation: lg-pop-up-out 0.1s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+/* AboutModal.jsx's glass shell -- second-ever glass panel in the app
+   (first is .hamburger-dropdown above), same recipe verbatim: identical
+   tint/blur tokens, identical three liquid-glass-react overrides, identical
+   lg-pop-down/lg-pop-up-out animation. Centered (not anchored top-right),
+   sized by AboutModal.jsx's own glassSize gating -- same reason as
+   .hamburger-dropdown: LiquidGlass's `top:50%;left:50%` + its own internal
+   translate(-50%,-50%) only centers correctly once this shell has an
+   explicit width/height to compute against. */
+.about-modal-glass {
+  position: relative;
+  border-radius: 12px;
+  background: rgba(13, 16, 22, 0.3);
+  backdrop-filter: blur(1px) saturate(1.6);
+  -webkit-backdrop-filter: blur(1px) saturate(1.6);
+}
+
+[data-theme="light"] .about-modal-glass {
+  background: rgba(242, 243, 247, 0.6);
+}
+
+.about-modal-glass .glass__warp {
+  display: none;
+}
+
+.about-modal-glass > div,
+.about-modal-glass > span,
+.about-modal-glass .glass {
+  transition: none !important;
+}
+
+.about-modal-glass > .bg-black {
+  display: none;
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .about-modal-glass {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: var(--surface-1);
+  }
+}
+
+.about-modal-glass--open {
+  animation: lg-pop-down 0.14s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.about-modal-glass--closing {
+  animation: lg-pop-up-out 0.1s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
+.about-modal-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 300px;
+  max-width: 360px;
+}
+
+.about-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.about-modal-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.about-modal-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.about-modal-tagline {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.about-modal-facts {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.25rem 0.75rem;
+  margin: 0.2rem 0;
+  font-size: 0.78rem;
+}
+
+.about-modal-facts dt {
+  color: var(--text-muted);
+}
+
+.about-modal-facts dd {
+  margin: 0;
+  color: var(--text-secondary);
+  overflow-wrap: anywhere;
+}
+
+.about-modal-desc {
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--text-secondary);
+}
+
+.about-modal-heading {
+  margin-top: 0.4rem;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.about-modal-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.about-modal-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.78rem;
+  padding: 0.15rem 0;
+  border-radius: 4px;
+}
+
+.about-modal-link:hover {
+  text-decoration: underline;
+}
+
+.about-modal-link-note {
+  color: var(--text-muted);
+}
+
+.about-modal-full-link {
+  margin-top: 0.3rem;
+  font-weight: 500;
+}
+
+.about-modal-close {
+  align-self: flex-end;
+  margin-top: 0.6rem;
 }
 
 /* Uniform icon-left row -- every hamburger menu item (language, appearance,

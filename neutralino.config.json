@@ -19,6 +19,7 @@
     "events.*",
     "filesystem.*",
     "server.*",
+    "window.*",
     "debug.log"
   ],
   "modes": {

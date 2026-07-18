@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import LiquidGlass from 'liquid-glass-react'
 import { useTranslation } from '../hooks/useTranslation.js'
+import AboutModal from './AboutModal.jsx'
 
 // Three uniform icon-left rows: language (click cycles through
 // EstellaLib.i18n.SUPPORTED_LANGS), appearance (click toggles theme), main
@@ -59,6 +61,16 @@ function UpdateIcon() {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M20.5 12a8.5 8.5 0 1 1-2.49-6.01" />
       <path d="M20.5 3.5v4h-4" />
+    </svg>
+  )
+}
+
+function InfoIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <line x1="12" y1="11" x2="12" y2="16" />
+      <circle cx="12" cy="7.5" r="0.75" fill="currentColor" stroke="none" />
     </svg>
   )
 }
@@ -125,6 +137,7 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
   const { t, lang } = useTranslation()
   const FlagIcon = LANG_FLAG_ICONS[lang]
   const [open, setOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   // True once the open pop animation finished -- the animation class is
   // then REMOVED (no forwards-fill lingering) because a filled keyframe
@@ -298,6 +311,19 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
                 <span className="hamburger-item__label">{t('hamburger.checkUpdate')}</span>
               </button>
 
+              <button
+                type="button"
+                className="hamburger-item"
+                role="menuitem"
+                onClick={() => {
+                  requestClose()
+                  setAboutOpen(true)
+                }}
+              >
+                <span className="hamburger-item__icon" aria-hidden="true"><InfoIcon /></span>
+                <span className="hamburger-item__label">{t('hamburger.about')}</span>
+              </button>
+
               {showBackToHub && (
                 <button
                   className="hamburger-item hamburger-item--danger"
@@ -315,6 +341,14 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
           </LiquidGlass>
         </div>
       )}
+      {/* Portaled to document.body -- .hamburger-menu is itself
+          position:relative (anchors .hamburger-dropdown below the toggle),
+          which would otherwise become AboutModal's .modal-overlay's
+          positioning ancestor and confine its full-viewport
+          top/left/right/bottom:0 to this small button's own box instead of
+          the real viewport (confirmed live: the modal rendered squeezed
+          into the header's top-right corner before this fix). */}
+      {createPortal(<AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />, document.body)}
     </div>
   )
 }

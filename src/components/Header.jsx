@@ -1,5 +1,7 @@
 import HamburgerMenu from './HamburgerMenu.jsx'
 import versionInfo from '../version.json'
+import logoDark from '../../resources/icons/appIcon-dark.png'
+import logoLight from '../../resources/icons/appIcon-light.png'
 
 // Hub-owned, persistent across every screen (hub menu and inside any tool)
 // — this is why theme toggling, tool navigation, and the app version
@@ -16,7 +18,12 @@ export default function Header({ toolLabel, showBackToHub, onBackToHub, theme, o
     <header className="header">
       <div className="header-left">
         <div className="logo">
-          <span className="logo-text">SORAI Toolkit</span>
+          <img
+            src={theme === 'light' ? logoLight : logoDark}
+            alt=""
+            className="logo-mark"
+          />
+          <span className="logo-text">Toolkit</span>
           <span className={toolLabel ? 'logo-sep' : 'logo-sep hidden'}>&nbsp;/&nbsp;</span>
           <span className="logo-type">{toolLabel || ''}</span>
         </div>

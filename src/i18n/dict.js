@@ -14,6 +14,7 @@ export const dict = {
     'hamburger.menu': 'Menu',
     'hamburger.appearance': 'Appearance',
     'hamburger.checkUpdate': 'Check for updates',
+    'hamburger.about': 'About',
     'hamburger.mainMenu': 'Main menu',
     // A language's own name is always shown in itself, never translated by
     // whichever language is currently active -- how a user finds their
@@ -34,6 +35,17 @@ export const dict = {
     'updateBanner.checkFailed': 'Update check failed',
     'updateBanner.checking': 'Checking for updates…',
     'updateBanner.upToDate': ({ version }) => `You're up to date — v${version}`,
+
+    'about.title': 'About',
+    'about.tagline': 'A local, no-upload file toolkit',
+    'about.version': 'Version',
+    'about.developer': 'Developer',
+    'about.license': 'License',
+    'about.homepage': 'Homepage',
+    'about.description': 'SORAI Toolkit is a desktop suite of local file tools — currently a video/image/audio/PDF Converter and a video Downloader — built with Neutralino.js and React. Everything runs on your own machine; no file is ever uploaded anywhere.',
+    'about.thirdPartyHeading': 'Third-party software',
+    'about.viewFullLicenses': 'View full third-party license details',
+    'about.close': 'Close',
   },
   'zh-TW': {
     'hub.tool.converter.label': '轉檔工具',
@@ -44,6 +56,7 @@ export const dict = {
     'hamburger.menu': '選單',
     'hamburger.appearance': '外觀',
     'hamburger.checkUpdate': '檢查更新',
+    'hamburger.about': '關於',
     'hamburger.mainMenu': '主選單',
     'hamburger.lang.en': 'English',
     'hamburger.lang.zh-TW': '繁體中文',
@@ -61,5 +74,16 @@ export const dict = {
     'updateBanner.checkFailed': '檢查更新失敗',
     'updateBanner.checking': '正在檢查更新…',
     'updateBanner.upToDate': ({ version }) => `目前已是最新版本－v${version}`,
+
+    'about.title': '關於',
+    'about.tagline': '本機、免上傳的檔案工具箱',
+    'about.version': '版本',
+    'about.developer': '軟體開發者',
+    'about.license': '授權方式',
+    'about.homepage': '專案首頁',
+    'about.description': 'SORAI Toolkit 是一套本機檔案工具箱，目前包含影片/圖片/音訊/PDF 轉檔工具與影片下載工具，使用 Neutralino.js 與 React 打造。所有處理都在你自己的電腦上完成，不會上傳任何檔案。',
+    'about.thirdPartyHeading': '第三方軟體',
+    'about.viewFullLicenses': '查看完整第三方授權內容',
+    'about.close': '關閉',
   },
 }
