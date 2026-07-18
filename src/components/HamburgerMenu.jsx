@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import LiquidGlass from 'liquid-glass-react'
 import { useTranslation } from '../hooks/useTranslation.js'
 import AboutModal from './AboutModal.jsx'
+import SettingsModal from './SettingsModal.jsx'
 
 // Uniform icon-left rows: language (click cycles through
 // EstellaLib.i18n.SUPPORTED_LANGS), appearance (click toggles theme), check
@@ -78,6 +79,15 @@ function InfoIcon() {
   )
 }
 
+function SettingsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.5-2-3.4-2.3.9a7.6 7.6 0 0 0-1.7-1L15 3.5h-4l-.4 2.5a7.6 7.6 0 0 0-1.7 1l-2.3-.9-2 3.4L6.6 11a7.7 7.7 0 0 0 0 2l-2 1.5 2 3.4 2.3-.9c.5.4 1.1.75 1.7 1l.4 2.5h4l.4-2.5c.6-.25 1.2-.6 1.7-1l2.3.9 2-3.4-2-1.5Z" />
+    </svg>
+  )
+}
+
 // Flag emoji (🇺🇸/🇹🇼) depend on the platform having a color-emoji font
 // with regional-indicator ligatures installed -- confirmed unreliable in
 // practice (falls back to plain "US"/"TW" letter pairs on at least one
@@ -127,7 +137,7 @@ const LANG_FLAG_ICONS = {
 // mounted through the closing animation instead of disappearing instantly.
 const CLOSE_ANIM_MS = 100
 
-export default function HamburgerMenu({ theme, onToggleTheme, updater }) {
+export default function HamburgerMenu({ theme, onToggleTheme, updater, closeBehavior }) {
   const { t, lang } = useTranslation()
   const FlagIcon = LANG_FLAG_ICONS[lang]
   // Quiet notification dot -- toggle button + the About row both get one
@@ -138,6 +148,7 @@ export default function HamburgerMenu({ theme, onToggleTheme, updater }) {
   const hasUpdate = updater?.status === 'available'
   const [open, setOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   // True once the open pop animation finished -- the animation class is
   // then REMOVED (no forwards-fill lingering) because a filled keyframe
@@ -318,6 +329,19 @@ export default function HamburgerMenu({ theme, onToggleTheme, updater }) {
                 role="menuitem"
                 onClick={() => {
                   requestClose()
+                  setSettingsOpen(true)
+                }}
+              >
+                <span className="hamburger-item__icon" aria-hidden="true"><SettingsIcon /></span>
+                <span className="hamburger-item__label">{t('hamburger.settings')}</span>
+              </button>
+
+              <button
+                type="button"
+                className="hamburger-item"
+                role="menuitem"
+                onClick={() => {
+                  requestClose()
                   setAboutOpen(true)
                 }}
               >
@@ -339,6 +363,15 @@ export default function HamburgerMenu({ theme, onToggleTheme, updater }) {
           the real viewport (confirmed live: the modal rendered squeezed
           into the header's top-right corner before this fix). */}
       {createPortal(<AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} theme={theme} updater={updater} />, document.body)}
+      {createPortal(
+        <SettingsModal
+          open={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+          closeBehavior={closeBehavior?.behavior}
+          onChangeCloseBehavior={closeBehavior?.setBehavior}
+        />,
+        document.body,
+      )}
     </div>
   )
 }

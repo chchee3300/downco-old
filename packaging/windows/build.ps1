@@ -31,6 +31,9 @@ if (-not $Iscc) { throw "ISCC.exe not found -- run packaging/windows/install-inn
 
 New-Item -ItemType Directory -Force -Path $OutDir | Out-Null
 
+node (Join-Path $RepoRoot "packaging/windows/generate-context-menu-registry.mjs")
+if ($LASTEXITCODE -ne 0) { throw "generate-context-menu-registry.mjs failed with exit code $LASTEXITCODE" }
+
 & $Iscc "/DAppVersion=$Version" (Join-Path $RepoRoot "packaging/windows/installer.iss")
 if ($LASTEXITCODE -ne 0) { throw "ISCC compile failed with exit code $LASTEXITCODE" }
 

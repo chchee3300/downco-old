@@ -23,6 +23,10 @@
 # CI packaging output (packaging/*/build.sh, packaging/windows/build.ps1)
 /release-assets
 
+# Regenerated fresh by generate-context-menu-registry.mjs before every
+# installer build -- never hand-edited, never stale in git.
+/packaging/windows/context-menu.generated.iss
+
 # Neutralinojs client (minified)
 neutralino.js
 

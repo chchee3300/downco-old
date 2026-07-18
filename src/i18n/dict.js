@@ -16,12 +16,31 @@ export const dict = {
     'hamburger.menu': 'Menu',
     'hamburger.appearance': 'Appearance',
     'hamburger.checkUpdate': 'Check for updates',
+    'hamburger.settings': 'Settings',
     'hamburger.about': 'About',
     // A language's own name is always shown in itself, never translated by
     // whichever language is currently active -- how a user finds their
     // language in the first place.
     'hamburger.lang.en': 'English',
     'hamburger.lang.zh-TW': '繁體中文',
+
+    'settings.title': 'Settings',
+    'settings.closeBehavior.heading': 'When closing the window',
+    'settings.closeBehavior.ask': 'Ask me every time',
+    'settings.closeBehavior.tray': 'Minimize to the system tray',
+    'settings.closeBehavior.quit': 'Quit the app',
+    'settings.close': 'Close',
+
+    'closeConfirm.title': 'Close SORAI Toolkit?',
+    'closeConfirm.body': 'You can keep it running in the background, or quit completely.',
+    'closeConfirm.rememberChoice': 'Remember my choice (change anytime in Settings)',
+    'closeConfirm.minimizeToTray': 'Minimize to tray',
+    'closeConfirm.quit': 'Quit',
+
+    'tray.open': 'Open SORAI Toolkit',
+    'tray.quit': 'Quit',
+    'tray.notifyTitle': 'SORAI Toolkit is still running',
+    'tray.notifyBody': "It's now in the background — click the tray icon to bring it back.",
 
     'updateBanner.available': ({ version }) => `Update available — v${version}`,
     'updateBanner.failed': ({ error }) => `Update failed: ${error}`,
@@ -62,9 +81,28 @@ export const dict = {
     'hamburger.menu': '選單',
     'hamburger.appearance': '外觀',
     'hamburger.checkUpdate': '檢查更新',
+    'hamburger.settings': '設定',
     'hamburger.about': '關於',
     'hamburger.lang.en': 'English',
     'hamburger.lang.zh-TW': '繁體中文',
+
+    'settings.title': '設定',
+    'settings.closeBehavior.heading': '關閉視窗時',
+    'settings.closeBehavior.ask': '每次都詢問',
+    'settings.closeBehavior.tray': '自動縮到背景執行',
+    'settings.closeBehavior.quit': '直接結束程式',
+    'settings.close': '關閉',
+
+    'closeConfirm.title': '要關閉 SORAI Toolkit 嗎？',
+    'closeConfirm.body': '你可以讓它繼續在背景執行，或是直接結束程式。',
+    'closeConfirm.rememberChoice': '記住我的選擇（之後可以在設定裡改）',
+    'closeConfirm.minimizeToTray': '縮到背景執行',
+    'closeConfirm.quit': '結束程式',
+
+    'tray.open': '開啟 SORAI Toolkit',
+    'tray.quit': '結束程式',
+    'tray.notifyTitle': 'SORAI Toolkit 仍在執行中',
+    'tray.notifyBody': '已縮到背景執行，點擊系統匣圖示即可開啟。',
 
     'updateBanner.available': ({ version }) => `有可用更新－v${version}`,
     'updateBanner.failed': ({ error }) => `更新失敗：${error}`,
@@ -94,4 +132,14 @@ export const dict = {
     'about.viewFullLicenses': '查看完整第三方授權內容',
     'about.close': '關閉',
   },
+}
+
+// Non-hook, point-in-time translation for text used in imperative
+// Neutralino calls (tray menu item labels, os.showNotification) rather than
+// rendered live from a key by a React component -- same tNow pattern
+// sorai-toolkit-converter/src/i18n/dict.js already uses for its progress
+// text, reads the current language at call time.
+export function tNow(key, params) {
+  const i18n = window.EstellaLib.i18n
+  return i18n.translate(dict, i18n.getLang(), key, params)
 }

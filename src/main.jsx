@@ -36,13 +36,13 @@ if (window.Neutralino) {
   window.Neutralino.init()
   // neutralino.config.json's window mode sets exitProcessOnClose: false,
   // which makes Neutralino intercept the window's close button and emit
-  // 'windowClose' instead of actually closing anything -- without a
-  // listener that calls app.exit(), clicking the close button does
-  // nothing at all (the window won't close, and the process is left
-  // running in the background).
-  window.Neutralino.events.on('windowClose', () => {
-    window.Neutralino.app.exit()
-  })
+  // 'windowClose' instead of actually closing anything -- the listener
+  // that decides what to do about it (ask / minimize to tray / quit) is
+  // src/hooks/useCloseBehavior.js, registered once App.jsx mounts. Nothing
+  // registered here means clicking the close button before that mount
+  // completes is a silent no-op for the ~tens of ms in between -- an
+  // accepted, negligible gap, not a regression from the old unconditional
+  // app.exit() this replaced.
 }
 
 createRoot(document.getElementById('root')).render(

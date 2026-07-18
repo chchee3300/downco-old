@@ -19,8 +19,32 @@
     return trimCmd;
   }
 
+  // "Quick compress to under N MB" bitrate math -- solves backward from a
+  // target output size instead of buildVideoCommand's normal relative-
+  // quality-to-original-bitrate approach. Only needs to land UNDER the
+  // target, not hit it exactly (SettingsPanel.jsx presents this as preset
+  // chips, not a slider, for the same reason), so a single safety margin
+  // does the job instead of true two-pass encoding.
+  const TARGET_SIZE_SAFETY_MARGIN = 0.92; // 8% headroom for VBV slack + container/mux overhead
+  function computeTargetSizeBitrates({ targetSizeMB, durationSeconds }) {
+    const targetBytes = targetSizeMB * 1000 * 1000; // decimal MB, stricter than MiB -- extra built-in margin
+    const totalBudgetKbps = (targetBytes * 8 * TARGET_SIZE_SAFETY_MARGIN) / 1000 / durationSeconds;
+    // Audio never reserves a flat 128kbps regardless of budget -- that
+    // alone could exceed a tiny target over a long clip. Clamped to at
+    // most half the total budget, never below a still-intelligible 32kbps.
+    const audioBitrateKbps = Math.max(32, Math.min(128, Math.floor(totalBudgetKbps * 0.5)));
+    const videoBitrateKbps = Math.max(100, Math.floor(totalBudgetKbps - audioBitrateKbps));
+    return { videoBitrateKbps, audioBitrateKbps };
+  }
+
   // fileObj: { fps, duration, size, trimStart, trimEnd } (subset of the app's file record)
-  function buildVideoCommand({ binPath, file, outPath, format, codec, qualityPercent, speed, targetFpsStr, fileObj }) {
+  // targetSizeMB: optional -- when set (and fileObj.duration is known),
+  // overrides qualityPercent's normal relative-bitrate branch entirely with
+  // computeTargetSizeBitrates above. SettingsPanel.jsx is expected to have
+  // already forced codec to 'libx264' whenever this is set (see
+  // useExecute.js) -- VBV (-maxrate/-bufsize) enforcement fidelity isn't
+  // equally reliable across the other 3 codecs this app offers.
+  function buildVideoCommand({ binPath, file, outPath, format, codec, qualityPercent, speed, targetFpsStr, fileObj, targetSizeMB }) {
     const targetFps = targetFpsStr === 'original' ? fileObj.fps : parseFloat(targetFpsStr);
     const fps = targetFpsStr;
 
@@ -50,7 +74,10 @@
     }
 
     let targetBitrateCmd = '';
-    if (fileObj.duration > 0) {
+    if (targetSizeMB && fileObj.duration > 0) {
+      const { videoBitrateKbps, audioBitrateKbps } = computeTargetSizeBitrates({ targetSizeMB, durationSeconds: fileObj.duration });
+      targetBitrateCmd = `-b:v ${videoBitrateKbps}k -maxrate ${videoBitrateKbps}k -bufsize ${videoBitrateKbps * 2}k -c:a aac -b:a ${audioBitrateKbps}k`;
+    } else if (fileObj.duration > 0) {
       const originalBitrateKbps = (fileObj.size * 8) / (fileObj.duration * 1024);
       const targetBitrateKbps = Math.max(10, Math.floor(originalBitrateKbps * (qualityPercent / 100) * fpsFactor));
       targetBitrateCmd = `-b:v ${targetBitrateKbps}k -bufsize ${targetBitrateKbps * 2}k`;

@@ -1,12 +1,16 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import Header from './components/Header.jsx'
 import HubMenu from './components/HubMenu.jsx'
 import UpdateBanner from './components/UpdateBanner.jsx'
+import CloseConfirmModal from './components/CloseConfirmModal.jsx'
 import { ConverterApp } from 'sorai-toolkit-converter'
 import { DownloaderApp } from 'sorai-toolkit-downloader'
 import { useTheme } from './hooks/useTheme.js'
 import { useTranslation } from './hooks/useTranslation.js'
 import { useUpdateChecker } from './hooks/useUpdateChecker.js'
+import { useCloseBehavior } from './hooks/useCloseBehavior.js'
+import { useSingleInstance } from './hooks/useSingleInstance.js'
 
 // Hub shell: owns which tool is currently shown. Plain conditional
 // rendering, not a router -- there's no history/deep-linking need for a
@@ -20,11 +24,31 @@ function App() {
   // re-checkable from the hamburger menu), one toast regardless of which
   // tool is showing.
   const updater = useUpdateChecker()
+  // Hub-level concern, same reasoning as updater above -- one instance for
+  // the whole app regardless of which tool is showing, since the close (X)
+  // button applies to the whole window, not a per-tool concept.
+  const closeBehavior = useCloseBehavior()
+  // Explorer/Finder/Files right-click launches (cold start or forwarded
+  // from a second instance) both land here as the same pendingLaunch
+  // shape -- see useSingleInstance.js. !ready/!isPrimary render nothing
+  // below (a secondary instance never shows a window at all).
+  const { ready, isPrimary, pendingLaunch } = useSingleInstance()
+
+  useEffect(() => {
+    if (pendingLaunch) setCurrentTool('converter')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingLaunch?.seq])
 
   // Reuses HubMenu.jsx's own `hub.tool.<id>.label` dict keys instead of a
   // separate TOOL_LABELS map, so the breadcrumb and the hub card never
   // drift out of sync the way two hand-duplicated literal strings could.
   const toolLabel = currentTool === 'hub' ? undefined : t(`hub.tool.${currentTool}.label`)
+
+  // Window stays invisible (see neutralino.config.json's modes.window.hidden)
+  // until we know whether this process is the primary instance -- a
+  // secondary instance hands its launch off to the primary and exits
+  // without ever rendering anything real.
+  if (!ready || !isPrimary) return null
 
   return (
     <div className="app-shell">
@@ -35,9 +59,10 @@ function App() {
         theme={theme}
         onToggleTheme={toggleTheme}
         updater={updater}
+        closeBehavior={closeBehavior}
       />
       {currentTool === 'hub' && <HubMenu onSelectTool={setCurrentTool} />}
-      {currentTool === 'converter' && <ConverterApp />}
+      {currentTool === 'converter' && <ConverterApp pendingLaunch={pendingLaunch} />}
       {currentTool === 'downloader' && <DownloaderApp />}
       {/* Self-built copies (see useUpdateChecker.js's IS_OFFICIAL_BUILD)
           never had a real silent-install to offer anyway -- the toast's
@@ -56,6 +81,18 @@ function App() {
           onInstall={updater.installUpdate}
           onDismiss={updater.dismiss}
         />
+      )}
+      {/* Portaled to document.body -- see HamburgerMenu.jsx's identical
+          reasoning for AboutModal: a full-viewport .modal-overlay needs an
+          unconstrained positioning ancestor, not whatever App.jsx's own
+          render tree happens to nest it under. */}
+      {createPortal(
+        <CloseConfirmModal
+          open={closeBehavior.confirmOpen}
+          onChoose={closeBehavior.resolveConfirm}
+          onCancel={closeBehavior.cancelConfirm}
+        />,
+        document.body,
       )}
     </div>
   )

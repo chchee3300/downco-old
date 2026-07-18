@@ -59,6 +59,15 @@ Name: "{group}\SORAI Toolkit"; Filename: "{app}\sorai-toolkit.exe"
 Name: "{group}\Uninstall SORAI Toolkit"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\SORAI Toolkit"; Filename: "{app}\sorai-toolkit.exe"; Tasks: desktopicon
 
+; Windows Explorer right-click "SORAI Toolkit" context menu (per-user,
+; HKCU, matching PrivilegesRequired=lowest above). Entries are generated
+; by packaging/windows/generate-context-menu-registry.mjs (run by
+; build.ps1 before this file is compiled) -- see that script's own
+; comment for the format matrix and why each leaf verb invokes once per
+; selected file rather than once per multi-selection.
+[Registry]
+#include "context-menu.generated.iss"
+
 [Run]
 ; No `skipifsilent` -- the in-app auto-update flow (useUpdateChecker.js)
 ; runs this installer with /VERYSILENT, and needs the app to relaunch
