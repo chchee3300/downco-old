@@ -2,7 +2,78 @@
    ESTELLA CONVERTER  ·  Design System
    ════════════════════════════════════════════════════════════ */
 
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* Inter + Noto Sans TC (思源黑體) are bundled locally under resources/fonts/ —
+   no CDN round-trip for the two text-bearing typefaces, so the packaged app
+   renders correctly offline. Latin + Latin Extended-A/B for Inter (accented
+   chars, currency); the chinese-traditional subset for Noto Sans TC covers
+   CJK ideographs + related punctuation. Font-family stacks list Inter first,
+   Noto Sans TC second — the browser resolves per-glyph, so Latin text stays
+   on Inter and CJK text falls through to Noto Sans TC automatically. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/inter-latin-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/inter-latin-ext-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./fonts/inter-latin-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./fonts/inter-latin-ext-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fonts/inter-latin-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fonts/inter-latin-ext-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Sans TC';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./fonts/noto-sans-tc-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Sans TC';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('./fonts/noto-sans-tc-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Noto Sans TC';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('./fonts/noto-sans-tc-600.woff2') format('woff2');
+}
 
 /* ── Dark theme (default) ─────────────────────────────────── */
 :root {
@@ -82,7 +153,7 @@
 html { font-size: 16.5px; }
 
 body {
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
   background: var(--bg) var(--bg-grad) no-repeat;
   color: var(--text-primary);
   line-height: 1.55;
@@ -160,12 +231,12 @@ body {
 .header-version {
   color: var(--text-dim);
   font-size: 0.62rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
 }
 
 /* Logo */
 .logo {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.1em;
@@ -599,7 +670,7 @@ body {
 }
 
 .loading-overlay p {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.72rem;
   color: var(--text-muted);
   letter-spacing: 0.06em;
@@ -675,7 +746,7 @@ body {
 }
 
 .drop-zone-hint {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.69rem;
   color: var(--text-muted);
   letter-spacing: 0.02em;
@@ -684,7 +755,7 @@ body {
 /* Browse badge */
 .drop-zone-cta {
   margin-top: 0.25rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.67rem;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -721,7 +792,7 @@ body.drag-active::after {
 }
 
 .mono-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.68rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -740,7 +811,7 @@ body.drag-active::after {
   justify-content: space-between;
   align-items: center;
   padding: 0.42rem 1rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.75rem;
   color: var(--text-secondary);
   border-bottom: 1px solid var(--glass-border);
@@ -754,7 +825,7 @@ body.drag-active::after {
   color: var(--text-dim);
   cursor: pointer;
   font-size: 0.85rem;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Sans TC', sans-serif;
   padding: 1px 4px;
   border-radius: 3px;
   transition: color 0.12s, background 0.12s;
@@ -833,6 +904,7 @@ body.drag-active::after {
 .queue-item-body { min-width: 0; flex: 1; }
 
 .queue-item-title {
+  display: block;
   font-size: 0.8rem;
   font-weight: 500;
   color: var(--text-primary);
@@ -855,7 +927,7 @@ body.drag-active::after {
   flex-wrap: wrap;
   gap: 0.3rem 0.4rem;
   margin-top: 0.2rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.66rem;
   color: var(--text-muted);
 }
@@ -867,7 +939,7 @@ body.drag-active::after {
 
 .queue-item-state {
   flex-shrink: 0;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.68rem;
   color: var(--text-muted);
   min-width: 3.5em;
@@ -909,7 +981,7 @@ body.drag-active::after {
 }
 
 .settings-subtitle {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.66rem;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -939,7 +1011,7 @@ body.drag-active::after {
 
 /* Field label */
 .field-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.67rem;
   font-weight: 500;
   letter-spacing: 0.07em;
@@ -957,7 +1029,7 @@ body.drag-active::after {
 /* Value chip */
 .val-chip {
   display: inline-block;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.72rem;
   color: var(--accent);
   background: var(--accent-dim);
@@ -1043,7 +1115,7 @@ body.drag-active::after {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.66rem;
   color: var(--text-muted);
   cursor: pointer;
@@ -1098,7 +1170,7 @@ body.drag-active::after {
   border: 1px solid var(--glass-border);
   background: var(--surface-1);
   color: var(--text-primary);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Sans TC', sans-serif;
   font-size: 0.8rem;
   outline: none;
   box-shadow: 0 1px 2px rgba(0,0,0,0.25), inset 0 1px 0 rgba(255,255,255,0.03);
@@ -1221,7 +1293,7 @@ select.input { display: none; }
   border-radius: 6px;
   font-size: 0.8rem;
   font-weight: 500;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Sans TC', sans-serif;
   cursor: pointer;
   border: 1px solid transparent;
   user-select: none;
@@ -1387,7 +1459,7 @@ select.input { display: none; }
 }
 
 .progress-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.69rem;
   color: var(--text-muted);
   letter-spacing: 0.04em;
@@ -1411,7 +1483,7 @@ select.input { display: none; }
   color: #6db87a;
   height: 130px;
   overflow-y: auto;
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 10px;
   padding: 0.55rem 0.7rem;
   border-radius: 6px;
@@ -1432,7 +1504,7 @@ select.input { display: none; }
   padding: 0 0.875rem;
   background: var(--surface-0);
   border-top: 1px solid var(--glass-border);
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.66rem;
   color: var(--text-muted);
 }
@@ -1651,7 +1723,7 @@ select.input { display: none; }
   border: 1px solid var(--glass-border);
   background: var(--surface-1);
   color: var(--text-primary);
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Sans TC', sans-serif;
   font-size: 0.8rem;
   cursor: pointer;
   text-align: left;
@@ -1802,7 +1874,7 @@ select.input { display: none; }
 /* Option items */
 .lg-option {
   padding: 0.45rem 0.75rem;
-  font-family: 'Inter', sans-serif;
+  font-family: 'Inter', 'Noto Sans TC', sans-serif;
   font-size: 0.8rem;
   color: var(--text-secondary);
   cursor: pointer;
@@ -2036,7 +2108,7 @@ select.input { display: none; }
 }
 
 .trim-time-label {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
   font-size: 0.85rem;
   color: rgba(255,255,255,0.9);
   min-width: 55px;

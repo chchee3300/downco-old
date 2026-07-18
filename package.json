@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "dev": "vite",
+    "dev:watch": "node scripts/dev-watch.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "release": "semantic-release",

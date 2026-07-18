@@ -150,6 +150,28 @@
     return `"${global.EstellaLib.platform.ffmpegPath(binPath)}" -y ${trimCmd}-i "${file}" ${filterCmd}${codecCmd}-b:a ${bitrate} "${outPath}"`;
   }
 
+  // File-list thumbnail preview (video mid-frame / audio embedded cover art /
+  // downscaled image), all funneled through one 160px-wide JPEG output so
+  // FileList.jsx has a single, uniform src regardless of fileType. `-an` on
+  // the audio branch is what makes ffmpeg treat an embedded picture stream
+  // (ID3/Vorbis cover art) as the thing to decode as a frame instead of
+  // erroring on "multiple streams" -- if the audio file has no embedded art,
+  // this command exits non-zero and the caller treats that as "no thumbnail"
+  // (same fallback as a video/image that fails to probe).
+  function buildThumbnailCommand({ binPath, file, outPath, fileType, duration }) {
+    const ffmpeg = `"${global.EstellaLib.platform.ffmpegPath(binPath)}"`;
+    const scale = '-vf "scale=160:-1"';
+
+    if (fileType === 'video') {
+      const mid = duration > 0 ? duration / 2 : 0;
+      return `${ffmpeg} -y -ss ${mid} -i "${file}" -frames:v 1 ${scale} "${outPath}"`;
+    }
+    if (fileType === 'audio') {
+      return `${ffmpeg} -y -i "${file}" -an ${scale} -frames:v 1 "${outPath}"`;
+    }
+    return `${ffmpeg} -y -i "${file}" -frames:v 1 ${scale} "${outPath}"`;
+  }
+
   global.EstellaLib = global.EstellaLib || {};
-  global.EstellaLib.ffmpegCommands = { buildVideoCommand, buildImageCommand, buildAudioCommand };
+  global.EstellaLib.ffmpegCommands = { buildVideoCommand, buildImageCommand, buildAudioCommand, buildThumbnailCommand };
 })(window);
