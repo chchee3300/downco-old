@@ -1,4 +1,5 @@
 import HamburgerMenu from './HamburgerMenu.jsx'
+import { useTranslation } from '../hooks/useTranslation.js'
 import versionInfo from '../version.json'
 import logoDark from '../../resources/icons/appIcon-dark.png'
 import logoLight from '../../resources/icons/appIcon-light.png'
@@ -14,15 +15,37 @@ import logoLight from '../../resources/icons/appIcon-light.png'
 // HubMenu's TOOLS array is the single source of truth for tool display
 // names.
 export default function Header({ toolLabel, showBackToHub, onBackToHub, theme, onToggleTheme, onCheckUpdate }) {
+  const { t } = useTranslation()
+  // Only the mark itself is the click target -- "Toolkit" / the breadcrumb
+  // text next to it reads as a label, not a button, so it stays a plain
+  // <span> even when showBackToHub is true. Used to be the whole .logo row
+  // (text included); narrowed after feedback that the wider hit area read
+  // wrong and the hover feedback (recoloring the text) was the wrong
+  // affordance for an icon -- a scale-up on the mark itself reads more like
+  // a real button.
+  const mark = (
+    <img
+      src={theme === 'light' ? logoLight : logoDark}
+      alt=""
+      className="logo-mark"
+    />
+  )
   return (
     <header className="header">
       <div className="header-left">
         <div className="logo">
-          <img
-            src={theme === 'light' ? logoLight : logoDark}
-            alt=""
-            className="logo-mark"
-          />
+          {showBackToHub ? (
+            <button
+              type="button"
+              className="logo-mark-button"
+              onClick={onBackToHub}
+              aria-label={t('header.backToHub')}
+            >
+              {mark}
+            </button>
+          ) : (
+            mark
+          )}
           <span className="logo-text">Toolkit</span>
           <span className={toolLabel ? 'logo-sep' : 'logo-sep hidden'}>&nbsp;/&nbsp;</span>
           <span className="logo-type">{toolLabel || ''}</span>
@@ -31,8 +54,6 @@ export default function Header({ toolLabel, showBackToHub, onBackToHub, theme, o
       <div className="header-right">
         <span className="header-version">v{versionInfo.version}</span>
         <HamburgerMenu
-          showBackToHub={showBackToHub}
-          onBackToHub={onBackToHub}
           theme={theme}
           onToggleTheme={onToggleTheme}
           onCheckUpdate={onCheckUpdate}

@@ -11,11 +11,12 @@ export const dict = {
     'hub.tool.downloader.label': 'Downloader',
     'hub.tool.downloader.desc': 'Download videos from a URL, pick a format, and save them locally.',
 
+    'header.backToHub': 'Back to hub',
+
     'hamburger.menu': 'Menu',
     'hamburger.appearance': 'Appearance',
     'hamburger.checkUpdate': 'Check for updates',
     'hamburger.about': 'About',
-    'hamburger.mainMenu': 'Main menu',
     // A language's own name is always shown in itself, never translated by
     // whichever language is currently active -- how a user finds their
     // language in the first place.
@@ -53,11 +54,12 @@ export const dict = {
     'hub.tool.downloader.label': '下載工具',
     'hub.tool.downloader.desc': '貼上網址下載影片，選擇格式後儲存到本機。',
 
+    'header.backToHub': '回到主選單',
+
     'hamburger.menu': '選單',
     'hamburger.appearance': '外觀',
     'hamburger.checkUpdate': '檢查更新',
     'hamburger.about': '關於',
-    'hamburger.mainMenu': '主選單',
     'hamburger.lang.en': 'English',
     'hamburger.lang.zh-TW': '繁體中文',
 

@@ -4,12 +4,15 @@ import LiquidGlass from 'liquid-glass-react'
 import { useTranslation } from '../hooks/useTranslation.js'
 import AboutModal from './AboutModal.jsx'
 
-// Three uniform icon-left rows: language (click cycles through
-// EstellaLib.i18n.SUPPORTED_LANGS), appearance (click toggles theme), main
-// menu (click navigates back to the hub, only when inside a tool). Each is
-// a plain full-width button (.hamburger-item) rather than a bespoke switch
-// control -- see styles.css's comment on .hamburger-item for why (no dead
-// zone: the whole row is the click target).
+// Uniform icon-left rows: language (click cycles through
+// EstellaLib.i18n.SUPPORTED_LANGS), appearance (click toggles theme), check
+// for updates, about. ("Back to hub" used to live here as a fourth row --
+// removed once Header.jsx's own logo became clickable for that, which
+// makes more sense as the affordance anyway (a persistent home button
+// beats one hidden behind a menu open).) Each row is a plain full-width
+// button (.hamburger-item) rather than a bespoke switch control -- see
+// styles.css's comment on .hamburger-item for why (no dead zone: the whole
+// row is the click target).
 //
 // Icon has two always-mounted line groups (closed/horizontal, open/vertical)
 // that cross-fade + rotate via CSS on [aria-expanded] — see styles.css.
@@ -75,15 +78,6 @@ function InfoIcon() {
   )
 }
 
-function HomeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M4 11l8-7 8 7" />
-      <path d="M6 10v9h12v-9" />
-    </svg>
-  )
-}
-
 // Flag emoji (🇺🇸/🇹🇼) depend on the platform having a color-emoji font
 // with regional-indicator ligatures installed -- confirmed unreliable in
 // practice (falls back to plain "US"/"TW" letter pairs on at least one
@@ -133,7 +127,7 @@ const LANG_FLAG_ICONS = {
 // mounted through the closing animation instead of disappearing instantly.
 const CLOSE_ANIM_MS = 100
 
-export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onToggleTheme, onCheckUpdate }) {
+export default function HamburgerMenu({ theme, onToggleTheme, onCheckUpdate }) {
   const { t, lang } = useTranslation()
   const FlagIcon = LANG_FLAG_ICONS[lang]
   const [open, setOpen] = useState(false)
@@ -323,20 +317,6 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
                 <span className="hamburger-item__icon" aria-hidden="true"><InfoIcon /></span>
                 <span className="hamburger-item__label">{t('hamburger.about')}</span>
               </button>
-
-              {showBackToHub && (
-                <button
-                  className="hamburger-item hamburger-item--danger"
-                  role="menuitem"
-                  onClick={() => {
-                    requestClose()
-                    onBackToHub()
-                  }}
-                >
-                  <span className="hamburger-item__icon" aria-hidden="true"><HomeIcon /></span>
-                  <span className="hamburger-item__label">{t('hamburger.mainMenu')}</span>
-                </button>
-              )}
             </div>
           </LiquidGlass>
         </div>
