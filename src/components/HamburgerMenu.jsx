@@ -127,9 +127,15 @@ const LANG_FLAG_ICONS = {
 // mounted through the closing animation instead of disappearing instantly.
 const CLOSE_ANIM_MS = 100
 
-export default function HamburgerMenu({ theme, onToggleTheme, onCheckUpdate }) {
+export default function HamburgerMenu({ theme, onToggleTheme, updater }) {
   const { t, lang } = useTranslation()
   const FlagIcon = LANG_FLAG_ICONS[lang]
+  // Quiet notification dot -- toggle button + the About row both get one
+  // when a newer release exists, instead of any popup. Self-built copies
+  // (see useUpdateChecker.js's isOfficialBuild) rely on this as their ONLY
+  // update signal (App.jsx never mounts UpdateBanner for them); official
+  // builds get this too, as a harmless bonus alongside their toast.
+  const hasUpdate = updater?.status === 'available'
   const [open, setOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -219,6 +225,7 @@ export default function HamburgerMenu({ theme, onToggleTheme, onCheckUpdate }) {
         onClick={() => (open ? requestClose() : requestOpen())}
       >
         <HamburgerIcon />
+        {hasUpdate && <span className="hb-badge-dot" aria-hidden="true" />}
       </button>
       {mounted && (
         <div
@@ -298,7 +305,7 @@ export default function HamburgerMenu({ theme, onToggleTheme, onCheckUpdate }) {
                 role="menuitem"
                 onClick={() => {
                   requestClose()
-                  onCheckUpdate?.()
+                  updater?.checkForUpdate?.()
                 }}
               >
                 <span className="hamburger-item__icon" aria-hidden="true"><UpdateIcon /></span>
@@ -314,7 +321,10 @@ export default function HamburgerMenu({ theme, onToggleTheme, onCheckUpdate }) {
                   setAboutOpen(true)
                 }}
               >
-                <span className="hamburger-item__icon" aria-hidden="true"><InfoIcon /></span>
+                <span className="hamburger-item__icon" aria-hidden="true">
+                  <InfoIcon />
+                  {hasUpdate && <span className="hb-badge-dot" aria-hidden="true" />}
+                </span>
                 <span className="hamburger-item__label">{t('hamburger.about')}</span>
               </button>
             </div>
@@ -328,7 +338,7 @@ export default function HamburgerMenu({ theme, onToggleTheme, onCheckUpdate }) {
           top/left/right/bottom:0 to this small button's own box instead of
           the real viewport (confirmed live: the modal rendered squeezed
           into the header's top-right corner before this fix). */}
-      {createPortal(<AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} theme={theme} />, document.body)}
+      {createPortal(<AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} theme={theme} updater={updater} />, document.body)}
     </div>
   )
 }

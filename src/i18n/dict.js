@@ -39,6 +39,9 @@ export const dict = {
 
     'about.title': 'About',
     'about.tagline': 'A local, no-upload file toolkit',
+    'about.updateAvailable': ({ version }) => `New version available — v${version}`,
+    'about.updateNow': 'Update now',
+    'about.viewOnGithub': 'View on GitHub',
     'about.version': 'Version',
     'about.developer': 'Developer',
     'about.license': 'License',
@@ -79,6 +82,9 @@ export const dict = {
 
     'about.title': '關於',
     'about.tagline': '本機、免上傳的檔案工具箱',
+    'about.updateAvailable': ({ version }) => `有新版本可用－v${version}`,
+    'about.updateNow': '立即更新',
+    'about.viewOnGithub': '在 GitHub 上查看',
     'about.version': '版本',
     'about.developer': '軟體開發者',
     'about.license': '授權方式',

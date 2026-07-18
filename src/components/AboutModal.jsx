@@ -30,11 +30,13 @@ const FULL_LICENSES_URL = 'https://github.com/chchee3300/sorai-toolkit/blob/mast
 // .hidden via the `open` prop on an always-mounted .modal-overlay) instead
 // of the mount/unmount-with-JS-timed-close-animation dance a real glass
 // panel needs.
-export default function AboutModal({ open, onClose, theme }) {
+export default function AboutModal({ open, onClose, theme, updater }) {
   const { t } = useTranslation()
   const modalContentRef = useRef(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
+  const hasUpdate = updater?.status === 'available'
+  const latestVersion = updater?.latestRelease?.tag_name?.replace(/^v/, '')
 
   // Focus trap / Escape / focus restore -- same pattern as TrimModal.jsx.
   useEffect(() => {
@@ -91,6 +93,25 @@ export default function AboutModal({ open, onClose, theme }) {
               <p className="about-modal-tagline">{t('about.tagline')}</p>
             </div>
           </div>
+
+          {/* Self-built copies (useUpdateChecker.js's isOfficialBuild is
+              false) never get UpdateBanner's toast at all -- App.jsx only
+              mounts it for official builds -- so this section is their
+              ONLY surface for "a newer version exists". Official builds
+              show it too, as a harmless bonus alongside the toast. The
+              button always calls the same updater.installUpdate -- it
+              already forks internally (silent download+install vs. just
+              opening the GitHub release page) based on that same flag, so
+              this component doesn't need to know which case it's in beyond
+              picking the right label. */}
+          {hasUpdate && (
+            <div className="about-modal-update">
+              <p className="about-modal-update-text">{t('about.updateAvailable', { version: latestVersion })}</p>
+              <button type="button" className="btn btn-primary btn-xs" onClick={() => updater.installUpdate()}>
+                {updater.isOfficialBuild ? t('about.updateNow') : t('about.viewOnGithub')}
+              </button>
+            </div>
+          )}
 
           <dl className="about-modal-facts">
             <dt>{t('about.version')}</dt>

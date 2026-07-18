@@ -34,20 +34,29 @@ function App() {
         onBackToHub={() => setCurrentTool('hub')}
         theme={theme}
         onToggleTheme={toggleTheme}
-        onCheckUpdate={updater.checkForUpdate}
+        updater={updater}
       />
       {currentTool === 'hub' && <HubMenu onSelectTool={setCurrentTool} />}
       {currentTool === 'converter' && <ConverterApp />}
       {currentTool === 'downloader' && <DownloaderApp />}
-      <UpdateBanner
-        status={updater.status}
-        latestRelease={updater.latestRelease}
-        updateError={updater.updateError}
-        manualCheck={updater.manualCheck}
-        currentVersion={updater.currentVersion}
-        onInstall={updater.installUpdate}
-        onDismiss={updater.dismiss}
-      />
+      {/* Self-built copies (see useUpdateChecker.js's IS_OFFICIAL_BUILD)
+          never had a real silent-install to offer anyway -- the toast's
+          "Update now" button would just re-open a browser tab, which reads
+          as a popup nagging you to do something you can just as easily
+          notice later. Those builds surface the same status quietly
+          instead, via HamburgerMenu's badge dot -> AboutModal's own update
+          section. */}
+      {updater.isOfficialBuild && (
+        <UpdateBanner
+          status={updater.status}
+          latestRelease={updater.latestRelease}
+          updateError={updater.updateError}
+          manualCheck={updater.manualCheck}
+          currentVersion={updater.currentVersion}
+          onInstall={updater.installUpdate}
+          onDismiss={updater.dismiss}
+        />
+      )}
     </div>
   )
 }

@@ -296,6 +296,7 @@ body {
 }
 
 #hamburger-toggle {
+  position: relative;
   display: flex; align-items: center; justify-content: center;
   width: 28px; height: 28px;
   border-radius: 6px;
@@ -512,6 +513,27 @@ body {
   color: var(--text-secondary);
 }
 
+/* Self-built copies' only surface for "a newer version exists" -- see
+   AboutModal.jsx's own comment. Borrows .queue-item.is-selected's
+   accent-dim tint so it reads as "something to notice" without the
+   weight/motion of a toast. */
+.about-modal-update {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.65rem;
+  border-radius: 8px;
+  background: var(--accent-dim);
+  border: 1px solid rgba(91, 127, 255, 0.35);
+}
+
+.about-modal-update-text {
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
 .about-modal-heading {
   margin-top: 0.4rem;
   font-family: 'JetBrains Mono', 'Noto Sans TC', monospace;
@@ -590,6 +612,7 @@ body {
 /* Fixed-size slot so a flag emoji, an SVG icon, or a symbol font glyph all
    align identically across rows regardless of the icon's native size. */
 .hamburger-item__icon {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -598,6 +621,22 @@ body {
   flex-shrink: 0;
   font-size: 0.95rem;
   line-height: 1;
+}
+
+/* Quiet "there's an update" signal -- HamburgerMenu.jsx puts this on the
+   toggle button itself (so it's noticeable closed) and on the About row's
+   icon (where the actual detail/action lives, see AboutModal.jsx). No
+   popup, no motion -- see App.jsx's comment on why self-built copies rely
+   on this instead of UpdateBanner's toast. */
+.hb-badge-dot {
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 1.5px var(--surface-1);
 }
 
 .hamburger-item__icon svg {

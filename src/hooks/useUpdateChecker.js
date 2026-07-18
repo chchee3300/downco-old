@@ -7,6 +7,15 @@ import versionInfo from '../version.json'
 const REPO = 'chchee3300/sorai-toolkit'
 const LATEST_RELEASE_URL = `https://api.github.com/repos/${REPO}/releases/latest`
 
+// True only for builds produced by .github/workflows/release.yml (which
+// sets this env var before `npm run build`, baking it into the bundle via
+// Vite's import.meta.env) -- a plain `npm run build` run by anyone building
+// from source themselves never sets it, so self-built copies fall back to
+// the "just open the release page" install path below with zero config.
+// This is the only thing that distinguishes "official" from "self-built" --
+// there's no signing/identity check, it's purely "did the CI job say so".
+const IS_OFFICIAL_BUILD = import.meta.env.VITE_OFFICIAL_BUILD === 'true'
+
 function parseSemver(v) {
   const m = String(v ?? '').replace(/^v/, '').match(/^(\d+)\.(\d+)\.(\d+)/)
   if (!m) return null
@@ -67,7 +76,10 @@ async function downloadFile(url, destPath) {
 // the running exe. macOS/Linux can't self-replace this cleanly (unsigned
 // .dmg hits Gatekeeper's quarantine flag; .deb/.rpm need a privilege
 // prompt to install) -- those just download the asset and reveal it in
-// the OS file manager for the user to finish.
+// the OS file manager for the user to finish. That whole silent-replace
+// flow only makes sense for the exact binaries the official CI actually
+// produced -- installUpdate below only takes it on IS_OFFICIAL_BUILD;
+// self-built copies get a much simpler "open the release page" fallback.
 export function useUpdateChecker() {
   const [status, setStatus] = useState('idle') // idle | checking | available | none | error | downloading | downloaded | installing
   const [latestRelease, setLatestRelease] = useState(null)
@@ -107,6 +119,19 @@ export function useUpdateChecker() {
   const installUpdate = useCallback(async () => {
     if (!latestRelease) return
     setUpdateError(null)
+
+    if (!IS_OFFICIAL_BUILD) {
+      // No download/silent-install for a self-built copy -- there's no
+      // guarantee the release asset even matches what's running locally.
+      // Handing off to the browser (same CORS-free path as every other
+      // Neutralino.os.open link in this app) is the only thing that's
+      // always correct: it just leaves it to the user to grab the right
+      // asset themselves. Status is left untouched (still 'available') so
+      // the AboutModal section stays visible if they come back later.
+      await window.Neutralino.os.open(latestRelease.html_url)
+      return
+    }
+
     setStatus('downloading')
     try {
       const asset = pickAsset(latestRelease.assets)
@@ -148,6 +173,7 @@ export function useUpdateChecker() {
     latestRelease,
     updateError,
     manualCheck,
+    isOfficialBuild: IS_OFFICIAL_BUILD,
     checkForUpdate: checkForUpdateManually,
     installUpdate,
     dismiss,

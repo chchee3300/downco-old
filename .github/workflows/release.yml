@@ -63,7 +63,13 @@ jobs:
       - run: neu update
       - run: node scripts/copy-neutralino-client.mjs
       - run: node scripts/write-version.mjs "${{ needs.get-next-version.outputs.version }}"
+      # VITE_OFFICIAL_BUILD is the only signal useUpdateChecker.js uses to
+      # tell "built by this workflow" from "someone's own `npm run build`" --
+      # it gates the in-app silent-download-and-install update flow (see
+      # that file's own comment). Only ever set here, never committed.
       - run: npm run build
+        env:
+          VITE_OFFICIAL_BUILD: 'true'
       - name: Install unzip and fpm
         run: |
           sudo apt-get update -qq
@@ -100,7 +106,13 @@ jobs:
       - run: neu update
       - run: node scripts/copy-neutralino-client.mjs
       - run: node scripts/write-version.mjs "${{ needs.get-next-version.outputs.version }}"
+      # VITE_OFFICIAL_BUILD is the only signal useUpdateChecker.js uses to
+      # tell "built by this workflow" from "someone's own `npm run build`" --
+      # it gates the in-app silent-download-and-install update flow (see
+      # that file's own comment). Only ever set here, never committed.
       - run: npm run build
+        env:
+          VITE_OFFICIAL_BUILD: 'true'
       - run: node setup.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -146,7 +158,13 @@ jobs:
       - run: neu update
       - run: node scripts/copy-neutralino-client.mjs
       - run: node scripts/write-version.mjs "${{ needs.get-next-version.outputs.version }}"
+      # VITE_OFFICIAL_BUILD is the only signal useUpdateChecker.js uses to
+      # tell "built by this workflow" from "someone's own `npm run build`" --
+      # it gates the in-app silent-download-and-install update flow (see
+      # that file's own comment). Only ever set here, never committed.
       - run: npm run build
+        env:
+          VITE_OFFICIAL_BUILD: 'true'
       - run: node setup.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
