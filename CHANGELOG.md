@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.8.0...v1.9.0) (2026-07-18)
+
+
+### Features
+
+* split auto-update between official CI builds and self-built copies ([ea57a81](https://github.com/chchee3300/sorai-toolkit/commit/ea57a81eb48c2534de7374aba94b4266026af9e3))
+
 # [1.8.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.7.0...v1.8.0) (2026-07-18)
 
 
