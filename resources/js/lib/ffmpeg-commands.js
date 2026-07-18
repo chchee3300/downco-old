@@ -9,14 +9,22 @@
 // window.EstellaLib.platform.ffmpegPath(binPath) (cross-platform seam) —
 // also a reviewed, deliberate change, not migration drift.
 (function (global) {
+  // Shared by buildVideoCommand/buildAudioCommand below (buildImageCommand
+  // has no timeline, so no trim concept) -- both built the exact same
+  // -ss/-to flag string independently before this extraction.
+  function buildTrimFlags(fileObj) {
+    let trimCmd = '';
+    if (fileObj.trimStart !== undefined) trimCmd += `-ss ${fileObj.trimStart} `;
+    if (fileObj.trimEnd !== undefined) trimCmd += `-to ${fileObj.trimEnd} `;
+    return trimCmd;
+  }
+
   // fileObj: { fps, duration, size, trimStart, trimEnd } (subset of the app's file record)
   function buildVideoCommand({ binPath, file, outPath, format, codec, qualityPercent, speed, targetFpsStr, fileObj }) {
     const targetFps = targetFpsStr === 'original' ? fileObj.fps : parseFloat(targetFpsStr);
     const fps = targetFpsStr;
 
-    let trimCmd = '';
-    if (fileObj.trimStart !== undefined) trimCmd += `-ss ${fileObj.trimStart} `;
-    if (fileObj.trimEnd !== undefined) trimCmd += `-to ${fileObj.trimEnd} `;
+    const trimCmd = buildTrimFlags(fileObj);
 
     if (format === '.gif') {
       let filterGraph = [];
@@ -139,9 +147,7 @@
       filterCmd = `-af "atempo=${speedFloat}" `;
     }
 
-    let trimCmd = '';
-    if (fileObj.trimStart !== undefined) trimCmd += `-ss ${fileObj.trimStart} `;
-    if (fileObj.trimEnd !== undefined) trimCmd += `-to ${fileObj.trimEnd} `;
+    const trimCmd = buildTrimFlags(fileObj);
 
     // Explicit rather than relying on ffmpeg's default muxer-implied encoder
     // choice for .ogg — every other format keeps codecCmd === '' (unchanged).

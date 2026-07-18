@@ -416,62 +416,30 @@ body {
   animation: lg-pop-up-out 0.1s cubic-bezier(0.23, 1, 0.32, 1) forwards;
 }
 
-/* AboutModal.jsx's glass shell -- second-ever glass panel in the app
-   (first is .hamburger-dropdown above), same recipe verbatim: identical
-   tint/blur tokens, identical three liquid-glass-react overrides, identical
-   lg-pop-down/lg-pop-up-out animation. Centered (not anchored top-right),
-   sized by AboutModal.jsx's own glassSize gating -- same reason as
-   .hamburger-dropdown: LiquidGlass's `top:50%;left:50%` + its own internal
-   translate(-50%,-50%) only centers correctly once this shell has an
-   explicit width/height to compute against. */
-.about-modal-glass {
-  position: relative;
-  border-radius: 12px;
-  background: rgba(13, 16, 22, 0.3);
-  backdrop-filter: blur(1px) saturate(1.6);
-  -webkit-backdrop-filter: blur(1px) saturate(1.6);
-}
-
-[data-theme="light"] .about-modal-glass {
-  background: rgba(242, 243, 247, 0.6);
-}
-
-.about-modal-glass .glass__warp {
-  display: none;
-}
-
-.about-modal-glass > div,
-.about-modal-glass > span,
-.about-modal-glass .glass {
-  transition: none !important;
-}
-
-.about-modal-glass > .bg-black {
-  display: none;
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .about-modal-glass {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-    background: var(--surface-1);
-  }
-}
-
-.about-modal-glass--open {
-  animation: lg-pop-down 0.14s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-}
-
-.about-modal-glass--closing {
-  animation: lg-pop-up-out 0.1s cubic-bezier(0.23, 1, 0.32, 1) forwards;
+/* AboutModal.jsx is a plain .modal-content now (same as Trim/Crop/
+   MixedType -- shared .modal-overlay scrim+blur, shared opaque
+   var(--surface-1) background, shared pop transition), just narrower.
+   It used to be a liquid-glass-react panel; removed the library entirely
+   (not just its backdrop-filter) after a residual shadow/halo ring around
+   this panel's own text survived removing backdrop-filter alone (reported
+   live, light theme, real WebView2 window -- confirmed via CDP connected
+   to the actual native window, not a separate Playwright browser). The
+   panel's blur/translucency were never functional to begin with (see
+   CLAUDE.md's Liquid glass guide for the full bisection story), so once
+   backdrop-filter was gone there was nothing left the library was
+   actually doing for this component -- something else in its own DOM/CSS
+   (beyond just backdrop-filter, which was ruled out on its own first) was
+   still producing the ring, so the fix was removing LiquidGlass outright
+   rather than keep isolating which of its internals was responsible. */
+.about-modal-content {
+  max-width: 380px;
 }
 
 .about-modal-body {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  min-width: 300px;
-  max-width: 360px;
+  padding: 20px;
 }
 
 .about-modal-header {

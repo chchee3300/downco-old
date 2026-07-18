@@ -348,7 +348,7 @@ export default function HamburgerMenu({ showBackToHub, onBackToHub, theme, onTog
           top/left/right/bottom:0 to this small button's own box instead of
           the real viewport (confirmed live: the modal rendered squeezed
           into the header's top-right corner before this fix). */}
-      {createPortal(<AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} />, document.body)}
+      {createPortal(<AboutModal open={aboutOpen} onClose={() => setAboutOpen(false)} theme={theme} />, document.body)}
     </div>
   )
 }

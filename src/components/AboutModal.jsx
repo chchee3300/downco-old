@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
-import LiquidGlass from 'liquid-glass-react'
+import { useEffect, useRef } from 'react'
 import { useTranslation } from '../hooks/useTranslation.js'
 import versionInfo from '../version.json'
-import appIcon from '../../resources/icons/appIcon.png'
+import logoDark from '../../resources/icons/appIcon-dark.png'
+import logoLight from '../../resources/icons/appIcon-light.png'
 
 const HOMEPAGE_URL = 'https://github.com/chchee3300/sorai-toolkit'
 
@@ -22,76 +22,30 @@ const THIRD_PARTY_LINKS = [
 
 const FULL_LICENSES_URL = 'https://github.com/chchee3300/sorai-toolkit/blob/master/THIRD-PARTY-LICENSES.md'
 
-// Close/open animation timing -- must match .about-modal-glass--closing's
-// CSS animation-duration (styles.css) so the shell unmounts exactly when
-// the pop-out animation finishes, not before (a visible cut) or after (a
-// dead frozen frame).
-const CLOSE_ANIM_MS = 100
-
-// Second-ever glass panel in the app (first is HamburgerMenu's own
-// dropdown) -- follows the same recipe as CLAUDE.md's Liquid glass guide:
-// backdrop-filter/tint on this shell only (never a LiquidGlass descendant,
-// which computes but never paints in this WebView2 engine), the same three
-// CSS overrides for the library's internal layers (.glass__warp hidden,
-// .bg-black hidden, inline transitions killed), and the identical
-// lg-pop-down/lg-pop-up-out keyframes every other glass panel uses so this
-// reads as the same material. glassSize/ResizeObserver gating mirrors
-// HamburgerMenu.jsx exactly -- same library mount-time-measurement bug
-// (filter region clips before rows/fonts settle) applies here too.
-export default function AboutModal({ open, onClose }) {
+// Used to be a liquid-glass-react panel (this file's git history has the
+// full LiquidGlass version). Removed the library entirely, not just its
+// backdrop-filter -- see styles.css's own comment on .about-modal-content
+// for why. With nothing left that actually needs it, this is now a plain
+// modal, same open/close CSS transition as TrimModal/CropModal (toggling
+// .hidden via the `open` prop on an always-mounted .modal-overlay) instead
+// of the mount/unmount-with-JS-timed-close-animation dance a real glass
+// panel needs.
+export default function AboutModal({ open, onClose, theme }) {
   const { t } = useTranslation()
-  const [mounted, setMounted] = useState(false)
-  const [closing, setClosing] = useState(false)
-  const [settled, setSettled] = useState(false)
-  const [glassSize, setGlassSize] = useState(null)
-  const shellRef = useRef(null)
-  const closeTimeoutRef = useRef(null)
+  const modalContentRef = useRef(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
 
-  useEffect(() => {
-    if (open) {
-      clearTimeout(closeTimeoutRef.current)
-      setMounted(true)
-      setClosing(false)
-      setSettled(false)
-      setGlassSize(null)
-    } else {
-      setClosing(true)
-      closeTimeoutRef.current = setTimeout(() => {
-        setMounted(false)
-        setClosing(false)
-      }, CLOSE_ANIM_MS)
-    }
-    return () => clearTimeout(closeTimeoutRef.current)
-  }, [open])
-
-  useEffect(() => {
-    if (!mounted || !shellRef.current) return undefined
-    const glassEl = shellRef.current.querySelector('.glass')
-    if (!glassEl) return undefined
-    const ro = new ResizeObserver(() => {
-      const w = Math.ceil(glassEl.offsetWidth)
-      const h = Math.ceil(glassEl.offsetHeight)
-      if (w > 0 && h > 0) {
-        setGlassSize((prev) => (prev && prev.w === w && prev.h === h ? prev : { w, h }))
-        window.dispatchEvent(new Event('resize'))
-      }
-    })
-    ro.observe(glassEl)
-    return () => ro.disconnect()
-  }, [mounted])
-
   // Focus trap / Escape / focus restore -- same pattern as TrimModal.jsx.
   useEffect(() => {
-    if (!mounted) return undefined
+    if (!open) return undefined
     const previouslyFocused = document.activeElement
     const getFocusable = () =>
       Array.from(
-        shellRef.current?.querySelectorAll('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])') || [],
+        modalContentRef.current?.querySelectorAll('button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])') || [],
       )
     const focusable = getFocusable()
-    ;(focusable[0] || shellRef.current)?.focus()
+    ;(focusable[0] || modalContentRef.current)?.focus()
 
     const onKeyDown = (e) => {
       if (e.key === 'Escape') {
@@ -117,89 +71,69 @@ export default function AboutModal({ open, onClose }) {
       document.removeEventListener('keydown', onKeyDown)
       if (previouslyFocused instanceof HTMLElement) previouslyFocused.focus()
     }
-  }, [mounted])
-
-  if (!mounted) return null
-
-  const animClass = closing ? 'about-modal-glass--closing' : glassSize && !settled ? 'about-modal-glass--open' : ''
+  }, [open])
 
   return (
-    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+    <div className={open ? 'modal-overlay' : 'modal-overlay hidden'} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
       <div
-        ref={shellRef}
-        className={`about-modal-glass ${animClass}`}
+        ref={modalContentRef}
+        className="modal-content about-modal-content"
         role="dialog"
         aria-modal="true"
         aria-labelledby="about-modal-title"
         tabIndex={-1}
-        style={glassSize ? { width: glassSize.w, height: glassSize.h } : { visibility: 'hidden' }}
-        onAnimationEnd={(e) => {
-          if (e.animationName === 'lg-pop-down') setSettled(true)
-        }}
       >
-        <LiquidGlass
-          cornerRadius={12}
-          padding="20px"
-          displacementScale={18}
-          blurAmount={0.625}
-          saturation={160}
-          aberrationIntensity={1}
-          elasticity={0}
-          overLight={false}
-          style={{ position: 'absolute', top: '50%', left: '50%' }}
-        >
-          <div className="about-modal-body">
-            <div className="about-modal-header">
-              <img src={appIcon} alt="" className="about-modal-icon" />
-              <div>
-                <h3 id="about-modal-title" className="about-modal-title">SORAI Toolkit</h3>
-                <p className="about-modal-tagline">{t('about.tagline')}</p>
-              </div>
+        <div className="about-modal-body">
+          <div className="about-modal-header">
+            <img src={theme === 'light' ? logoLight : logoDark} alt="" className="about-modal-icon" />
+            <div>
+              <h3 id="about-modal-title" className="about-modal-title">SORAI Toolkit</h3>
+              <p className="about-modal-tagline">{t('about.tagline')}</p>
             </div>
-
-            <dl className="about-modal-facts">
-              <dt>{t('about.version')}</dt>
-              <dd className="tabular-nums">v{versionInfo.version}</dd>
-              <dt>{t('about.developer')}</dt>
-              <dd>Charls "CometCafe" Lin</dd>
-              <dt>{t('about.license')}</dt>
-              <dd>MIT</dd>
-              <dt>{t('about.homepage')}</dt>
-              <dd>
-                <button type="button" className="about-modal-link" onClick={() => window.Neutralino.os.open(HOMEPAGE_URL)}>
-                  {HOMEPAGE_URL}
-                </button>
-              </dd>
-            </dl>
-
-            <p className="about-modal-desc">{t('about.description')}</p>
-
-            <p className="about-modal-heading">{t('about.thirdPartyHeading')}</p>
-            <div className="about-modal-links">
-              {THIRD_PARTY_LINKS.map((item) => (
-                <button
-                  key={item.name}
-                  type="button"
-                  className="about-modal-link"
-                  onClick={() => window.Neutralino.os.open(item.url)}
-                >
-                  {item.name} <span className="about-modal-link-note">({item.note})</span>
-                </button>
-              ))}
-            </div>
-            <button
-              type="button"
-              className="about-modal-link about-modal-full-link"
-              onClick={() => window.Neutralino.os.open(FULL_LICENSES_URL)}
-            >
-              {t('about.viewFullLicenses')}
-            </button>
-
-            <button type="button" className="btn btn-outline about-modal-close" onClick={onClose}>
-              {t('about.close')}
-            </button>
           </div>
-        </LiquidGlass>
+
+          <dl className="about-modal-facts">
+            <dt>{t('about.version')}</dt>
+            <dd className="tabular-nums">v{versionInfo.version}</dd>
+            <dt>{t('about.developer')}</dt>
+            <dd>Charls "CometCafe" Lin</dd>
+            <dt>{t('about.license')}</dt>
+            <dd>MIT</dd>
+            <dt>{t('about.homepage')}</dt>
+            <dd>
+              <button type="button" className="about-modal-link" onClick={() => window.Neutralino.os.open(HOMEPAGE_URL)}>
+                {HOMEPAGE_URL}
+              </button>
+            </dd>
+          </dl>
+
+          <p className="about-modal-desc">{t('about.description')}</p>
+
+          <p className="about-modal-heading">{t('about.thirdPartyHeading')}</p>
+          <div className="about-modal-links">
+            {THIRD_PARTY_LINKS.map((item) => (
+              <button
+                key={item.name}
+                type="button"
+                className="about-modal-link"
+                onClick={() => window.Neutralino.os.open(item.url)}
+              >
+                {item.name} <span className="about-modal-link-note">({item.note})</span>
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="about-modal-link about-modal-full-link"
+            onClick={() => window.Neutralino.os.open(FULL_LICENSES_URL)}
+          >
+            {t('about.viewFullLicenses')}
+          </button>
+
+          <button type="button" className="btn btn-outline about-modal-close" onClick={onClose}>
+            {t('about.close')}
+          </button>
+        </div>
       </div>
     </div>
   )

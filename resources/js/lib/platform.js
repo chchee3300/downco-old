@@ -28,17 +28,24 @@
     return parts.filter((p) => p !== '' && p != null).join(sep());
   }
 
-  // ffmpeg is bundled on every platform. binaries/win_x64, binaries/mac_x64,
-  // binaries/mac_arm64, binaries/linux_x64 -- mac arch is split (not a
-  // universal binary) to match the pattern bin/ already uses for the
-  // Neutralino shell itself.
-  function ffmpegPath(binPath) {
-    if (isWindows()) return joinPath(binPath, 'binaries', 'win_x64', 'ffmpeg.exe');
+  // Shared shape behind ffmpegPath/ytdlpPath below -- both bundle one
+  // binary per platform under binaries/<platform>/<name>[.exe], mac arch
+  // split (not a universal binary) to match the pattern bin/ already uses
+  // for the Neutralino shell itself. name is the bare executable name with
+  // no extension -- the Windows branch appends .exe, macOS/Linux don't need
+  // one.
+  function binaryPath(binPath, name) {
+    if (isWindows()) return joinPath(binPath, 'binaries', 'win_x64', `${name}.exe`);
     if (getOS() === 'Darwin') {
       const arch = global.NL_ARCH === 'arm64' ? 'mac_arm64' : 'mac_x64';
-      return joinPath(binPath, 'binaries', arch, 'ffmpeg');
+      return joinPath(binPath, 'binaries', arch, name);
     }
-    return joinPath(binPath, 'binaries', 'linux_x64', 'ffmpeg');
+    return joinPath(binPath, 'binaries', 'linux_x64', name);
+  }
+
+  // ffmpeg is bundled on every platform.
+  function ffmpegPath(binPath) {
+    return binaryPath(binPath, 'ffmpeg');
   }
 
   // qpdf/img2pdf: bundled .exe on Windows. On macOS/Linux these are
@@ -57,12 +64,7 @@
   // and Apple Silicon -- same one-build-covers-both-arches pattern as
   // ffmpeg's evermeet.cx build above.
   function ytdlpPath(binPath) {
-    if (isWindows()) return joinPath(binPath, 'binaries', 'win_x64', 'yt-dlp.exe');
-    if (getOS() === 'Darwin') {
-      const arch = global.NL_ARCH === 'arm64' ? 'mac_arm64' : 'mac_x64';
-      return joinPath(binPath, 'binaries', arch, 'yt-dlp');
-    }
-    return joinPath(binPath, 'binaries', 'linux_x64', 'yt-dlp');
+    return binaryPath(binPath, 'yt-dlp');
   }
 
   // Direct replacement for the old `window.NL_PATH.replace(/\//g, '\\')`
@@ -86,6 +88,35 @@
     }
   }
 
+  // Neutralino.os.updateSpawnedProcess(pid, 'exit') only terminates the
+  // single PID it tracks -- fine for ffmpeg (one real process, verified: it
+  // spawns no children), but not for the bundled Windows yt-dlp.exe: it's a
+  // PyInstaller onefile build whose top-level process is just a bootloader
+  // that re-execs itself as a CHILD process to do the real work (confirmed
+  // live: Get-CimInstance Win32_Process showed a second yt-dlp.exe with
+  // ParentProcessId = the spawned PID). Killing only the parent orphans
+  // that child, which keeps downloading in the background even though the
+  // UI already shows "Cancelled" -- this is why cancel felt unreliable in
+  // Downloader specifically (Converter's ffmpeg has no such child). Callers
+  // should run this ALONGSIDE (not instead of) updateSpawnedProcess(pid,
+  // 'exit') -- this best-effort-kills the OS-level tree, the other keeps
+  // Neutralino's own internal bookkeeping/exit-event consistent.
+  async function killProcessTree(pid) {
+    try {
+      if (isWindows()) {
+        await global.Neutralino.os.execCommand(`taskkill /PID ${pid} /T /F`);
+        return;
+      }
+      // macOS/Linux: yt-dlp's own binaries there aren't PyInstaller onefile
+      // builds the same way, so this is a precautionary best-effort only --
+      // kills any direct children of pid, not verified to be needed like
+      // the Windows case above.
+      await global.Neutralino.os.execCommand(`pkill -TERM -P ${pid}`);
+    } catch (e) {
+      /* already gone, or nothing to kill -- fine either way */
+    }
+  }
+
   global.EstellaLib = global.EstellaLib || {};
   global.EstellaLib.platform = {
     getOS,
@@ -98,5 +129,6 @@
     ytdlpPath,
     resolveBinPath,
     checkToolAvailable,
+    killProcessTree,
   };
 })(window);

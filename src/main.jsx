@@ -24,6 +24,7 @@ import '../resources/js/lib/qpdf-commands.js'
 import '../resources/js/lib/img2pdf-commands.js'
 import '../resources/js/lib/progress-parser.js'
 import '../resources/js/lib/size-estimate.js'
+import '../resources/js/lib/range-fill.js'
 
 // Neutralino.init() only functions when this app is actually served by a
 // running `neu` process (window.NL_PORT/NL_TOKEN injected by neu's dev
