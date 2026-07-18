@@ -1,3 +1,10 @@
+# [1.6.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.5.4...v1.6.0) (2026-07-18)
+
+
+### Features
+
+* bundle Inter/Noto Sans TC fonts locally, add thumbnail ffmpeg command, add dev-watch script ([9b7095b](https://github.com/chchee3300/sorai-toolkit/commit/9b7095b7fac52a87dc3b640e6d38b403d0dd44ba))
+
 ## [1.5.4](https://github.com/chchee3300/sorai-toolkit/compare/v1.5.3...v1.5.4) (2026-07-17)
 
 
