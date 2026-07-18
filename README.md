@@ -30,6 +30,8 @@ The UI (React + Vite, in `src/`) runs inside a [Neutralino.js](https://neutralin
 
 These live in per-platform folders under `binaries/` (`win_x64/`, `mac_x64/`, `mac_arm64/`, `linux_x64/`), fetched by `setup.mjs`.
 
+Inter and Noto Sans TC (思源黑體) are bundled locally as `@font-face` woff2 files under `resources/fonts/` (so Traditional Chinese UI text renders consistently even fully offline); JetBrains Mono still loads from Google Fonts.
+
 ## Requirements
 
 Building from source needs:
@@ -68,16 +70,20 @@ The `@neutralinojs/neu` version is pinned rather than left at `latest`: as of th
 
 ```bash
 npm run dev         # start the Vite dev server (UI only, in a browser)
-neu run             # build the web UI and launch the Neutralino desktop shell
+neu run             # launch the Neutralino desktop shell -- serves whatever's already in web-dist/,
+                     # it does NOT build anything itself; run `npm run build` first (or use dev:watch below)
+npm run dev:watch   # rebuilds automatically on save, then launches neu run -- see below
 ```
 
-`neu run` serves the app from `web-dist/`, which is built from `src/` via Vite. Rebuild the UI with:
+`neu run` serves the app from `web-dist/`, which is built from `src/` via Vite — `npm run build` regenerates it.
+
+Changing a tool's own logic (Converter/Downloader) happens in that tool's own repo. Since those are consumed here as npm git dependencies, editing their source doesn't touch this repo's `node_modules` copy on its own — either `npm install` again (or `npm update sorai-toolkit-converter`/`sorai-toolkit-downloader`) once those changes are pushed, or, for local iteration before pushing:
 
 ```bash
-npm run build
+npm run dev:watch
 ```
 
-Changing a tool's own logic (Converter/Downloader) happens in that tool's own repo — this repo's `node_modules` copy is a built snapshot, so `npm install` again (or `npm update sorai-toolkit-converter`/`sorai-toolkit-downloader`) to pick up new changes.
+`scripts/dev-watch.mjs` rebuilds whichever of this hub or a sibling `sorai-toolkit-converter`/`sorai-toolkit-downloader` checkout just changed, copies the tool's `dist/` into this repo's `node_modules`, rebuilds `web-dist/`, and launches `neu run` — which then live-reloads on every subsequent save. Assumes the two tool repos are cloned as sibling folders next to this one; override with `CONVERTER_REPO`/`DOWNLOADER_REPO` env vars otherwise. Windows/macOS only (uses `fs.watch({ recursive: true })`, unsupported on Linux).
 
 ## Project structure
 
@@ -140,4 +146,4 @@ On launch, the app checks `GET /repos/chchee3300/sorai-toolkit/releases/latest` 
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE) for this repo's own code (and Converter's/Downloader's — see their own repos). The bundled third-party binaries and fonts keep their own licenses, including a GPL-licensed ffmpeg build on Windows/macOS — see [`THIRD-PARTY-LICENSES.md`](THIRD-PARTY-LICENSES.md) for the full breakdown and why bundling it this way (invoked as a subprocess, never linked) doesn't require this app's own code to be GPL.

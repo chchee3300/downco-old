@@ -1,6 +1,7 @@
 {
   "name": "sorai-toolkit",
   "private": true,
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "dev:watch": "node scripts/dev-watch.mjs",
