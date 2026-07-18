@@ -1,3 +1,10 @@
+# [1.8.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.7.0...v1.8.0) (2026-07-18)
+
+
+### Features
+
+* make header logo icon click back to hub, remove hamburger's back-to-hub item ([4761570](https://github.com/chchee3300/sorai-toolkit/commit/47615700a196aa2b4e77bfd81e5567c4d264d589))
+
 # [1.7.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.6.0...v1.7.0) (2026-07-18)
 
 
