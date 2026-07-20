@@ -5,7 +5,6 @@ import {
   checkAndAcquireLock,
   consumeQueueEntries,
   enqueuePendingLaunch,
-  forceOwnWindowForeground,
   listQueueEntryNames,
 } from '../lib/instanceLock.js'
 
@@ -67,37 +66,63 @@ export function useSingleInstance() {
       // neutralino.config.json's modes.window.hidden is true specifically
       // so a secondary instance never flashes a window before exiting --
       // that means the primary is the one that has to explicitly show
-      // itself, exactly once, right here (nothing else ever will). show()
-      // alone leaves the window visible but never brought to the
-      // foreground/given input focus -- same show()+focus() pairing as
-      // useCloseBehavior.js's tray-restore path uses, for the same reason.
+      // itself, exactly once, right here (nothing else ever will).
       //
-      // center() is required too, and isn't redundant with config's
-      // "center": true -- that flag only applies to a window's placement
-      // at creation, and this window is *created* hidden (that's the
-      // whole point of modes.window.hidden), so it never gets a valid
-      // "normal" placement to begin with. Verified live: right after
-      // show(), GetWindowRect on the real window reported
-      // (32767,-32768,33827,-32068) -- Win32's icon-parking sentinel
-      // position, not a valid on-screen rect -- despite IsIconic/
-      // IsWindowVisible both reporting the window as a normal, visible,
-      // non-minimized window. That's a window that "opened" but sits
-      // off-screen: nothing the user does (including hovering) reaches
-      // it. Calling center() moved it to a real rect immediately.
-      //
-      // forceOwnWindowForeground is a Windows-only extra safety net on
-      // top of that -- see its own comment in instanceLock.js for the
-      // real, observed bug (window left genuinely iconic/un-restorable)
-      // this works around specifically under neu run's nested spawn
-      // chain; a no-op everywhere else. It doesn't fix the off-screen
-      // case above -- SW_RESTORE is a no-op on a window that was never
-      // minimized in the first place, only ever mis-placed.
-      window.Neutralino.window
-        .show()
-        .then(() => window.Neutralino.window.center())
-        .then(() => window.Neutralino.window.focus())
-        .then(() => forceOwnWindowForeground())
-        .catch(() => {})
+      // Four separate native calls, not one -- each one fixes a distinct,
+      // independently-observed way the window can come up unusable
+      // (looks "open" but can't be hovered/clicked/dropped onto), and
+      // each is run in its own try/catch (not one .then() chain with a
+      // single trailing .catch()) so one call throwing can't skip the
+      // rest:
+      //  - show(): the window was created with modes.window.hidden, so
+      //    it's actually invisible (native isVisible() is false) until
+      //    this runs -- nothing else ever calls it.
+      //  - unminimize(): verified live that a fresh launch can come up
+      //    genuinely iconic (Win32 IsIconic() true, GetWindowRect at the
+      //    minimized-icon sentinel around (-32000,-32000)) even though
+      //    show() alone reports success -- show()'s own internal
+      //    "already visible, nothing to do" fast path in this Neutralino
+      //    version doesn't restore from iconic. unminimize() is
+      //    Neutralino's own native SW_RESTORE and fixes this directly;
+      //    no need to shell out to PowerShell for our own window (that's
+      //    still necessary in bringExistingInstanceToForeground, which
+      //    has to reach a *different* process's window).
+      //  - center(): isn't redundant with config's "center": true --
+      //    that flag only applies to a window's placement at creation,
+      //    and this window is *created* hidden, so it never gets a valid
+      //    "normal" placement to begin with. Verified live: right after
+      //    show(), GetWindowRect on the real window reported
+      //    (32767,-32768,33827,-32068) -- a different, positive-side
+      //    off-screen sentinel than the iconic one above -- despite
+      //    IsIconic/IsWindowVisible both reporting the window as a
+      //    normal, visible, non-minimized window. center() moved it to a
+      //    real on-screen rect immediately.
+      //  - focus(): show()/unminimize() alone leave the window visible
+      //    but never given input focus -- same show()+focus() pairing
+      //    useCloseBehavior.js's tray-restore path uses, for the same
+      //    reason.
+      ;(async () => {
+        try {
+          await window.Neutralino.window.show()
+        } catch (e) {
+          /* best-effort, see comment above */
+        }
+        try {
+          await window.Neutralino.window.unminimize()
+        } catch (e) {
+          /* best-effort, see comment above */
+        }
+        try {
+          await window.Neutralino.window.center()
+        } catch (e) {
+          /* best-effort, see comment above */
+        }
+        try {
+          await window.Neutralino.window.focus()
+        } catch (e) {
+          /* best-effort, see comment above */
+        }
+      })()
       if (initialArgs) {
         seqRef.current += 1
         setPendingLaunch({ seq: seqRef.current, ...initialArgs })

@@ -249,27 +249,3 @@ export async function bringExistingInstanceToForeground(pid) {
     /* best-effort, see comment above */
   }
 }
-
-// Windows-only workaround for a real observed bug: becoming primary and
-// calling window.show()+focus() can leave the window in a genuinely
-// iconic/minimized state (confirmed live via Win32 IsIconic/GetWindowRect
-// -- visible in the taskbar, but un-clickable/un-restorable by the user)
-// specifically when launched through neu run's multi-layer cmd.exe spawn
-// chain (dev-watch.mjs -> cmd.exe -> neu CLI -> cmd.exe -> native binary
-// -- see the neu CLI's own runner.js/spawn-command dependency, outside
-// this repo). Windows' ShowWindow(SW_SHOWDEFAULT) semantics can inherit a
-// hidden/minimized show-state from any ancestor process's STARTUPINFO
-// through that many nested layers; a double-installed app launched
-// directly (no neu run in the chain) does not hit this. Reuses the exact
-// EnumWindows+ShowWindow(SW_RESTORE)+SetForegroundWindow script already
-// proven (live, manually) to flip a stuck window's IsIconic from true to
-// false, targeted at our OWN pid instead of a remote one. Best-effort --
-// failure here is swallowed, same reasoning as bringExistingInstanceToForeground.
-export async function forceOwnWindowForeground() {
-  if (window.EstellaLib.platform.getOS() !== 'Windows') return
-  try {
-    await runWindowsForegroundScript(Number(window.NL_PID))
-  } catch (e) {
-    /* best-effort, see comment above */
-  }
-}
