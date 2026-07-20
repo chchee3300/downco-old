@@ -35,11 +35,18 @@ fi
 
 mkdir -p "$OUT_DIR"
 
+# ---- Generate the KDE Dolphin ServiceMenu files (right-click "SORAI
+# Toolkit" submenu) fresh before staging -- see generate-context-menu-
+# registry.mjs's own comment for the format/mimetype caveats and the
+# unverified two-level-nesting question.
+node "$PKG_DIR/generate-context-menu-registry.mjs"
+
 # ---- Stage the installed filesystem layout ----
 mkdir -p "$STAGE_DIR/opt/sorai-toolkit/binaries/linux_x64"
 mkdir -p "$STAGE_DIR/usr/bin"
 mkdir -p "$STAGE_DIR/usr/share/applications"
 mkdir -p "$STAGE_DIR/usr/share/pixmaps"
+mkdir -p "$STAGE_DIR/usr/share/kio/servicemenus"
 
 install -m 755 "$APP_EXE" "$STAGE_DIR/opt/sorai-toolkit/sorai-toolkit"
 install -m 755 "$FFMPEG_BIN" "$STAGE_DIR/opt/sorai-toolkit/binaries/linux_x64/ffmpeg"
@@ -47,6 +54,7 @@ install -m 755 "$YTDLP_BIN" "$STAGE_DIR/opt/sorai-toolkit/binaries/linux_x64/yt-
 install -m 755 "$PKG_DIR/launcher.sh" "$STAGE_DIR/usr/bin/sorai-toolkit"
 install -m 644 "$PKG_DIR/sorai-toolkit.desktop" "$STAGE_DIR/usr/share/applications/sorai-toolkit.desktop"
 install -m 644 "$REPO_ROOT/resources/icons/appIcon.png" "$STAGE_DIR/usr/share/pixmaps/sorai-toolkit.png"
+install -m 644 "$PKG_DIR"/context-menu.generated/*.desktop "$STAGE_DIR/usr/share/kio/servicemenus/"
 
 COMMON_ARGS=(
   -s dir

@@ -11,6 +11,8 @@ import { useTranslation } from './hooks/useTranslation.js'
 import { useUpdateChecker } from './hooks/useUpdateChecker.js'
 import { useCloseBehavior } from './hooks/useCloseBehavior.js'
 import { useSingleInstance } from './hooks/useSingleInstance.js'
+import { ensureFinderServicesInstalled } from './lib/macFinderServices.js'
+import { ensureNautilusScriptsInstalled } from './lib/linuxNautilusScripts.js'
 
 // Hub shell: owns which tool is currently shown. Plain conditional
 // rendering, not a router -- there's no history/deep-linking need for a
@@ -38,6 +40,21 @@ function App() {
     if (pendingLaunch) setCurrentTool('converter')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingLaunch?.seq])
+
+  // macOS Finder Quick Actions / GNOME Nautilus Scripts have no install-
+  // time hook the way Windows' registry (installer.iss) or KDE Dolphin's
+  // ServiceMenu (packaging/linux/build.sh) do -- see macFinderServices.js
+  // / linuxNautilusScripts.js for why the app self-installs these itself,
+  // idempotently, on every primary-instance startup. Each is a no-op on
+  // the "wrong" platform (checked via EstellaLib.platform.getOS() /
+  // XDG_CURRENT_DESKTOP respectively) and swallows its own errors, so a
+  // failure here never blocks startup or the normal file-open flow.
+  useEffect(() => {
+    if (!isPrimary || !ready) return
+    const os = window.EstellaLib?.platform.getOS()
+    if (os === 'Darwin') ensureFinderServicesInstalled().catch(() => {})
+    if (os === 'Linux') ensureNautilusScriptsInstalled().catch(() => {})
+  }, [isPrimary, ready])
 
   // Reuses HubMenu.jsx's own `hub.tool.<id>.label` dict keys instead of a
   // separate TOOL_LABELS map, so the breadcrumb and the hub card never

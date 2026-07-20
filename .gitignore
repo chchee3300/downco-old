@@ -27,6 +27,11 @@
 # installer build -- never hand-edited, never stale in git.
 /packaging/windows/context-menu.generated.iss
 
+# Same convention, Linux side -- regenerated fresh by
+# packaging/linux/generate-context-menu-registry.mjs before every
+# .deb/.rpm build.
+/packaging/linux/context-menu.generated/
+
 # Neutralinojs client (minified)
 neutralino.js
 
