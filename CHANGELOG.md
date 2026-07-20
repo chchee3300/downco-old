@@ -1,3 +1,10 @@
+## [1.10.2](https://github.com/chchee3300/sorai-toolkit/compare/v1.10.1...v1.10.2) (2026-07-20)
+
+
+### Bug Fixes
+
+* window can come up genuinely iconic, not just mis-placed ([ef978b9](https://github.com/chchee3300/sorai-toolkit/commit/ef978b9c5f5f4fe64da0a88cacc62d9d5b6464cf))
+
 ## [1.10.1](https://github.com/chchee3300/sorai-toolkit/compare/v1.10.0...v1.10.1) (2026-07-20)
 
 
