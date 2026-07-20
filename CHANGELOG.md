@@ -1,3 +1,10 @@
+## [1.10.1](https://github.com/chchee3300/sorai-toolkit/compare/v1.10.0...v1.10.1) (2026-07-20)
+
+
+### Bug Fixes
+
+* window opens off-screen (unhoverable) on primary-instance show ([0180f5d](https://github.com/chchee3300/sorai-toolkit/commit/0180f5d9d3ec8f915eba417f3a99b72df3dde17f))
+
 # [1.10.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.9.0...v1.10.0) (2026-07-20)
 
 
