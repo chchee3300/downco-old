@@ -1,3 +1,11 @@
+# [1.10.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.9.0...v1.10.0) (2026-07-20)
+
+
+### Features
+
+* background tray, settings page, and Windows Explorer context menu ([e281afe](https://github.com/chchee3300/sorai-toolkit/commit/e281afee66139f94d55fca06ef7f6d9f54c3e50f))
+* macOS Finder and Linux (Dolphin/Nautilus) context-menu integration ([7b7d224](https://github.com/chchee3300/sorai-toolkit/commit/7b7d224d732a326676b791c5eb660febd7b9e22e))
+
 # [1.9.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.8.0...v1.9.0) (2026-07-18)
 
 
