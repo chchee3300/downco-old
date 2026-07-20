@@ -184,8 +184,10 @@ function toPowerShellEncodedCommand(script) {
 // Finds the target PID's own top-level window via EnumWindows (not
 // Get-Process.MainWindowHandle, which is unreliable for a window
 // currently hidden by Feature A's minimize-to-tray) and brings it
-// forward. Unverified against a real two-process launch as of writing --
-// see the plan's Windows spike step for where this gets actually proven.
+// forward. Verified live against a stuck real window (see
+// forceOwnWindowForeground's comment) -- ShowWindow(9)/SW_RESTORE +
+// SetForegroundWindow measurably flips a real window from IsIconic=true
+// back to false.
 function windowsForegroundScript(pid) {
   return [
     '$sig = @\'',
@@ -217,6 +219,11 @@ function windowsForegroundScript(pid) {
   ].join('\n')
 }
 
+async function runWindowsForegroundScript(pid) {
+  const encoded = toPowerShellEncodedCommand(windowsForegroundScript(pid))
+  await window.Neutralino.os.execCommand(`powershell -NoProfile -NonInteractive -EncodedCommand ${encoded}`)
+}
+
 // Best-effort -- a failure here (wrong window found, wmctrl missing,
 // Wayland refusing focus-steal) is swallowed by the caller. Files still
 // reach the primary instance via the pending-launch file regardless of
@@ -226,8 +233,7 @@ export async function bringExistingInstanceToForeground(pid) {
   const os = window.EstellaLib.platform.getOS()
   try {
     if (os === 'Windows') {
-      const encoded = toPowerShellEncodedCommand(windowsForegroundScript(pid))
-      await window.Neutralino.os.execCommand(`powershell -NoProfile -NonInteractive -EncodedCommand ${encoded}`)
+      await runWindowsForegroundScript(pid)
       return
     }
     if (os === 'Darwin') {
@@ -239,6 +245,30 @@ export async function bringExistingInstanceToForeground(pid) {
     // focus-stealing outright regardless -- see useCloseBehavior.js's
     // sibling comment on the same platform limitation for tray.
     await window.Neutralino.os.execCommand(`wmctrl -a "SORAI Toolkit"`)
+  } catch (e) {
+    /* best-effort, see comment above */
+  }
+}
+
+// Windows-only workaround for a real observed bug: becoming primary and
+// calling window.show()+focus() can leave the window in a genuinely
+// iconic/minimized state (confirmed live via Win32 IsIconic/GetWindowRect
+// -- visible in the taskbar, but un-clickable/un-restorable by the user)
+// specifically when launched through neu run's multi-layer cmd.exe spawn
+// chain (dev-watch.mjs -> cmd.exe -> neu CLI -> cmd.exe -> native binary
+// -- see the neu CLI's own runner.js/spawn-command dependency, outside
+// this repo). Windows' ShowWindow(SW_SHOWDEFAULT) semantics can inherit a
+// hidden/minimized show-state from any ancestor process's STARTUPINFO
+// through that many nested layers; a double-installed app launched
+// directly (no neu run in the chain) does not hit this. Reuses the exact
+// EnumWindows+ShowWindow(SW_RESTORE)+SetForegroundWindow script already
+// proven (live, manually) to flip a stuck window's IsIconic from true to
+// false, targeted at our OWN pid instead of a remote one. Best-effort --
+// failure here is swallowed, same reasoning as bringExistingInstanceToForeground.
+export async function forceOwnWindowForeground() {
+  if (window.EstellaLib.platform.getOS() !== 'Windows') return
+  try {
+    await runWindowsForegroundScript(Number(window.NL_PID))
   } catch (e) {
     /* best-effort, see comment above */
   }
