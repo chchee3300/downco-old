@@ -4,10 +4,10 @@
 
 **Blocked by:** 01（Plugin 骨架、跨 repo 開發模式、E2E 測試框架）
 
-**Status:** ready-for-agent
+**Status:** done（拖曳待使用者真機驗證）
 
-- [ ] 拖曳改用 Tauri 原生的 drag-drop 事件，遮罩由 enter、leave、drop 事件驅動；Neutralino 的 filesDropped、瀏覽器模式的 dataTransfer 讀檔和分塊複製流程全部移除；刪除 Phase 0 的探測器
-- [ ] 來源資訊探測和縮圖指令都在 Converter plugin 的 Rust 端，解析部分用 `cargo test` 覆蓋
-- [ ] 縮圖透過 asset protocol 提供，scope 只開放 app 的暫存資料夾
-- [ ] E2E：替換瀏覽對話框後加入多個 fixture 檔（包含檔名有中文和空白的），能看到縮圖和資訊卡；重複加入同一個檔案時會被略過
+- [x] 拖曳改用 Tauri 原生的 drag-drop 事件，遮罩由 enter、leave、drop 事件驅動；Neutralino 的 filesDropped、瀏覽器模式的 dataTransfer 讀檔和分塊複製流程全部移除；刪除 Phase 0 的探測器
+- [x] 來源資訊探測和縮圖指令都在 Converter plugin 的 Rust 端，解析部分用 `cargo test` 覆蓋
+- [x] 縮圖透過 asset protocol 提供，scope 只開放 app 的暫存資料夾
+- [x] E2E：替換瀏覽對話框後加入多個 fixture 檔（包含檔名有中文和空白的），能看到縮圖和資訊卡；重複加入同一個檔案時會被略過
 - [ ] 拖曳需要使用者用真實滑鼠驗證：多個檔案、檔名有中文和空白、資料夾、類型混雜
