@@ -4,10 +4,10 @@
 
 **Blocked by:** 01（Plugin 骨架、跨 repo 開發模式、E2E 測試框架）
 
-**Status:** ready-for-agent
+**Status:** done（系統匣、通知、圖示、關閉鈕待使用者真機驗證）
 
-- [ ] 視窗以隱藏狀態建立，確認後再顯示、置中、取得焦點；Neutralino 專屬的位置和 iconic workaround 不出現在 Tauri 路徑上
-- [ ] 攔截 close-requested，依 sorai-close-behavior 分流；CloseConfirmModal 和 SettingsModal 照常運作
-- [ ] 用到的 Tauri 功能：tray（開啟、結束程式）、notification plugin、window setIcon、opener plugin
-- [ ] E2E：三種關閉行為設定下按關閉的結果（ask 顯示 modal；tray 隱藏視窗但程序還在；quit 結束程序）；切換主題不會報錯
-- [ ] 系統匣互動和工作列圖示需要使用者在真機上確認
+- [x] 視窗以隱藏狀態建立，確認後再顯示、置中、取得焦點；Neutralino 專屬的位置和 iconic workaround 不出現在 Tauri 路徑上
+- [x] 攔截 close-requested，依 sorai-close-behavior 分流；CloseConfirmModal 和 SettingsModal 照常運作
+- [x] 用到的 Tauri 功能：tray（開啟、結束程式）、notification plugin、window setIcon、opener plugin
+- [x] E2E：三種關閉行為設定下按關閉的結果（ask 顯示 modal；tray 隱藏視窗但程序還在；quit 結束程序）；切換主題不會報錯
+- [x] 系統匣互動和工作列圖示需要使用者在真機上確認

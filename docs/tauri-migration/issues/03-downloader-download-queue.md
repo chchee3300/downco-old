@@ -4,9 +4,9 @@
 
 **Blocked by:** 02（Downloader：貼網址抓 metadata）
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Downloader plugin 提供子程序執行器：開始 job 時回傳 job id，推送 progress、log、finished 事件，可以依 job id 取消，並且有逾時保險
-- [ ] 指令建構和進度解析都在 Rust 端，用 `cargo test` 覆蓋；指令建構包括格式選擇器、--ffmpeg-location 指向 ffmpeg sidecar、合併成 mp4、分開存檔時的輸出檔名、progress-template
-- [ ] 選擇下載資料夾時走集中的對話框模組
-- [ ] E2E（改寫現有的 test_download）：選 video-only 格式下載，用 ffmpeg 確認輸出同時有 Video 和 Audio 串流；只下載音訊時有產生輸出檔；取消後項目狀態是 cancelled，而且沒有殘留的 yt-dlp 程序
+- [x] Downloader plugin 提供子程序執行器：開始 job 時回傳 job id，推送 progress、log、finished 事件，可以依 job id 取消，並且有逾時保險
+- [x] 指令建構和進度解析都在 Rust 端，用 `cargo test` 覆蓋；指令建構包括格式選擇器、--ffmpeg-location 指向 ffmpeg sidecar、合併成 mp4、分開存檔時的輸出檔名、progress-template
+- [x] 選擇下載資料夾時走集中的對話框模組
+- [x] E2E（改寫現有的 test_download）：選 video-only 格式下載，用 ffmpeg 確認輸出同時有 Video 和 Audio 串流；只下載音訊時有產生輸出檔；取消後項目狀態是 cancelled，而且沒有殘留的 yt-dlp 程序

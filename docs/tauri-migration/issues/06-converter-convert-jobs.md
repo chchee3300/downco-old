@@ -4,9 +4,9 @@
 
 **Blocked by:** 05（Converter：拖曳和瀏覽加檔、來源資訊卡、縮圖）
 
-**Status:** ready-for-agent
+**Status:** done（PDF/img2pdf 由 08 處理）
 
-- [ ] ffmpeg 指令建構、目標大小的位元率計算、進度解析、大小預估、檔名衝突避開，都搬到 Converter plugin 的 Rust 端，用 `cargo test` 覆蓋（承接現有純邏輯測試的案例）
-- [ ] Converter plugin 有自己的子程序執行器，跟 Downloader 那份重複，加上 ponytail 註記
-- [ ] Converter 不再使用 window.EstellaLib 裡對應的指令類模組
-- [ ] E2E（改寫現有的 test_conversion）：影片、音訊、圖片各轉一次，用 ffmpeg 驗證輸出；目標大小模式的輸出低於門檻；取消有效
+- [x] ffmpeg 指令建構、目標大小的位元率計算、進度解析、大小預估、檔名衝突避開，都搬到 Converter plugin 的 Rust 端，用 `cargo test` 覆蓋（承接現有純邏輯測試的案例）
+- [x] Converter plugin 有自己的子程序執行器，跟 Downloader 那份重複，加上 ponytail 註記
+- [x] Converter 不再使用 window.EstellaLib 裡對應的指令類模組
+- [x] E2E（改寫現有的 test_conversion）：影片、音訊、圖片各轉一次，用 ffmpeg 驗證輸出；目標大小模式的輸出低於門檻；取消有效
