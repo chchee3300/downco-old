@@ -8,6 +8,16 @@
   "permissions": [
     "core:default",
     "dialog:default",
+    "notification:default",
+    "opener:default",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-center",
+    "core:window:allow-unminimize",
+    "core:window:allow-set-focus",
+    "core:window:allow-set-icon",
+    "core:window:allow-close",
+    "core:window:allow-destroy",
     "sorai-converter:default",
     "sorai-downloader:default"
   ]

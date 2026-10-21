@@ -7,6 +7,7 @@ import {
   enqueuePendingLaunch,
   listQueueEntryNames,
 } from '../lib/instanceLock.js'
+import { revealMainWindow } from '../lib/mainWindow.js'
 
 // Debounce window: Explorer/Finder/Files fires one invocation PER
 // SELECTED FILE for a multi-selection right-click (see instanceLock.js's
@@ -42,6 +43,8 @@ export function useSingleInstance() {
       // Plain Vite dev/preview session, no Neutralino runtime at all --
       // render normally as if we're the only (primary) instance, same
       // reasoning main.jsx's own `if (window.Neutralino)` guard uses.
+      // Under Tauri the window starts hidden; reveal it as the primary.
+      revealMainWindow({ center: true }).catch(console.error)
       setIsPrimary(true)
       setReady(true)
       return undefined

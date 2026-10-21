@@ -3,6 +3,7 @@ import { useTranslation } from '../hooks/useTranslation.js'
 import versionInfo from '../version.json'
 import logoDark from '../../resources/icons/appIcon-dark.png'
 import logoLight from '../../resources/icons/appIcon-light.png'
+import { openUrl } from '@tauri-apps/plugin-opener'
 
 const HOMEPAGE_URL = 'https://github.com/chchee3300/sorai-toolkit'
 
@@ -122,7 +123,7 @@ export default function AboutModal({ open, onClose, theme, updater }) {
             <dd>MIT</dd>
             <dt>{t('about.homepage')}</dt>
             <dd>
-              <button type="button" className="about-modal-link" onClick={() => window.Neutralino.os.open(HOMEPAGE_URL)}>
+              <button type="button" className="about-modal-link" onClick={() => openUrl(HOMEPAGE_URL)}>
                 {HOMEPAGE_URL}
               </button>
             </dd>
@@ -137,7 +138,7 @@ export default function AboutModal({ open, onClose, theme, updater }) {
                 key={item.name}
                 type="button"
                 className="about-modal-link"
-                onClick={() => window.Neutralino.os.open(item.url)}
+                onClick={() => openUrl(item.url)}
               >
                 {item.name} <span className="about-modal-link-note">({item.note})</span>
               </button>
@@ -146,7 +147,7 @@ export default function AboutModal({ open, onClose, theme, updater }) {
           <button
             type="button"
             className="about-modal-link about-modal-full-link"
-            onClick={() => window.Neutralino.os.open(FULL_LICENSES_URL)}
+            onClick={() => openUrl(FULL_LICENSES_URL)}
           >
             {t('about.viewFullLicenses')}
           </button>
