@@ -110,7 +110,7 @@
 - **Converter、Downloader 各自做成 Tauri v2 plugin**，各 repo 的內容：
   - Rust crate，以 plugin 形式提供
   - JS 套件：同時 export React 元件和這個 plugin 的 `invoke` 包裝
-- **hub 透過 cargo git dependency 和 npm git dependency 消費兩個 plugin**，並在 Rust 端註冊。
+- **hub 消費兩個 plugin 的方式**：JS 和 Rust 都來自同一份 npm git dependency（工具套件連同 Rust crate 一起打包），hub 的 Cargo 用 path dependency 指向一個自動產生的連結：有 sibling checkout 就指到 sibling，否則指到 `node_modules` 裡的那份。之所以不用 cargo git dependency 加 patch，是因為 cargo 在套 patch 之前仍會抓原本的 git 來源，本機開發就會被迫依賴 push（ticket 01 實測後決定）。
 - **sidecar 由 hub 宣告與打包**：plugin 用 sidecar 名稱呼叫（`ffmpeg`、`yt-dlp`、`qpdf`、`img2pdf`），不自己打包 binary。plugin 的文件要寫明「宿主 app 必須提供這些 sidecar」的契約。
   - qpdf 的 DLL 走 Tauri `resources`，跟 qpdf 主程式放在同一個目錄。
   - 要確認 qpdf 以 sidecar 執行時找得到這些 DLL；找不到的話，就改成 qpdf 整包當 resource、用完整路徑執行。
