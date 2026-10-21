@@ -23,6 +23,9 @@ async fn sidecar_versions(app: tauri::AppHandle) -> Result<Vec<String>, String> 
 pub fn run() {
   tauri::Builder::default()
     .plugin(tauri_plugin_shell::init())
+    .plugin(tauri_plugin_dialog::init())
+    .plugin(tauri_plugin_sorai_converter::init())
+    .plugin(tauri_plugin_sorai_downloader::init())
     .invoke_handler(tauri::generate_handler![sidecar_versions])
     .setup(|app| {
       if cfg!(debug_assertions) {

@@ -25,6 +25,8 @@ import '../resources/js/lib/img2pdf-commands.js'
 import '../resources/js/lib/progress-parser.js'
 import '../resources/js/lib/size-estimate.js'
 import '../resources/js/lib/range-fill.js'
+// Installs window.SoraiDialogs (native file/folder pickers, E2E-replaceable).
+import './lib/dialogs.js'
 
 // Neutralino.init() only functions when this app is actually served by a
 // running `neu` process (window.NL_PORT/NL_TOKEN injected by neu's dev

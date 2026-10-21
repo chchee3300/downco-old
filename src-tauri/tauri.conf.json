@@ -6,8 +6,8 @@
   "build": {
     "frontendDist": "../web-dist",
     "devUrl": "http://localhost:5173",
-    "beforeDevCommand": "node scripts/copy-sidecars.mjs && npm run dev",
-    "beforeBuildCommand": "node scripts/copy-sidecars.mjs && npm run build"
+    "beforeDevCommand": "node scripts/copy-sidecars.mjs && node scripts/siblings.mjs && npm run dev",
+    "beforeBuildCommand": "node scripts/copy-sidecars.mjs && node scripts/siblings.mjs && npm run build"
   },
   "app": {
     "windows": [
