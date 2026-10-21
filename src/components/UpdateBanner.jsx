@@ -5,7 +5,7 @@ import { useTranslation } from '../hooks/useTranslation.js'
 // modal, since a new version is never urgent enough to interrupt an
 // in-progress conversion or settings edit. See useUpdateChecker.js for the
 // status machine (idle/checking/available/downloading/installing/
-// downloaded/error/none) and the Windows-vs-macOS/Linux install split.
+// error/none) and the official-vs-self-built install split.
 // updateError/latestRelease.name are raw strings sourced from GitHub/the OS
 // (network errors, release notes) -- left untranslated, same "alerts and
 // external error text stay English for now" scope decision as the other
@@ -67,16 +67,6 @@ export default function UpdateBanner({ status, latestRelease, updateError, manua
 
       {status === 'installing' && (
         <div className="update-toast-title">{t('updateBanner.installing')}</div>
-      )}
-
-      {status === 'downloaded' && (
-        <>
-          <div className="update-toast-title">{t('updateBanner.downloaded', { version })}</div>
-          <div className="update-toast-body">{t('updateBanner.downloadedBody')}</div>
-          <div className="update-toast-actions">
-            <button className="btn btn-ghost btn-xs" onClick={onDismiss}>{t('updateBanner.dismiss')}</button>
-          </div>
-        </>
       )}
 
       {status === 'error' && (

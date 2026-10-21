@@ -100,7 +100,7 @@ export default function AboutModal({ open, onClose, theme, updater }) {
               ONLY surface for "a newer version exists". Official builds
               show it too, as a harmless bonus alongside the toast. The
               button always calls the same updater.installUpdate -- it
-              already forks internally (silent download+install vs. just
+              already forks internally (updater plugin install vs. just
               opening the GitHub release page) based on that same flag, so
               this component doesn't need to know which case it's in beyond
               picking the right label. */}

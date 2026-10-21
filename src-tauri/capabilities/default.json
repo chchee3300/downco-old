@@ -8,6 +8,9 @@
   "permissions": [
     "core:default",
     "dialog:default",
+    "opener:default",
+    "process:allow-restart",
+    "updater:default",
     "sorai-converter:default",
     "sorai-downloader:default"
   ]

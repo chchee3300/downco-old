@@ -19,6 +19,7 @@
 - **Downloader 下載佇列（ticket 03）**：plugin 指令 `start_download`/`cancel_download`，Rust 端建指令、解析進度、用 shell plugin 的 `set_process_group(true)` 跑 `yt-dlp` sidecar（取消時整棵程序樹一起殺；`--ffmpeg-location` 指向同目錄的 `ffmpeg` sidecar），細節見 Downloader repo CLAUDE.md。hub 端不用改 Rust/capability。舊的 `awaitWithCancelGuard`（下面「已知小坑」）在 Tauri 版 Downloader 由 Rust 的 3 秒逾時保險取代。E2E：`tests/e2e/downloader-download.test.mjs`（合併 video-only+bestaudio → ffmpeg 確認有 Video+Audio、只下載音訊、關掉合併 → 兩個帶 format id 的檔案、Big Buck Bunny 下載中取消 → 狀態 Cancelled 且這個 worktree 的 `src-tauri/target` 底下沒有殘留 yt-dlp/ffmpeg 程序），需要網路；取代 `tests/test_download.js`。
 - **Converter 加檔／縮圖（ticket 05）**：拖曳走 Tauri 原生 `onDragDropEvent`、瀏覽走 `SoraiDialogs`，來源資訊與縮圖在 converter plugin 的 `probe_source`（細節見 Converter repo CLAUDE.md）。hub 這邊的配合：`tauri.conf.json` 開 `app.security.assetProtocol`，**scope 只有 `$TEMP/sorai-toolkit/thumbnails/*`**（plugin 的縮圖資料夾，`THUMBNAIL_SUBDIR` 常數；兩邊要一起改），`Cargo.toml` 的 `tauri` 因此要有 `protocol-asset` feature（tauri-build 會檢查 config 跟 feature 一致）。Trim/Crop 預覽需要的「使用者檔案動態加入 scope」還沒做（ticket 07）。E2E：`tests/e2e/converter-files.test.mjs`。
 - **拖曳驗證要用真實滑鼠**：Playwright 模擬的 DOM drag 不會走 Tauri 的原生 drop 路徑，測不出來。
+- **自動更新（ticket 11）**：檢查邏輯不變（`useUpdateChecker.js` 打 GitHub Releases API，`IS_OFFICIAL_BUILD` 分流也不變），只換掉 `installUpdate`：官方版走 `@tauri-apps/plugin-updater` 的 `check()` → `downloadAndInstall()` → `@tauri-apps/plugin-process` 的 `relaunch()`（Windows 上 NSIS `installMode: "passive"` 會自己關掉 app）；非官方版用 `@tauri-apps/plugin-opener` 的 `openUrl(html_url)`。curl 下載、`/VERYSILENT`、「下載完開資料夾」（`downloaded` 狀態與對應字典 key）都刪掉了。Rust 端註冊 `tauri-plugin-updater`/`-process`/`-opener`，capability 加 `opener:default`、`process:allow-restart`、`updater:default`。`tauri.conf.json` 的 `plugins.updater.endpoints` 指向 `releases/latest/download/latest.json`，**`pubkey` 目前是佔位字串 `PLACEHOLDER-UPDATER-PUBKEY-FILLED-BY-TICKET-14`**——金鑰由維護者產生（ticket 14 填入，並開 `bundle.createUpdaterArtifacts`），在那之前官方版按「立即更新」會在簽章驗證或找不到 latest.json 時失敗、錯誤顯示在 toast。E2E `tests/e2e/updater.test.mjs`：`page.route` 攔 GitHub API 偽造 v999.0.0、`page.route` 攔 `http://ipc.localhost/plugin%3Aopener%7Copen_url`（Tauri IPC 在 Windows 走這個 fetch，Playwright 攔得到；`__TAURI_INTERNALS__.invoke` 是 non-writable 沒辦法包，所以要攔 IPC 請求才不會真的開瀏覽器），驗證非官方 build 沒 toast、兩個徽章出現、「關於」按鈕呼叫 `open_url` 帶 release 頁網址。官方版路徑沒有自動測試（需要真的簽章 release）。
 
 ## 現況（Phase D）
 - `src/App.jsx` 是 hub 殼層：`currentTool` state 切換 `HubMenu`/`ConverterApp`/`DownloaderApp`，沒有 router。兩個工具都從各自的 npm 套件 import（`sorai-toolkit-converter`、`sorai-toolkit-downloader`），不是本地檔案。
@@ -66,7 +67,7 @@
 - **`defaultMode` 必須是 `"window"`**，不是 `"browser"`。
 - **`modes.window.enableInspector` 必須是 `false`**。
 - **`src/main.jsx` 必須監聽 `windowClose` 並呼叫 `Neutralino.app.exit()`**（`exitProcessOnClose: false` 需要這個才能讓關閉鈕生效）。
-- **`useUpdateChecker.js` 下載 release asset 不能用瀏覽器 `fetch()`**（CORS 會擋掉），要用 `Neutralino.os.execCommand` 呼叫 `curl`。
+- **`useUpdateChecker.js` 下載 release asset 不能用瀏覽器 `fetch()`**（CORS 會擋掉），要用 `Neutralino.os.execCommand` 呼叫 `curl`。（Tauri 版已改用 updater plugin，這條不再適用）
 - **`@neutralinojs/neu` 鎖在 `11.7.1`**（`latest` 的 `uuid` 依賴是 ESM-only，會讓 `npm install -g` 直接崩潰）。
 - **解壓縮 zip 不能假設裸指令 `tar` 支援**（Windows 用 `System32\tar.exe` 全路徑，macOS/Linux 用 `unzip`）。
 - **Linux `.deb`/`.rpm` 宣告 `gtk3`/`webkit2gtk` 依賴**（deb: `libgtk-3-0`/`libwebkit2gtk-4.1-0`；rpm: `gtk3`/`webkit2gtk4.1`）——Neutralino 開視窗需要，別拿掉。
