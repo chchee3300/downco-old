@@ -1,4 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
+import { openUrl } from '@tauri-apps/plugin-opener'
+import { relaunch } from '@tauri-apps/plugin-process'
+import { check } from '@tauri-apps/plugin-updater'
 import versionInfo from '../version.json'
 
 // GitHub owner/repo this app is published from -- see .github/workflows/release.yml
@@ -36,52 +39,14 @@ function isNewer(latest, current) {
   return false
 }
 
-// Maps the current OS/arch to the release asset filename pattern produced
-// by packaging/{linux,windows,macos}/build.* (see .releaserc.json's asset
-// list, which is the source of truth for these suffixes).
-function currentAssetPattern() {
-  const os = window.EstellaLib.platform.getOS()
-  if (os === 'Darwin') {
-    return window.NL_ARCH === 'arm64' ? /mac_arm64\.dmg$/i : /mac_x64\.dmg$/i
-  }
-  if (os === 'Linux') return null // no single package format to auto-pick -- see installUpdate
-  return /setup.*win_x64\.exe$/i // Windows, or NL_OS missing (pre-load default)
-}
-
-function pickAsset(assets) {
-  const pattern = currentAssetPattern()
-  if (!pattern) return null
-  return (assets || []).find((a) => pattern.test(a.name)) || null
-}
-
-// GitHub's release-asset CDN (the redirect target of browser_download_url)
-// doesn't send Access-Control-Allow-Origin, so a browser-side fetch() from
-// this app's own http://localhost origin is blocked by CORS before a byte
-// of the body is ever readable -- confirmed via a real download attempt
-// (TypeError: Failed to fetch). curl runs outside the webview entirely, so
-// it isn't subject to that restriction. This is why checkForUpdate's fetch
-// to api.github.com still works fine (that endpoint *does* send permissive
-// CORS headers) while downloading the actual asset never could.
-async function downloadFile(url, destPath) {
-  const res = await window.Neutralino.os.execCommand(`curl -sL -o "${destPath}" "${url}"`)
-  if (res.exitCode !== 0) {
-    throw new Error(`Download failed (curl exit ${res.exitCode}): ${(res.stdErr || res.stdOut || '').slice(0, 300)}`)
-  }
-}
-
-// Checks GitHub Releases for a newer version on mount and exposes an
-// install flow: Windows downloads the installer and runs it silently with
-// /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS (matching installer.iss's
-// CloseApplications=yes), then quits itself so the installer can replace
-// the running exe. macOS/Linux can't self-replace this cleanly (unsigned
-// .dmg hits Gatekeeper's quarantine flag; .deb/.rpm need a privilege
-// prompt to install) -- those just download the asset and reveal it in
-// the OS file manager for the user to finish. That whole silent-replace
-// flow only makes sense for the exact binaries the official CI actually
-// produced -- installUpdate below only takes it on IS_OFFICIAL_BUILD;
-// self-built copies get a much simpler "open the release page" fallback.
+// Checks GitHub Releases for a newer version on mount (both build kinds).
+// Installing forks on IS_OFFICIAL_BUILD: official builds hand off to the
+// Tauri updater plugin (latest.json endpoint + signature check configured in
+// src-tauri/tauri.conf.json `plugins.updater`), then relaunch; self-built
+// copies just open the release page -- the official installer would
+// overwrite a build that isn't theirs.
 export function useUpdateChecker() {
-  const [status, setStatus] = useState('idle') // idle | checking | available | none | error | downloading | downloaded | installing
+  const [status, setStatus] = useState('idle') // idle | checking | available | none | error | downloading | installing
   const [latestRelease, setLatestRelease] = useState(null)
   const [updateError, setUpdateError] = useState(null)
   // Whether the in-flight/last check was user-initiated (hamburger's
@@ -121,39 +86,23 @@ export function useUpdateChecker() {
     setUpdateError(null)
 
     if (!IS_OFFICIAL_BUILD) {
-      // No download/silent-install for a self-built copy -- there's no
-      // guarantee the release asset even matches what's running locally.
-      // Handing off to the browser (same CORS-free path as every other
-      // Neutralino.os.open link in this app) is the only thing that's
-      // always correct: it just leaves it to the user to grab the right
-      // asset themselves. Status is left untouched (still 'available') so
-      // the AboutModal section stays visible if they come back later.
-      await window.Neutralino.os.open(latestRelease.html_url)
+      // Status stays 'available' so the AboutModal section is still there
+      // if they come back later.
+      await openUrl(latestRelease.html_url)
       return
     }
 
     setStatus('downloading')
     try {
-      const asset = pickAsset(latestRelease.assets)
-      if (!asset) throw new Error('No matching download found for this platform in the latest release')
-
-      const downloadsDir = await window.Neutralino.os.getPath('downloads')
-      const destPath = window.EstellaLib.platform.joinPath(downloadsDir, asset.name)
-      await downloadFile(asset.browser_download_url, destPath)
-
-      if (window.EstellaLib.platform.isWindows()) {
-        setStatus('installing')
-        await window.Neutralino.os.spawnProcess(
-          `"${destPath}" /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS`,
-        )
-        await window.Neutralino.app.exit()
-      } else {
-        await window.Neutralino.os.open(downloadsDir)
-        setStatus('downloaded')
-      }
+      const update = await check()
+      if (!update) throw new Error('No signed update found for this platform in the latest release')
+      // On Windows the NSIS installer (installMode "passive") exits the app
+      // itself; relaunch covers macOS/Linux.
+      await update.downloadAndInstall((e) => e.event === 'Finished' && setStatus('installing'))
+      await relaunch()
     } catch (e) {
       console.error('Update install failed', e)
-      setUpdateError(e.message || String(e))
+      setUpdateError(e?.message || String(e))
       setStatus('available')
     }
   }, [latestRelease])

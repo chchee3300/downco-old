@@ -26,6 +26,13 @@
       "csp": null
     }
   },
+  "plugins": {
+    "updater": {
+      "pubkey": "PLACEHOLDER-UPDATER-PUBKEY-FILLED-BY-TICKET-14",
+      "endpoints": ["https://github.com/chchee3300/sorai-toolkit/releases/latest/download/latest.json"],
+      "windows": { "installMode": "passive" }
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",

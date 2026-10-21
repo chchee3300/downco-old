@@ -16,6 +16,7 @@
 - **原生對話框集中在 `src/lib/dialogs.js`**：安裝 `window.SoraiDialogs = { openFiles(opts) → string[]|null, openFolder(opts) → string|null }`（`@tauri-apps/plugin-dialog`）。hub 跟工具都要在呼叫當下查 `window.SoraiDialogs.*`（不要先存起函式），E2E 才能替換。
 - **E2E**：`npm run test:e2e [-- <filter>]`（`tests/e2e/run.mjs`）：啟動 `tauri dev`、等 CDP 就緒、找到 devUrl 那個 page、跑所有 `tests/e2e/*.test.mjs`（`export const tests = { '名稱': async ({ page, browser }) => {} }`）、最後 `taskkill /T` 整棵程序樹。每次用全新的暫存 WebView2 profile（localStorage 乾淨），並把 `sorai-lang` 設成 `en` 後 reload（新 profile 會跟系統語系走成繁中，測試才能比對英文 UI 文字）；CDP port 已被佔用就拒跑；失敗時印 tauri dev log 尾段（log 路徑開頭會印）。helpers：`invoke(page, cmd, args)`、`stubDialogs(page, {...})`。冒煙測試 `smoke.test.mjs`：兩張卡片、兩個 plugin ping、對話框可替換。舊的 `tests/test_*.js` 還是 Neutralino 版，之後的 ticket 逐一搬過來。
 - **拖曳驗證要用真實滑鼠**：Playwright 模擬的 DOM drag 不會走 Tauri 的原生 drop 路徑，測不出來。
+- **自動更新（ticket 11）**：檢查邏輯不變（`useUpdateChecker.js` 打 GitHub Releases API，`IS_OFFICIAL_BUILD` 分流也不變），只換掉 `installUpdate`：官方版走 `@tauri-apps/plugin-updater` 的 `check()` → `downloadAndInstall()` → `@tauri-apps/plugin-process` 的 `relaunch()`（Windows 上 NSIS `installMode: "passive"` 會自己關掉 app）；非官方版用 `@tauri-apps/plugin-opener` 的 `openUrl(html_url)`。curl 下載、`/VERYSILENT`、「下載完開資料夾」（`downloaded` 狀態與對應字典 key）都刪掉了。Rust 端註冊 `tauri-plugin-updater`/`-process`/`-opener`，capability 加 `opener:default`、`process:allow-restart`、`updater:default`。`tauri.conf.json` 的 `plugins.updater.endpoints` 指向 `releases/latest/download/latest.json`，**`pubkey` 目前是佔位字串 `PLACEHOLDER-UPDATER-PUBKEY-FILLED-BY-TICKET-14`**——金鑰由維護者產生（ticket 14 填入，並開 `bundle.createUpdaterArtifacts`），在那之前官方版按「立即更新」會在簽章驗證或找不到 latest.json 時失敗、錯誤顯示在 toast。E2E `tests/e2e/updater.test.mjs`：`page.route` 攔 GitHub API 偽造 v999.0.0、`page.route` 攔 `http://ipc.localhost/plugin%3Aopener%7Copen_url`（Tauri IPC 在 Windows 走這個 fetch，Playwright 攔得到；`__TAURI_INTERNALS__.invoke` 是 non-writable 沒辦法包，所以要攔 IPC 請求才不會真的開瀏覽器），驗證非官方 build 沒 toast、兩個徽章出現、「關於」按鈕呼叫 `open_url` 帶 release 頁網址。官方版路徑沒有自動測試（需要真的簽章 release）。
 
 ## 現況（Phase D）
 - `src/App.jsx` 是 hub 殼層：`currentTool` state 切換 `HubMenu`/`ConverterApp`/`DownloaderApp`，沒有 router。兩個工具都從各自的 npm 套件 import（`sorai-toolkit-converter`、`sorai-toolkit-downloader`），不是本地檔案。
@@ -63,7 +64,7 @@
 - **`defaultMode` 必須是 `"window"`**，不是 `"browser"`。
 - **`modes.window.enableInspector` 必須是 `false`**。
 - **`src/main.jsx` 必須監聽 `windowClose` 並呼叫 `Neutralino.app.exit()`**（`exitProcessOnClose: false` 需要這個才能讓關閉鈕生效）。
-- **`useUpdateChecker.js` 下載 release asset 不能用瀏覽器 `fetch()`**（CORS 會擋掉），要用 `Neutralino.os.execCommand` 呼叫 `curl`。
+- **`useUpdateChecker.js` 下載 release asset 不能用瀏覽器 `fetch()`**（CORS 會擋掉），要用 `Neutralino.os.execCommand` 呼叫 `curl`。（Tauri 版已改用 updater plugin，這條不再適用）
 - **`@neutralinojs/neu` 鎖在 `11.7.1`**（`latest` 的 `uuid` 依賴是 ESM-only，會讓 `npm install -g` 直接崩潰）。
 - **解壓縮 zip 不能假設裸指令 `tar` 支援**（Windows 用 `System32\tar.exe` 全路徑，macOS/Linux 用 `unzip`）。
 - **Linux `.deb`/`.rpm` 宣告 `gtk3`/`webkit2gtk` 依賴**（deb: `libgtk-3-0`/`libwebkit2gtk-4.1-0`；rpm: `gtk3`/`webkit2gtk4.1`）——Neutralino 開視窗需要，別拿掉。
