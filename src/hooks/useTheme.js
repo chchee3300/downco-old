@@ -1,4 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
+import { getCurrentWindow } from '@tauri-apps/api/window'
+import { imageFromUrl } from '../lib/mainWindow.js'
+import iconDark from '../../resources/icons/appIcon-dark.png'
+import iconLight from '../../resources/icons/appIcon-light.png'
 
 // Hub-owned (relocated here from the Converter repo during the multi-repo
 // restructure — theme is a shell/header concern shared across every tool).
@@ -8,18 +12,10 @@ import { useCallback, useEffect, useState } from 'react'
 const STORAGE_KEY = 'sorai-theme'
 
 // Window/taskbar icon has a matching pair (white mark for dark theme, black
-// mark for light theme -- same contrast-against-background reasoning as any
-// theme-aware logo) swapped at runtime via Neutralino.window.setIcon(),
-// rather than picking one static icon at build time the way
-// neutralino.config.json's own `icon` field necessarily has to (that field
-// only sets the icon for the very first frame before this effect's initial
-// run takes over). Path is resolved the same way neutralino.config.json's
-// `icon` field is -- relative to the project root, not through the web
-// server (window icons load from disk directly, unlike documentRoot).
-const ICON_PATHS = {
-  dark: '/resources/icons/appIcon-dark.png',
-  light: '/resources/icons/appIcon-light.png',
-}
+// mark for light theme) swapped at runtime via Tauri's window.setIcon --
+// needs core:window:allow-set-icon and tauri's `image-png` feature (PNG
+// bytes are decoded on the Rust side).
+const ICONS = { dark: iconDark, light: iconLight }
 
 export function useTheme() {
   const [theme, setTheme] = useState(
@@ -29,7 +25,9 @@ export function useTheme() {
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
     localStorage.setItem(STORAGE_KEY, theme)
-    window.Neutralino?.window.setIcon(ICON_PATHS[theme]).catch(() => {})
+    imageFromUrl(ICONS[theme])
+      .then((img) => getCurrentWindow().setIcon(img))
+      .catch((e) => console.error('setIcon failed', e))
   }, [theme])
 
   const toggleTheme = useCallback(() => {
