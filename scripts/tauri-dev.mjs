@@ -18,7 +18,10 @@ export function tauriDev({ vitePort, cdpPort, userDataDir, stdio = 'inherit' }) 
   for (const line of linkPlugins()) console.log(`plugin ${line}`)
   const devUrl = `http://localhost:${vitePort}`
   // tauri dev only watches src-tauri; sibling crates must be added explicitly.
-  const watch = siblings().flatMap((s) => ['--additional-watch-folders', join(s.dir, 'plugin')])
+  // Only plugin/src: build.rs rewrites plugin/permissions/ on every build, and
+  // watching that (or plugin/target) makes the app rebuild+restart mid-E2E --
+  // worse when other worktrees build against the same sibling concurrently.
+  const watch = siblings().flatMap((s) => ['--additional-watch-folders', join(s.dir, 'plugin', 'src')])
   return spawn(
     process.execPath,
     [join(root, 'node_modules', '@tauri-apps', 'cli', 'tauri.js'), 'dev', '--config', JSON.stringify({ build: { devUrl } }), ...watch],
