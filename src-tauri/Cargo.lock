@@ -3417,8 +3417,11 @@ dependencies = [
 name = "tauri-plugin-sorai-downloader"
 version = "0.1.0"
 dependencies = [
+ "serde",
+ "serde_json",
  "tauri",
  "tauri-plugin",
+ "tauri-plugin-shell",
 ]
 
 [[package]]
