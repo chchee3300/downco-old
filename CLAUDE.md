@@ -6,6 +6,14 @@
 - **每次 commit（不管是這個 hub repo，還是 `sorai-toolkit-converter`/`sorai-toolkit-downloader` 那兩個 repo）完成後，都要同步更新這份 CLAUDE.md**，把這次改動實際影響到的行為/檔案/流程寫進對應章節（通常是「現況」），讓這份文件隨時反映目前程式碼的真實狀態——不要留給下一個 session 自己重新翻程式碼、重新踩一次同樣的坑才發現。小到「加了一個 badge」不必寫，但任何新增的檔案、新的執行期流程、或修正了某個既有假設，都要記。
 - **本機開發一律用 `npm run dev:watch`，不要直接下 `neu run`**（`scripts/dev-watch.mjs`）。原因：Converter/Downloader 是透過 npm git dependency 裝進 `node_modules` 的（`prepare` script 建置一次），改這兩個 repo 自己 checkout 出來的原始碼並不會反映到 hub 的 `node_modules` 裡；而且實測過 `vite build --watch` 本身也不會理會 `node_modules` 裡的變化（rollup watcher 預設排除 `node_modules/**`）。`dev:watch` 做的事：先把兩個工具 repo 的 lib 建置一次、把 `dist/` 複製進 hub 的 `node_modules`、建置 hub 本身，然後啟動 `neu run`；之後只要存檔（不管改的是 hub 自己的 `src/`/`resources/`，還是旁邊 `sorai-toolkit-converter`/`sorai-toolkit-downloader` 兩個 sibling repo 的 `src/`），就會自動重跑同一條鏈，`neu run` 自帶的 `--neu-dev-auto-reload` 負責讓視窗跟著重新整理。預設假設兩個工具 repo 跟 hub 是同一層的 sibling 資料夾（`…/toolkit/sorai-toolkit`、`…/toolkit/sorai-toolkit-converter`、`…/toolkit/sorai-toolkit-downloader`），路徑不同可用 `CONVERTER_REPO`/`DOWNLOADER_REPO` 環境變數覆寫。`fs.watch({ recursive: true })` 只支援 Windows/macOS，Linux 上這支 script 目前不能用。
 
+## Tauri 遷移（`tauri` 分支，進行中）
+- **為什麼搬**：Neutralino v6.8～v6.10 在 WebView2 內容區拖曳檔案完全不觸發（見下面「現況」裡 issue #1795 那條），修正 PR #1845 還沒 merge。Tauri v2 的原生 drag-drop 已在真機驗證可拿到完整檔案路徑（含空白檔名），這是遷移的主要理由。
+- **結構維持三 repo**：hub（這個 repo）是 Tauri app；Converter/Downloader 各自變成 Tauri plugin（Rust crate + React UI），hub 透過 cargo git dependency + npm git dependency 消費。完整規格與 tickets 在 `docs/tauri-migration/`。
+- **本機開發位置**：每個 repo 用 `git worktree` 開 `tauri` 分支到 sibling 資料夾（hub 是 `…/toolkit/sorai-toolkit-tauri`），原本的 Neutralino checkout 保留在原資料夾當參照，做完再 merge 回 master 整個替換。
+- **Phase 0（已完成）**：`src-tauri/`（`tauri init` 產生，identifier `com.soraitoolkit.hub`、視窗尺寸沿用 neutralino.config.json、icon 由 `resources/icons/appIcon.png` 產生）；`tauri-plugin-shell` 跑 sidecar；`scripts/copy-sidecars.mjs` 把 `binaries/<platform>/` 複製成 `src-tauri/binaries/<name>-<target-triple>[.exe]`（Tauri `externalBin` 要求的命名，gitignore），`tauri dev`/`tauri build` 前自動執行。`vite.config.mjs`/`index.html` 已拿掉 Neutralino client。`src/tauri/dropProbe.js` 是暫時的探測器（sidecar 版本 + 拖曳路徑），Phase 2 刪除。
+- **啟動方式**：`npx tauri dev`；要用 Playwright 讀視窗狀態就加 `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9229`，再 `chromium.connectOverCDP('http://127.0.0.1:9229')`。
+- **拖曳驗證要用真實滑鼠**：Playwright 模擬的 DOM drag 不會走 Tauri 的原生 drop 路徑，測不出來。
+
 ## 現況（Phase D）
 - `src/App.jsx` 是 hub 殼層：`currentTool` state 切換 `HubMenu`/`ConverterApp`/`DownloaderApp`，沒有 router。兩個工具都從各自的 npm 套件 import（`sorai-toolkit-converter`、`sorai-toolkit-downloader`），不是本地檔案。
 - Converter/Downloader 的所有元件/hooks 都不在這個 repo 裡——分別活在各自的 repo，透過 `node_modules/<pkg>/dist/index.js`（Vite library build）提供。`package.json` 的 `dependencies` 有兩個 `github:chchee3300/...` 條目，npm install 時會自動觸發各自的 `prepare` script 建置。

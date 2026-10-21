@@ -45,6 +45,8 @@ if (window.Neutralino) {
   // app.exit() this replaced.
 }
 
+if (window.__TAURI_INTERNALS__) import('./tauri/dropProbe.js')
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />
