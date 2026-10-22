@@ -8,18 +8,21 @@
       "@semantic-release/github",
       {
         "assets": [
+          { "path": "release-assets/*_x64-setup.exe", "label": "Windows installer (x86_64)" },
+          { "path": "release-assets/*_mac_arm64.dmg", "label": "macOS installer (Apple Silicon)" },
+          { "path": "release-assets/*_mac_x64.dmg", "label": "macOS installer (Intel)" },
           { "path": "release-assets/*.deb", "label": "Linux .deb (Ubuntu/Debian, x86_64)" },
           { "path": "release-assets/*.rpm", "label": "Linux .rpm (Fedora, x86_64)" },
-          { "path": "release-assets/*setup*win_x64.exe", "label": "Windows installer (x86_64)" },
-          { "path": "release-assets/*mac_x64.dmg", "label": "macOS installer (Intel)" },
-          { "path": "release-assets/*mac_arm64.dmg", "label": "macOS installer (Apple Silicon)" }
+          { "path": "release-assets/*_mac_arm64.app.tar.gz", "label": "macOS app update (Apple Silicon)" },
+          { "path": "release-assets/*_mac_x64.app.tar.gz", "label": "macOS app update (Intel)" },
+          { "path": "release-assets/latest.json", "label": "latest.json" }
         ]
       }
     ],
     [
       "@semantic-release/git",
       {
-        "assets": ["CHANGELOG.md", "src/version.json"],
+        "assets": ["CHANGELOG.md", "src/version.json", "src-tauri/tauri.conf.json"],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
     ]

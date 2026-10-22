@@ -1,20 +1,34 @@
 name: Release
 
+# push to master: semantic-release decides whether/which version to release,
+# every platform is built with `tauri build`, signed for the updater, and
+# published as a GitHub Release with latest.json.
+#
+# Manual run (Actions -> Release -> Run workflow, any branch) with dry_run
+# checked (the default): builds all four packages UNSIGNED under the fake
+# version 0.0.<run number> and uploads them as workflow artifacts only -- no
+# signing secrets needed, no tag, no release. Uncheck dry_run on master to
+# force a real release run.
 on:
   push:
     branches: [master]
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Build all platforms unsigned, upload as artifacts, publish nothing
+        type: boolean
+        default: true
 
 # get-next-version's dry-run push check and the real release job both need
 # write access to create tags/releases.
 permissions:
   contents: write
 
-# playwright (a devDependency, used only by tests/*.js) triggers a
+# playwright (a devDependency, used only by the E2E tests) triggers a
 # multi-hundred-MB browser-binary download on every `npm ci` unless this is
 # set -- no job here runs the test suite, and this was severe enough to hit
-# "No space left on device" building the macOS package. Set globally so
-# every job's `npm ci` skips it.
+# "No space left on device" on the macOS runner. Set globally so every job's
+# `npm ci` skips it.
 env:
   PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
 
@@ -26,173 +40,161 @@ jobs:
   get-next-version:
     runs-on: ubuntu-latest
     outputs:
-      will-release: ${{ steps.version.outputs.will-release }}
-      version: ${{ steps.version.outputs.version }}
+      # build: run the build matrix. publish: sign + release (false on dry runs).
+      build: ${{ steps.version.outputs.will-release || steps.dry.outputs.will-release }}
+      publish: ${{ steps.version.outputs.will-release == 'true' }}
+      version: ${{ steps.version.outputs.version || steps.dry.outputs.version }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      # semantic-release >=25 requires Node >=22.14 -- unrelated to the
-      # Node version the app itself builds with (see build-* jobs below).
+      # semantic-release >=25 requires Node >=22.14.
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm ci
+      - if: ${{ !inputs.dry_run }}
+        run: npm ci
       - id: version
+        if: ${{ !inputs.dry_run }}
         run: node scripts/get-next-version.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-linux:
-    needs: get-next-version
-    if: needs.get-next-version.outputs.will-release == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      # Pinned: @neutralinojs/neu's "latest" (11.7.2) declares "uuid": "^14.0.0"
-      # but its own code still does a CommonJS require('uuid') -- uuid 14 is
-      # ESM-only, so a fresh `npm install -g` of "latest" crashes immediately
-      # with ERR_REQUIRE_ESM. 11.7.1 is the last version pinning uuid to the
-      # CJS-safe ^8.3.2 range. Re-check occasionally for a fixed upstream
-      # release before assuming this pin is still needed.
-      - run: npm install -g @neutralinojs/neu@11.7.1
-      - run: neu update
-      - run: node scripts/copy-neutralino-client.mjs
-      - run: node scripts/write-version.mjs "${{ needs.get-next-version.outputs.version }}"
-      # VITE_OFFICIAL_BUILD is the only signal useUpdateChecker.js uses to
-      # tell "built by this workflow" from "someone's own `npm run build`" --
-      # it gates the in-app silent-download-and-install update flow (see
-      # that file's own comment). Only ever set here, never committed.
-      - run: npm run build
-        env:
-          VITE_OFFICIAL_BUILD: 'true'
-      - name: Install unzip and fpm
+      - id: dry
+        if: ${{ inputs.dry_run }}
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq unzip ruby ruby-dev build-essential rpm
-          sudo gem install --no-document fpm
-      - run: node setup.mjs
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: neu build --release --embed-resources
-      - run: bash packaging/linux/build.sh "${{ needs.get-next-version.outputs.version }}"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: linux-packages
-          path: release-assets/*
-          retention-days: 1
+          echo "will-release=true" >> "$GITHUB_OUTPUT"
+          echo "version=0.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+      # A release signed against the placeholder key would ship a latest.json
+      # no installed app can verify -- stop before building anything.
+      - name: Check the updater public key is filled in
+        if: steps.version.outputs.will-release == 'true'
+        run: |
+          node -e "
+            const k = require('./src-tauri/tauri.conf.json').plugins.updater.pubkey;
+            if (k.startsWith('PLACEHOLDER')) {
+              console.error('::error::src-tauri/tauri.conf.json plugins.updater.pubkey is still the placeholder. See README -> Releases -> Updater signing key.');
+              process.exit(1);
+            }"
 
-  build-windows:
+  build:
     needs: get-next-version
-    if: needs.get-next-version.outputs.will-release == 'true'
-    runs-on: windows-latest
+    if: needs.get-next-version.outputs.build == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: windows, os: windows-latest, target: x86_64-pc-windows-msvc }
+          # 22.04 = oldest supported glibc/webkit2gtk-4.1 the packages then run on.
+          - { name: linux, os: ubuntu-22.04, target: x86_64-unknown-linux-gnu }
+          - { name: mac_arm64, os: macos-latest, target: aarch64-apple-darwin }
+          - { name: mac_x64, os: macos-latest, target: x86_64-apple-darwin }
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      VERSION: ${{ needs.get-next-version.outputs.version }}
+      PUBLISH: ${{ needs.get-next-version.outputs.publish }}
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - run: npm ci
-      # Pinned: @neutralinojs/neu's "latest" (11.7.2) declares "uuid": "^14.0.0"
-      # but its own code still does a CommonJS require('uuid') -- uuid 14 is
-      # ESM-only, so a fresh `npm install -g` of "latest" crashes immediately
-      # with ERR_REQUIRE_ESM. 11.7.1 is the last version pinning uuid to the
-      # CJS-safe ^8.3.2 range. Re-check occasionally for a fixed upstream
-      # release before assuming this pin is still needed.
-      - run: npm install -g @neutralinojs/neu@11.7.1
-      - run: neu update
-      - run: node scripts/copy-neutralino-client.mjs
-      - run: node scripts/write-version.mjs "${{ needs.get-next-version.outputs.version }}"
-      # VITE_OFFICIAL_BUILD is the only signal useUpdateChecker.js uses to
-      # tell "built by this workflow" from "someone's own `npm run build`" --
-      # it gates the in-app silent-download-and-install update flow (see
-      # that file's own comment). Only ever set here, never committed.
-      - run: npm run build
-        env:
-          VITE_OFFICIAL_BUILD: 'true'
-      - run: node setup.mjs
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - run: neu build --release --embed-resources
-      - run: pwsh packaging/windows/install-innosetup.ps1
-      - run: pwsh packaging/windows/build.ps1 -Version "${{ needs.get-next-version.outputs.version }}"
-      - uses: actions/upload-artifact@v4
-        with:
-          name: windows-packages
-          path: release-assets/*
-          retention-days: 1
-
-  build-macos:
-    needs: get-next-version
-    if: needs.get-next-version.outputs.will-release == 'true'
-    runs-on: macos-latest
-    steps:
-      # macos-latest hosted runners ship with several old Xcode versions and
-      # a full Android SDK pre-installed, none of which this build ever
-      # touches (packaging only uses sips/iconutil/hdiutil, all separate
-      # from Xcode.app itself) -- reclaims tens of GB before anything else
-      # runs. Without this, building two arches' worth of embedded-resources
-      # app bundles + DMG staging can exhaust the runner's default free
-      # space (observed: hdiutil failing with "No space left on device").
+      # macos-latest ships several old Xcodes and an Android SDK this build
+      # never touches; reclaim the space before cargo + hdiutil need it.
       - name: Free up disk space
+        if: runner.os == 'macOS'
         run: |
-          echo "Before cleanup:"; df -h /
+          df -h /
           sudo rm -rf /Users/runner/Library/Android
           sudo rm -rf /Applications/Xcode_1[0-5]*.app
-          echo "After cleanup:"; df -h /
+          df -h /
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: ${{ matrix.target }}
+      # Tauri's Linux build deps (webkit2gtk-4.1, ayatana appindicator for
+      # the tray -- tauri-cli detects which one via pkg-config and declares
+      # the matching runtime package in the deb/rpm), plus unzip for setup.mjs.
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev patchelf unzip
       - run: npm ci
-      # Pinned: @neutralinojs/neu's "latest" (11.7.2) declares "uuid": "^14.0.0"
-      # but its own code still does a CommonJS require('uuid') -- uuid 14 is
-      # ESM-only, so a fresh `npm install -g` of "latest" crashes immediately
-      # with ERR_REQUIRE_ESM. 11.7.1 is the last version pinning uuid to the
-      # CJS-safe ^8.3.2 range. Re-check occasionally for a fixed upstream
-      # release before assuming this pin is still needed.
-      - run: npm install -g @neutralinojs/neu@11.7.1
-      - run: neu update
-      - run: node scripts/copy-neutralino-client.mjs
-      - run: node scripts/write-version.mjs "${{ needs.get-next-version.outputs.version }}"
-      # VITE_OFFICIAL_BUILD is the only signal useUpdateChecker.js uses to
-      # tell "built by this workflow" from "someone's own `npm run build`" --
-      # it gates the in-app silent-download-and-install update flow (see
-      # that file's own comment). Only ever set here, never committed.
-      - run: npm run build
-        env:
-          VITE_OFFICIAL_BUILD: 'true'
+      # ffmpeg + yt-dlp everywhere, qpdf/img2pdf on Windows (binaries/<platform>/).
       - run: node setup.mjs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # setup.mjs only fills the runner's own arch folder; the macOS ffmpeg
+      # (evermeet.cx) and yt-dlp_macos builds are universal, so the x64 job on
+      # the arm64 runner reuses them.
       - name: Populate the other mac arch folder
-        # evermeet.cx (ffmpeg) and yt-dlp's own release both publish one
-        # universal macOS build covering both Intel and Apple Silicon (see
-        # setup.mjs) -- setup.mjs only downloads into the runner's own arch
-        # folder, so copy each into the other arch's folder too rather than
-        # downloading twice.
+        if: runner.os == 'macOS'
         run: |
           for bin in ffmpeg yt-dlp; do
-            if [ -f "binaries/mac_arm64/$bin" ] && [ ! -f "binaries/mac_x64/$bin" ]; then
-              mkdir -p binaries/mac_x64 && cp "binaries/mac_arm64/$bin" "binaries/mac_x64/$bin"
-            elif [ -f "binaries/mac_x64/$bin" ] && [ ! -f "binaries/mac_arm64/$bin" ]; then
-              mkdir -p binaries/mac_arm64 && cp "binaries/mac_x64/$bin" "binaries/mac_arm64/$bin"
-            fi
+            for pair in "mac_arm64 mac_x64" "mac_x64 mac_arm64"; do
+              set -- $pair
+              if [ -f "binaries/$1/$bin" ] && [ ! -f "binaries/$2/$bin" ]; then
+                mkdir -p "binaries/$2" && cp "binaries/$1/$bin" "binaries/$2/$bin"
+              fi
+            done
           done
-      - run: neu build --release --embed-resources
-      - run: bash packaging/macos/build.sh "${{ needs.get-next-version.outputs.version }}"
+      - run: node scripts/write-version.mjs "$VERSION"
+      # VITE_OFFICIAL_BUILD is the only signal useUpdateChecker.js uses to tell
+      # "built by this workflow" from a self-built copy (gates the updater
+      # plugin install path). Only ever set here, never committed.
+      # tauri.release.conf.json turns on createUpdaterArtifacts, which makes
+      # `tauri build` sign with TAURI_SIGNING_PRIVATE_KEY (and fail without
+      # it) -- so only real releases pass it; dry runs build unsigned.
+      - name: tauri build
+        run: |
+          args=(--target "${{ matrix.target }}")
+          if [ "$PUBLISH" = "true" ]; then args+=(--config src-tauri/tauri.release.conf.json); fi
+          npx tauri build "${args[@]}"
+        env:
+          VITE_OFFICIAL_BUILD: 'true'
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      # Tauri names bundles "SORAI Toolkit_<ver>_..."; GitHub would turn the
+      # space into a dot on upload, so copy them to fixed, space-free names
+      # (scripts/updater-manifest.mjs + .releaserc.json rely on these).
+      # The Windows name deliberately does NOT match the Neutralino-era
+      # updater's /setup.*win_x64\.exe$/ -- old installs must not silently
+      # run this NSIS installer with Inno flags (see README "Upgrading from
+      # 1.x").
+      - name: Collect release assets
+        run: |
+          shopt -s nullglob
+          B="src-tauri/target/${{ matrix.target }}/release/bundle"
+          mkdir -p release-assets
+          put() { cp "$1" "release-assets/$2"; if [ -f "$1.sig" ]; then cp "$1.sig" "release-assets/$2.sig"; fi; }
+          case "${{ matrix.name }}" in
+            windows)
+              for f in "$B"/nsis/*-setup.exe; do put "$f" "sorai-toolkit_${VERSION}_x64-setup.exe"; done ;;
+            linux)
+              for f in "$B"/deb/*.deb; do put "$f" "sorai-toolkit_${VERSION}_amd64.deb"; done
+              for f in "$B"/rpm/*.rpm; do put "$f" "sorai-toolkit-${VERSION}.x86_64.rpm"; done ;;
+            mac_*)
+              for f in "$B"/dmg/*.dmg; do put "$f" "sorai-toolkit_${VERSION}_${{ matrix.name }}.dmg"; done
+              for f in "$B"/macos/*.app.tar.gz; do put "$f" "sorai-toolkit_${VERSION}_${{ matrix.name }}.app.tar.gz"; done ;;
+          esac
+          ls -la release-assets
       - uses: actions/upload-artifact@v4
         with:
-          name: macos-packages
+          name: packages-${{ matrix.name }}
           path: release-assets/*
-          retention-days: 1
+          if-no-files-found: error
+          # Dry-run packages are kept for a week so they can be installed on
+          # real machines; release packages only need to reach the next job.
+          retention-days: ${{ needs.get-next-version.outputs.publish == 'true' && 1 || 7 }}
 
   release:
-    needs: [get-next-version, build-linux, build-windows, build-macos]
-    if: needs.get-next-version.outputs.will-release == 'true'
+    needs: [get-next-version, build]
+    if: needs.get-next-version.outputs.publish == 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -206,15 +208,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: release-assets
-          pattern: '*-packages'
+          pattern: packages-*
           merge-multiple: true
+      - run: node scripts/updater-manifest.mjs "${{ needs.get-next-version.outputs.version }}"
       - run: ls -la release-assets
-      # Writes the real version into src/version.json in *this* checkout so
-      # @semantic-release/git (see .releaserc.json) commits it back to the
-      # repo as part of the "chore(release)" commit -- otherwise the
-      # committed file stays at whatever placeholder it last had, and the
-      # StatusBar version display / useUpdateChecker.js's baseline never
-      # reflects the actual last release.
+      # Stamps the real version into src/version.json + src-tauri/tauri.conf.json
+      # in *this* checkout so @semantic-release/git (.releaserc.json) commits
+      # them back as part of the "chore(release)" commit.
       - run: node scripts/write-version.mjs "${{ needs.get-next-version.outputs.version }}"
       - run: npx semantic-release
         env:

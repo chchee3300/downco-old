@@ -7,9 +7,11 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
-const triple = execSync('rustc -vV').toString().match(/host: (\S+)/)[1]
+// `tauri build --target <triple>` exports TAURI_ENV_TARGET_TRIPLE to this hook
+// (CI builds mac x64 on an arm64 runner); otherwise use the host triple.
+const triple = process.env.TAURI_ENV_TARGET_TRIPLE || execSync('rustc -vV').toString().match(/host: (\S+)/)[1]
 const platform = { win32: 'win_x64', linux: 'linux_x64' }[process.platform]
-  ?? (process.arch === 'arm64' ? 'mac_arm64' : 'mac_x64')
+  ?? (triple.startsWith('aarch64') ? 'mac_arm64' : 'mac_x64')
 const ext = process.platform === 'win32' ? '.exe' : ''
 
 // qpdf/img2pdf are bundled on Windows only (setup.mjs); macOS/Linux use the

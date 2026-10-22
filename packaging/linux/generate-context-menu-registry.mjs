@@ -1,9 +1,9 @@
 // Generates packaging/linux/context-menu.generated/*.desktop -- KDE
-// ServiceMenu files that packaging/linux/build.sh stages into
-// usr/share/kio/servicemenus/ before fpm packages the .deb/.rpm.
-// Regenerated fresh by build.sh before every package build -- gitignored,
-// same convention as packaging/windows/generate-context-menu-registry.mjs's
-// context-menu.generated.iss.
+// ServiceMenu files that the Tauri deb/rpm bundles install into
+// /usr/share/kio/servicemenus/ (bundle.linux.{deb,rpm}.files in
+// src-tauri/tauri.linux.conf.json). Regenerated fresh by beforeBuildCommand
+// before every `tauri build` -- gitignored, same convention as
+// packaging/windows/generate-context-menu-registry.mjs's NSIS hook file.
 //
 // One .desktop file PER INPUT EXTENSION (not one shared file) -- a KDE
 // ServiceMenu's MimeType= field filters at the whole-file level, and each

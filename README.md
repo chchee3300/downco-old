@@ -14,10 +14,18 @@ Each tool repo is consumed here as an npm git dependency (`package.json`'s `depe
 Pick one:
 
 - **Download a pre-built package** — grab the file for your OS from the [latest release](https://github.com/chchee3300/sorai-toolkit/releases/latest):
-  - **Windows** — `sorai-toolkit-setup-*-win_x64.exe`. Run it; the installer asks for a destination folder and whether to add a Start Menu shortcut.
-  - **macOS** — `sorai-toolkit-*-mac_x64.dmg` (Intel) or `*-mac_arm64.dmg` (Apple Silicon). Open it and drag the app into Applications. These builds aren't code-signed, so the first launch needs right-click → Open (or System Settings → Privacy & Security → "Open Anyway") to get past Gatekeeper.
-  - **Linux** — `sorai-toolkit_*_amd64.deb` (`sudo apt install ./sorai-toolkit_*_amd64.deb`) or `sorai-toolkit-*.x86_64.rpm` (`sudo dnf install ./sorai-toolkit-*.x86_64.rpm`). Both declare their own `qpdf`/`gtk3`/`webkit2gtk` dependencies, so the package manager pulls those in automatically.
+  - **Windows** — `sorai-toolkit_*_x64-setup.exe`. Per-user install into `%LOCALAPPDATA%\SORAI Toolkit\`, no admin prompt; adds the Explorer right-click menu.
+  - **macOS** — `sorai-toolkit_*_mac_x64.dmg` (Intel) or `*_mac_arm64.dmg` (Apple Silicon). Open it and drag the app into Applications. These builds aren't code-signed, so the first launch needs right-click → Open (or System Settings → Privacy & Security → "Open Anyway") to get past Gatekeeper.
+  - **Linux** — `sorai-toolkit_*_amd64.deb` (`sudo apt install ./sorai-toolkit_*_amd64.deb`) or `sorai-toolkit-*.x86_64.rpm` (`sudo dnf install ./sorai-toolkit-*.x86_64.rpm`). Both pull in `qpdf`, `img2pdf`, webkit2gtk and gtk3, and install the KDE Dolphin right-click menu. They ship their own `ffmpeg` and `yt-dlp` into `/usr/bin`, so they **replace a distro `ffmpeg`/`yt-dlp` package** if one is installed (deb: Conflicts/Replaces/Provides; rpm: Conflicts/Provides, so dnf asks for `--allowerasing`).
 - **Build it yourself from source** — see [Setup](#setup) below.
+
+### Upgrading from 1.x (the Neutralino builds)
+
+The first Tauri release can't be installed by a 1.x app's built-in updater; install it by hand once. After that, updates install themselves.
+
+- **Windows: uninstall the old version first** (Settings → Apps → SORAI Toolkit → Uninstall), *then* run the new installer. The old version lives in `%LOCALAPPDATA%\Programs\SORAI Toolkit\`, the new one in `%LOCALAPPDATA%\SORAI Toolkit\`, but both write the same right-click menu registry keys — uninstalling the old one *after* installing the new one deletes the new version's right-click menu (reinstall the new version to get it back).
+- **macOS**: drag the new app into Applications and replace the old one.
+- **Linux**: install the new `.deb`/`.rpm` over the old one — same package name (`sorai-toolkit`), so it upgrades in place.
 
 ## How it works
 
@@ -127,22 +135,29 @@ Versioning and GitHub Releases are automated with [semantic-release](https://sem
 
 Every push to `master` runs `.github/workflows/release.yml`, which:
 1. Computes whether a release is warranted and, if so, the next version (`scripts/get-next-version.mjs`, semantic-release in dry-run).
-2. Builds and packages all platforms in parallel: `.deb`/`.rpm` (Linux, via [fpm](https://fpm.readthedocs.io/)), a Windows installer (via [Inno Setup](https://jrsoftware.org/isinfo.php)), and a `.dmg` ×2 for macOS (Intel + Apple Silicon).
-3. Publishes the GitHub Release with those packages attached, and updates `CHANGELOG.md`.
+2. Runs `tauri build` for Windows (NSIS), Linux (`.deb` + `.rpm`), and macOS (`.dmg` + updater `.app.tar.gz`, Intel and Apple Silicon) in parallel, signing every updater payload with the updater key.
+3. Writes `latest.json` (`scripts/updater-manifest.mjs`) and publishes the GitHub Release with the packages and `latest.json` attached, and updates `CHANGELOG.md`.
 
-No manual version bumping or tagging — the version number lives entirely in git tags/GitHub Releases, driven by commit messages. `scripts/write-version.mjs` stamps the computed version into `src/version.json` before each platform build, so the running app knows its own version (used by the update checker below).
+No manual version bumping or tagging — the version number lives entirely in git tags/GitHub Releases, driven by commit messages. `scripts/write-version.mjs` stamps the computed version into `src/version.json` (the update checker's baseline) and `src-tauri/tauri.conf.json` before each build, and the release commit writes both back.
 
-To build packages locally without CI:
-- **Linux**: `neu build --release --embed-resources`, then `bash packaging/linux/build.sh <version>` (needs [fpm](https://fpm.readthedocs.io/en/latest/installing.html) and `rpmbuild` installed).
-- **Windows**: same `neu build` step, then `packaging/windows/install-innosetup.ps1` (one-time) and `packaging/windows/build.ps1 -Version <version>`.
-- **macOS**: same `neu build` step, then `packaging/macos/build.sh <version>` (needs `sips`/`iconutil`/`hdiutil`, all built into macOS).
+**Dry run** (no signing key needed, publishes nothing): Actions → Release → Run workflow on any branch with `dry_run` checked. It builds all four packages unsigned as version `0.0.<run number>` and keeps them as workflow artifacts for a week.
+
+#### Updater signing key (maintainer, one-time)
+
+1. `npx tauri signer generate -w ~/.tauri/sorai-toolkit.key` — pick a password. Keep the private key out of the repo.
+2. Repo Settings → Secrets and variables → Actions: `TAURI_SIGNING_PRIVATE_KEY` = contents of `sorai-toolkit.key`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` = the password.
+3. Paste the contents of `sorai-toolkit.key.pub` into `src-tauri/tauri.conf.json` → `plugins.updater.pubkey` (replacing the `PLACEHOLDER-…` string) and commit. The workflow refuses to release while the placeholder is still there.
+
+Losing the private key means installed apps can never verify another update — back it up.
+
+To build packages locally: `npx tauri build` (after `npm ci` and `node setup.mjs`). Local builds are unsigned — `createUpdaterArtifacts` is only switched on in CI via `src-tauri/tauri.release.conf.json`. Output lands in `src-tauri/target/release/bundle/`.
 
 ### In-app updates
 
-On launch, the app checks `GET /repos/chchee3300/sorai-toolkit/releases/latest` and compares it against `src/version.json`. If a newer version is available it shows a toast (`src/hooks/useUpdateChecker.js`, `src/components/UpdateBanner.jsx`):
+On launch, the app checks `GET /repos/chchee3300/sorai-toolkit/releases/latest` and compares it against `src/version.json`. If a newer version is available (`src/hooks/useUpdateChecker.js`, `src/components/UpdateBanner.jsx`):
 
-- **Windows**: downloads the installer and runs it with `/VERYSILENT /CLOSEAPPLICATIONS /RESTARTAPPLICATIONS`, then quits — the installer closes the running app, replaces it, and relaunches it automatically.
-- **macOS/Linux**: downloads the asset and reveals it in the file manager instead of self-installing — an unsigned `.dmg` gets Gatekeeper's quarantine flag, and `.deb`/`.rpm` need a privilege prompt either way, so neither can be silently self-replaced from inside the app.
+- **Official builds** (built by the workflow, `VITE_OFFICIAL_BUILD=true`): a toast offers "Update now", which hands off to the Tauri updater plugin — it fetches `latest.json`, verifies the signature, installs, and relaunches. Windows runs the NSIS installer in passive mode; Linux runs `dpkg -i` or `rpm -U` behind a pkexec/sudo password prompt (whichever format is installed); macOS replaces the `.app`.
+- **Self-built copies**: only a badge in the menu and About; clicking it opens the release page.
 
 ## License
 

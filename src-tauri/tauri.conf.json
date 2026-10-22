@@ -1,13 +1,13 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "SORAI Toolkit",
-  "version": "0.1.0",
+  "version": "1.10.2",
   "identifier": "com.soraitoolkit.hub",
   "build": {
     "frontendDist": "../web-dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "node scripts/copy-sidecars.mjs && node scripts/siblings.mjs && npm run dev",
-    "beforeBuildCommand": "node scripts/copy-sidecars.mjs && node scripts/siblings.mjs && node packaging/windows/generate-context-menu-registry.mjs && npm run build"
+    "beforeBuildCommand": "node scripts/copy-sidecars.mjs && node scripts/siblings.mjs && node packaging/windows/generate-context-menu-registry.mjs && node packaging/linux/generate-context-menu-registry.mjs && npm run build"
   },
   "app": {
     "windows": [
@@ -33,7 +33,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "PLACEHOLDER-UPDATER-PUBKEY-FILLED-BY-TICKET-14",
+      "pubkey": "PLACEHOLDER-maintainer-runs-npx-tauri-signer-generate-and-pastes-the-.key.pub-contents-here-see-README-Releases",
       "endpoints": ["https://github.com/chchee3300/sorai-toolkit/releases/latest/download/latest.json"],
       "windows": { "installMode": "passive" }
     }
@@ -41,6 +41,9 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "Utility",
+    "shortDescription": "Convert video, image, audio, and PDF files locally",
+    "homepage": "https://github.com/chchee3300/sorai-toolkit",
     "externalBin": ["binaries/ffmpeg", "binaries/yt-dlp"],
     "icon": [
       "icons/32x32.png",
