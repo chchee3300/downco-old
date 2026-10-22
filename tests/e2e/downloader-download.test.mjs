@@ -132,6 +132,9 @@ export const tests = {
       await page.locator('#clip-modal:not(.hidden)').waitFor()
       const total = await page.$eval('#clip-label-end', (el) => parseFloat(el.textContent))
       assert.ok(total > 15, `full duration by default, got ${total}`)
+      // No progressive format without a JS runtime: the preview must fall
+      // back to a video-only stream and actually decode, not degrade.
+      await page.waitForFunction(() => document.querySelector('#clip-modal video')?.readyState >= 2, null, { timeout: 30_000 })
       await dragThumb(page, 'clip-thumb-left', 2, total)
       await dragThumb(page, 'clip-thumb-right', 6, total)
       const start = await page.$eval('#clip-label-start', (el) => parseFloat(el.textContent))
