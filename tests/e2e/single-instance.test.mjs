@@ -64,5 +64,12 @@ export const tests = {
     } finally {
       await backToHub(page)
     }
+    // Reopening the Converter must not re-apply that launch (re-add its file).
+    await page.locator('.hub-card:has-text("Converter")').click()
+    await page.locator('.drop-zone-message').waitFor()
+    await page.waitForTimeout(1500)
+    assert.equal(await rows(page).count(), 0)
+    await page.locator('[aria-label="Back to hub"]').click()
+    await page.locator('.hub-card').first().waitFor()
   },
 }

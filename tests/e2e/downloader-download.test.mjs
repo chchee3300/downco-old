@@ -158,6 +158,36 @@ export const tests = {
     }
   },
 
+  'downloader: removing items mid-run (an earlier one, then the active one) does not stop or skip the rest': async ({ page }) => {
+    const out = await prepare(page, ZOO)
+    try {
+      for (const url of [LONG, ZOO]) {
+        await page.fill('#video-url', url)
+        await page.click('#btn-fetch')
+      }
+      await page.waitForFunction(() => document.querySelectorAll('.queue-item .btn-trim').length === 3, null, { timeout: 90_000 })
+      const state = (i) => page.locator('.queue-item').nth(i).locator('.queue-item-state').textContent()
+      await page.click('#btn-download')
+      await page.waitForFunction(
+        () => {
+          const s = [...document.querySelectorAll('.queue-item .queue-item-state')].map((e) => e.textContent)
+          return s[0] === 'Done' && /\d%/.test(s[1])
+        },
+        null,
+        { timeout: 180_000 },
+      )
+      await page.locator('.queue-item').nth(0).locator('button.remove').click() // earlier item: no index shift skip
+      await page.waitForFunction(() => document.querySelectorAll('.queue-item').length === 2)
+      await page.locator('.queue-item').nth(0).locator('button.remove').click() // the active one: cancels just it
+      await page.waitForFunction(() => document.querySelectorAll('.queue-item').length === 1)
+      await page.waitForFunction(() => document.querySelector('.queue-item .queue-item-state')?.textContent === 'Done', null, { timeout: 180_000 })
+      assert.equal(await state(0), 'Done')
+      assert.doesNotMatch(await page.textContent('.statusbar-text'), /Cancelled/)
+    } finally {
+      await leave(page, out)
+    }
+  },
+
   'downloader: cancel stops yt-dlp, item is cancelled, no process left': async ({ page }) => {
     const out = await prepare(page, LONG)
     try {

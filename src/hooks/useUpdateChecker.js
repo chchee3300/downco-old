@@ -4,9 +4,7 @@ import { relaunch } from '@tauri-apps/plugin-process'
 import { check } from '@tauri-apps/plugin-updater'
 import versionInfo from '../version.json'
 
-// GitHub owner/repo this app is published from -- see .github/workflows/release.yml
-// (release pipeline migrates here in Phase C of the multi-repo restructure;
-// until then this just means "no update found" since no release exists yet).
+// GitHub owner/repo this app is published from -- see .github/workflows/release.yml.
 const REPO = 'chchee3300/sorai-toolkit'
 const LATEST_RELEASE_URL = `https://api.github.com/repos/${REPO}/releases/latest`
 
@@ -15,8 +13,9 @@ const LATEST_RELEASE_URL = `https://api.github.com/repos/${REPO}/releases/latest
 // Vite's import.meta.env) -- a plain `npm run build` run by anyone building
 // from source themselves never sets it, so self-built copies fall back to
 // the "just open the release page" install path below with zero config.
-// This is the only thing that distinguishes "official" from "self-built" --
-// there's no signing/identity check, it's purely "did the CI job say so".
+// The flag only picks the install path; what actually gets installed is
+// verified by the Tauri updater: it refuses any bundle whose signature
+// doesn't match `plugins.updater.pubkey` in src-tauri/tauri.conf.json.
 const IS_OFFICIAL_BUILD = import.meta.env.VITE_OFFICIAL_BUILD === 'true'
 
 function parseSemver(v) {

@@ -16,7 +16,8 @@ fn take_launch_args(queue: tauri::State<LaunchQueue>) -> Vec<Vec<String>> {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
-    .manage(LaunchQueue(Mutex::new(vec![std::env::args().collect()])))
+    // args_os: env::args() panics on a non-UTF-8 argument (Linux file names).
+    .manage(LaunchQueue(Mutex::new(vec![std::env::args_os().map(|a| a.to_string_lossy().into_owned()).collect()])))
     // Must be the first plugin. Keyed on the app identifier: scripts/tauri-dev.mjs
     // gives dev/E2E builds a per-CDP-port identifier so worktrees don't collide.
     .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {

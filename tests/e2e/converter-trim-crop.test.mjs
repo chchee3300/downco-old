@@ -1,6 +1,6 @@
 // Trim / Crop modals end to end (ported from the old test_crop_ui.js):
-// the preview really loads through the asset protocol (queued file added to
-// the scope at runtime, nothing else readable), the crop rect drags / snaps /
+// the preview really loads through the converter's sorai-media:// scheme
+// (exactly the queued files readable, access revoked on removal), the crop rect drags / snaps /
 // clears, and real ffmpeg output has the cropped size / trimmed length.
 // Crop / trim ffmpeg args themselves are cargo-tested in the converter plugin.
 import assert from 'node:assert/strict'
@@ -65,10 +65,23 @@ const dims = async (page) => {
   const m = /(\d+)\s*x\s*(\d+)/.exec(await page.locator('#crop-dims-label').innerText())
   return m ? [+m[1], +m[2]] : null
 }
+// Does an <img> load `path` through sorai-media:// ? (fetch() can't tell:
+// no CORS headers, so it rejects either way.) Cache-busted per call.
+const previewLoads = (page, path) =>
+  page.evaluate(
+    (p) =>
+      new Promise((resolve) => {
+        const img = new Image()
+        img.onload = () => resolve(true)
+        img.onerror = () => resolve(false)
+        img.src = `${window.__TAURI_INTERNALS__.convertFileSrc(p, 'sorai-media')}?${Math.random()}`
+      }),
+    path,
+  )
 const closed = (page, id) => page.waitForFunction((i) => document.getElementById(i).classList.contains('hidden'), id)
 
 export const tests = {
-  'converter: crop preview loads via asset protocol, drag + save crops the real output': async ({ page }) => {
+  'converter: crop preview loads via sorai-media, drag + save crops the real output': async ({ page }) => {
     const img = join(dir, '裁切 圖.png')
     copyFileSync(join(fixtures, 'test_in.png'), img) // 320x240
     const notQueued = join(dir, 'not queued.png')
@@ -81,18 +94,12 @@ export const tests = {
 
       await page.click('#btn-crop-0')
       await page.locator('#crop-modal:not(.hidden)').waitFor()
-      // Preview decoded from http://asset.localhost/<queued path>.
+      // Preview decoded from http://sorai-media.localhost/<queued path>.
       await page.waitForFunction(() => document.querySelector('#crop-container img')?.naturalWidth === 320, null, { timeout: 10_000 })
-      assert.match(await page.locator('#crop-container img').first().getAttribute('src'), /^http:\/\/asset\.localhost\//)
-      // Scope is per queued file: a sibling that was never queued is refused.
-      const status = await page.evaluate(async (p) => {
-        try {
-          return (await fetch(window.__TAURI_INTERNALS__.convertFileSrc(p))).status
-        } catch {
-          return 'blocked'
-        }
-      }, notQueued)
-      assert.notEqual(status, 200, 'unqueued file readable through the asset protocol')
+      assert.match(await page.locator('#crop-container img').first().getAttribute('src'), /^http:\/\/sorai-media\.localhost\//)
+      // Per queued file: a sibling that was never queued is refused.
+      assert.equal(await previewLoads(page, img), true)
+      assert.equal(await previewLoads(page, notQueued), false, 'unqueued file readable through sorai-media')
       assert.deepEqual(await dims(page), [320, 240])
 
       await page.click('#crop-ratio-1\\:1')
@@ -129,19 +136,25 @@ export const tests = {
       await page.click('#crop-modal .btn-primary')
       await closed(page, 'crop-modal')
       assert.doesNotMatch(await page.locator('#file-item-0').innerText(), /Crop:/)
+      // Leaving the queue revokes access.
+      await page.locator('.file-item button.remove').first().click()
+      await page.waitForFunction(() => document.querySelectorAll('.file-item').length === 0)
+      let after = await previewLoads(page, img)
+      for (let i = 0; i < 20 && after; i++) await page.waitForTimeout(100), (after = await previewLoads(page, img))
+      assert.equal(after, false, 'removed file still readable through sorai-media')
     } finally {
       await backToHub(page)
     }
   },
 
-  'converter: trim preview plays via asset protocol, set start/end trims the real output': async ({ page }) => {
+  'converter: trim preview plays via sorai-media, set start/end trims the real output': async ({ page }) => {
     const clip = join(dir, '剪輯 影片.mp4')
     copyFileSync(join(fixtures, 'test_fixture_video.mp4'), clip) // 2 s
     await open(page, [clip])
     try {
       await page.locator('#file-item-0 .btn-trim').click()
       await page.locator('#trim-modal:not(.hidden)').waitFor()
-      // Seeking needs the asset protocol's Range support, not just a load.
+      // Seeking needs sorai-media's Range support, not just a load.
       const seek = (t) =>
         page.evaluate(
           (t) =>
@@ -159,7 +172,7 @@ export const tests = {
           t,
         )
       await seek(0.5)
-      assert.match(await page.locator('#trim-video-player').getAttribute('src'), /^http:\/\/asset\.localhost\//)
+      assert.match(await page.locator('#trim-video-player').getAttribute('src'), /^http:\/\/sorai-media\.localhost\//)
       assert.ok(await page.evaluate(() => Math.abs(document.getElementById('trim-video-player').duration - 2) < 0.2))
       await page.click('#btn-set-start')
       await seek(1.5)

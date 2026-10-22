@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { TrayIcon } from '@tauri-apps/api/tray'
 import { Menu } from '@tauri-apps/api/menu'
-import { sendNotification } from '@tauri-apps/plugin-notification'
+import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
 import { tNow } from '../i18n/dict.js'
 import { imageFromUrl, revealMainWindow } from '../lib/mainWindow.js'
 import trayIconUrl from '../../resources/icons/trayIcon.png'
@@ -62,7 +62,10 @@ export function useCloseBehavior() {
     if (!hasNotifiedThisSessionRef.current) {
       hasNotifiedThisSessionRef.current = true
       try {
-        sendNotification({ title: tNow('tray.notifyTitle'), body: tNow('tray.notifyBody') })
+        // macOS drops it silently without permission; ask once (no-op elsewhere).
+        if ((await isPermissionGranted()) || (await requestPermission()) === 'granted') {
+          sendNotification({ title: tNow('tray.notifyTitle'), body: tNow('tray.notifyBody') })
+        }
       } catch (e) {
         console.warn('notification failed', e)
       }

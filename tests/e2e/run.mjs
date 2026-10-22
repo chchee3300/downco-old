@@ -56,9 +56,13 @@ try {
   }
   // Fresh profile follows the OS locale (zh-TW here); pin English so tests
   // can match on UI text.
-  await page.waitForLoadState('domcontentloaded')
+  // Wait for React to render first: after a cold build Vite's first-run
+  // dependency optimizer reloads the page once, which would eat an early reload.
+  const rendered = () => page.locator('.hub-card').first().waitFor({ timeout: 120_000 })
+  await rendered()
   await page.evaluate(() => localStorage.setItem('sorai-lang', 'en'))
   await page.reload()
+  await rendered()
 
   const files = readdirSync(here).filter((f) => f.endsWith('.test.mjs')).sort()
   for (const file of files) {

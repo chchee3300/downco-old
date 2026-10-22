@@ -4198,6 +4198,7 @@ dependencies = [
 name = "tauri-plugin-sorai-converter"
 version = "0.1.0"
 dependencies = [
+ "percent-encoding",
  "regex",
  "serde",
  "tauri",

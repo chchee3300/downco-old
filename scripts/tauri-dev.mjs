@@ -25,9 +25,12 @@ export function tauriDev({ vitePort, cdpPort, userDataDir, stdio = 'inherit' }) 
   // this a dev/E2E window would forward its launch to (and exit into) the
   // installed app or another worktree's window instead of starting.
   const watch = siblings().flatMap((s) => ['--additional-watch-folders', join(s.dir, 'plugin', 'src')])
+  // Dev/E2E only: E2E presses "X" via plugin:window|close. Production builds
+  // use just the capabilities/ files, which don't grant it.
+  const capabilities = ['default', { identifier: 'dev-e2e', windows: ['main'], permissions: ['core:window:allow-close'] }]
   return spawn(
     process.execPath,
-    [join(root, 'node_modules', '@tauri-apps', 'cli', 'tauri.js'), 'dev', '--config', JSON.stringify({ identifier: `com.soraitoolkit.hub.dev${cdpPort}`, build: { devUrl } }), ...watch],
+    [join(root, 'node_modules', '@tauri-apps', 'cli', 'tauri.js'), 'dev', '--config', JSON.stringify({ identifier: `com.soraitoolkit.hub.dev${cdpPort}`, build: { devUrl }, app: { security: { capabilities } } }), ...watch],
     {
       cwd: root,
       stdio,

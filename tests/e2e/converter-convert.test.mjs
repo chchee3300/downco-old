@@ -85,8 +85,6 @@ export const tests = {
     writeFileSync(broken, 'not a video')
     const clip = join(dir, '測試 影片.mp4')
     copyFileSync(join(fixtures, 'test_fixture_video.mp4'), clip)
-    const onDialog = (d) => d.dismiss().catch(() => {}) // per-file failure alert()
-    page.on('dialog', onDialog)
     await open(page, [broken, clip])
     try {
       await page.waitForFunction(() => /→ ~/.test(document.getElementById('file-est-1').textContent), null, { timeout: 10_000 })
@@ -95,6 +93,9 @@ export const tests = {
       assert.match(await run(page, 2), /^Completed 1 of 2/)
       assert.match(await log(page), /! ffmpeg exited with code -?\d+: Error opening input/)
       assert.ok(!existsSync(join(dir, '壞掉的_converted.mp4')), 'failed output left behind')
+      // Non-blocking failure mark on the right row (no alert()).
+      assert.match(await page.locator('#file-size-0 .file-failed').getAttribute('title'), /exited with code/)
+      assert.equal(await page.locator('#file-size-1 .file-failed').count(), 0)
 
       const out = join(dir, '測試 影片_converted.mp4')
       const p = probe(out)
@@ -110,7 +111,6 @@ export const tests = {
       assert.match(probe(join(dir, '測試 影片_converted_converted.mp4')).streams, /Video: h264/)
       assert.equal(statSync(out).mtimeMs, mtime)
     } finally {
-      page.off('dialog', onDialog)
       await backToHub(page)
     }
   },

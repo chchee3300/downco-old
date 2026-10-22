@@ -27,19 +27,22 @@ export function useSingleInstance() {
     // before ever getting here, so whoever runs this is the primary.
     revealMainWindow({ center: true }).catch(console.error)
 
+    const flush = () => {
+      clearTimeout(timer.current)
+      if (batch.current) setPendingLaunch({ seq: ++seq.current, ...batch.current })
+      batch.current = null
+    }
     const drain = async () => {
       for (const argv of await invoke('take_launch_args')) {
         const args = parseLaunchArgs(argv)
         if (!args) continue
-        const b = (batch.current ??= { files: [], format: null, quickAction: null })
-        b.files.push(...args.files)
-        b.format ??= args.format
-        b.quickAction ??= args.quickAction
+        // A different action (e.g. "to MP3" then "to OGG") is its own batch.
+        const b = batch.current
+        if (b && (b.format !== args.format || JSON.stringify(b.quickAction) !== JSON.stringify(args.quickAction))) flush()
+        batch.current ??= { files: [], format: args.format, quickAction: args.quickAction }
+        batch.current.files.push(...args.files)
         clearTimeout(timer.current)
-        timer.current = setTimeout(() => {
-          setPendingLaunch({ seq: ++seq.current, ...batch.current })
-          batch.current = null
-        }, DEBOUNCE_MS)
+        timer.current = setTimeout(flush, DEBOUNCE_MS)
       }
     }
     const unlisten = listen('sorai://launch', () => drain().catch(console.error))

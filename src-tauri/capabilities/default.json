@@ -18,7 +18,6 @@
     "core:window:allow-unminimize",
     "core:window:allow-set-focus",
     "core:window:allow-set-icon",
-    "core:window:allow-close",
     "core:window:allow-destroy",
     "sorai-converter:default",
     "sorai-downloader:default"
