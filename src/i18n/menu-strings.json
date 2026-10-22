@@ -1,0 +1,16 @@
+{
+  "en": {
+    "preset.convertTo": "Convert to {format}",
+    "preset.compressUnder": "Compress under {mb} MB",
+    "preset.compressPdf": "Compress PDF",
+    "menu.open": "Open in SORAI Toolkit…",
+    "menu.presets": "Manage presets…"
+  },
+  "zh-TW": {
+    "preset.convertTo": "轉成 {format}",
+    "preset.compressUnder": "快速壓縮到 {mb}MB 以下",
+    "preset.compressPdf": "壓縮 PDF",
+    "menu.open": "在 SORAI Toolkit 中開啟…",
+    "menu.presets": "設定預設…"
+  }
+}

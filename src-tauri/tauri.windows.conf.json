@@ -7,7 +7,7 @@
     "windows": {
       "nsis": {
         "installMode": "currentUser",
-        "installerHooks": "../packaging/windows/context-menu.generated.nsh"
+        "installerHooks": "../packaging/windows/installer-hooks.nsh"
       }
     }
   }

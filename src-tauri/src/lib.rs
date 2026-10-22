@@ -1,3 +1,4 @@
+mod context_menu;
 mod presets;
 mod self_install;
 
@@ -32,6 +33,29 @@ fn launch_is_background(cold: tauri::State<ColdBackground>) -> bool {
 
 fn presets_path<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> Result<std::path::PathBuf, String> {
   Ok(app.path().app_config_dir().map_err(|e| e.to_string())?.join(presets::FILE_NAME))
+}
+
+/// Rewrites the Explorer menu from the presets in `lang` (main window: on
+/// start and on every language change).
+#[tauri::command]
+async fn register_context_menu(app: tauri::AppHandle, lang: String) -> Result<(), String> {
+  context_menu::register(&presets_path(&app)?, &app.config().identifier, &lang)
+}
+
+/// What register_context_menu writes, and where (E2E compares it with the registry).
+#[derive(Serialize)]
+struct MenuPreview {
+  root: String,
+  values: Vec<context_menu::RegValue>,
+}
+
+#[tauri::command]
+fn context_menu_entries(app: tauri::AppHandle, lang: String) -> Result<MenuPreview, String> {
+  let presets = presets::load(&presets_path(&app)?)?;
+  Ok(MenuPreview {
+    root: context_menu::classes_root(&app.config().identifier),
+    values: context_menu::entries(&presets, &lang, &context_menu::exe_path()?),
+  })
 }
 
 #[tauri::command]
@@ -96,9 +120,29 @@ fn taskbar_is_light() -> Option<bool> {
   None
 }
 
+/// Tauri's app_config_dir on Windows is %APPDATA%\<identifier>; there's no
+/// AppHandle yet on this path.
+fn register_menu_and_exit(identifier: &str) -> i32 {
+  let Some(appdata) = std::env::var_os("APPDATA") else { return 1 };
+  let path = std::path::Path::new(&appdata).join(identifier).join(presets::FILE_NAME);
+  match context_menu::register(&path, identifier, context_menu::INSTALL_LANG) {
+    Ok(()) => 0,
+    Err(e) => {
+      eprintln!("--sorai-register-menu: {e}");
+      1
+    }
+  }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   let cold_argv: Vec<String> = std::env::args_os().map(|a| a.to_string_lossy().into_owned()).collect();
+  let context = tauri::generate_context!();
+  // The installer's post-install hook: write the menu (built-ins / saved
+  // presets, Chinese labels) and exit before any window or plugin exists.
+  if cold_argv.iter().any(|a| a == "--sorai-register-menu") {
+    std::process::exit(register_menu_and_exit(&context.config().identifier));
+  }
   tauri::Builder::default()
     // args_os: env::args() panics on a non-UTF-8 argument (Linux file names).
     .manage(ColdBackground(is_background_launch(&cold_argv)))
@@ -127,7 +171,7 @@ pub fn run() {
     .plugin(tauri_plugin_notification::init())
     .plugin(tauri_plugin_sorai_converter::init())
     .plugin(tauri_plugin_sorai_downloader::init())
-    .invoke_handler(tauri::generate_handler![take_launch_args, taskbar_is_light, launch_is_background, list_presets, queue_background, take_progress_jobs])
+    .invoke_handler(tauri::generate_handler![take_launch_args, taskbar_is_light, launch_is_background, list_presets, register_context_menu, context_menu_entries, queue_background, take_progress_jobs])
     // Closing the progress window ends the app when nothing else is showing:
     // the main window was never revealed (background-only cold start) and
     // isn't parked in the tray.
@@ -152,7 +196,7 @@ pub fn run() {
       std::thread::spawn(self_install::install);
       Ok(())
     })
-    .run(tauri::generate_context!())
+    .run(context)
     .expect("error while building tauri application");
 }
 

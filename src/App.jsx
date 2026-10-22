@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { invoke } from '@tauri-apps/api/core'
 import { createPortal } from 'react-dom'
 import Header from './components/Header.jsx'
 import HubMenu from './components/HubMenu.jsx'
@@ -18,7 +19,7 @@ import { useSingleInstance } from './hooks/useSingleInstance.js'
 // more branch here plus one more HubMenu.TOOLS entry, not a rework.
 function App() {
   const { theme, toggleTheme } = useTheme()
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const [currentTool, setCurrentTool] = useState('hub')
   // Hub-level concern: one checker for the whole app (checks on mount,
   // re-checkable from the hamburger menu), one toast regardless of which
@@ -32,7 +33,13 @@ function App() {
   // from a second instance) both land here as the same pendingLaunch
   // shape -- see useSingleInstance.js. A secondary instance exits in Rust
   // (single-instance plugin) before this ever renders.
-  const { pendingLaunch } = useSingleInstance()
+  const { pendingLaunch, presetsRequest } = useSingleInstance()
+
+  // The Explorer menu follows the presets and language: rewrite it on every
+  // start (repairs a deleted menu, replaces 2.0.0's) and language switch.
+  useEffect(() => {
+    invoke('register_context_menu', { lang }).catch(console.error)
+  }, [lang])
 
   useEffect(() => {
     if (pendingLaunch) setCurrentTool('converter')
@@ -54,6 +61,7 @@ function App() {
         onToggleTheme={toggleTheme}
         updater={updater}
         closeBehavior={closeBehavior}
+        presetsRequest={presetsRequest}
       />
       {currentTool === 'hub' && <HubMenu onSelectTool={setCurrentTool} />}
       {currentTool === 'converter' && <ConverterApp pendingLaunch={pendingLaunch} />}

@@ -137,7 +137,7 @@ const LANG_FLAG_ICONS = {
 // mounted through the closing animation instead of disappearing instantly.
 const CLOSE_ANIM_MS = 100
 
-export default function HamburgerMenu({ theme, onToggleTheme, updater, closeBehavior }) {
+export default function HamburgerMenu({ theme, onToggleTheme, updater, closeBehavior, presetsRequest }) {
   const { t, lang } = useTranslation()
   const FlagIcon = LANG_FLAG_ICONS[lang]
   // Quiet notification dot -- toggle button + the About row both get one
@@ -149,6 +149,13 @@ export default function HamburgerMenu({ theme, onToggleTheme, updater, closeBeha
   const [open, setOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
+  // Explorer's "Manage presets…" (--sorai-presets): settings, presets section.
+  const [settingsFocus, setSettingsFocus] = useState(null)
+  useEffect(() => {
+    if (!presetsRequest) return
+    setSettingsFocus('presets')
+    setSettingsOpen(true)
+  }, [presetsRequest])
   const [mounted, setMounted] = useState(false)
   // True once the open pop animation finished -- the animation class is
   // then REMOVED (no forwards-fill lingering) because a filled keyframe
@@ -366,7 +373,8 @@ export default function HamburgerMenu({ theme, onToggleTheme, updater, closeBeha
       {createPortal(
         <SettingsModal
           open={settingsOpen}
-          onClose={() => setSettingsOpen(false)}
+          onClose={() => { setSettingsOpen(false); setSettingsFocus(null) }}
+          focusSection={settingsFocus}
           closeBehavior={closeBehavior?.behavior}
           onChangeCloseBehavior={closeBehavior?.setBehavior}
         />,
