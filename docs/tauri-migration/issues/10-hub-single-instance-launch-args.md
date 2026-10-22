@@ -4,9 +4,9 @@
 
 **Blocked by:** 06（Converter：影片、音訊、圖片轉檔 job）, 09（Hub：視窗生命週期、關閉行為、系統匣、通知、主題圖示）
 
-**Status:** ready-for-agent
+**Status:** done（真實右鍵多選與前景喚醒待第 13 張安裝版驗證）
 
-- [ ] 用 single-instance plugin 取代 lock 檔、PID 檢查、pending-launch 目錄輪詢；argv 轉發後用 500ms 去抖動合併
-- [ ] 啟動參數解析改讀 Tauri 的 argv，--sorai-* 的語意不變，pendingLaunch 的形狀維持 {seq, files, format, quickAction}
-- [ ] Tauri 路徑上不再使用 instanceLock 和 Neutralino 版的 useSingleInstance
-- [ ] E2E：從命令列連續啟動 3 次、每次帶一個檔案，結果只有一個視窗，佇列裡有 3 個檔案而且格式套用正確；compress-under:50 會切換到目標大小模式
+- [x] 用 single-instance plugin 取代 lock 檔、PID 檢查、pending-launch 目錄輪詢；argv 轉發後用 500ms 去抖動合併
+- [x] 啟動參數解析改讀 Tauri 的 argv，--sorai-* 的語意不變，pendingLaunch 的形狀維持 {seq, files, format, quickAction}
+- [x] Tauri 路徑上不再使用 instanceLock 和 Neutralino 版的 useSingleInstance
+- [x] E2E：從命令列連續啟動 3 次、每次帶一個檔案，結果只有一個視窗，佇列裡有 3 個檔案而且格式套用正確；compress-under:50 會切換到目標大小模式

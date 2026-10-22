@@ -4,8 +4,8 @@
 
 **Blocked by:** 06（Converter：影片、音訊、圖片轉檔 job）
 
-**Status:** ready-for-agent
+**Status:** done（Crop/Trim 真實滑鼠拖拉待使用者驗證）
 
-- [ ] 預覽改用 asset protocol，使用者選的檔案在加入佇列時動態加進 asset scope；server.mount 全部移除
-- [ ] 裁切和剪輯相關的指令建構都在 Rust 端，`cargo test` 承接現有 test_image_crop_commands 的案例
-- [ ] E2E（改寫現有的 test_crop_ui）：預覽能載入，裁切輸出的尺寸正確，剪輯輸出的長度正確
+- [x] 預覽改用 asset protocol，使用者選的檔案在加入佇列時動態加進 asset scope；server.mount 全部移除
+- [x] 裁切和剪輯相關的指令建構都在 Rust 端，`cargo test` 承接現有 test_image_crop_commands 的案例
+- [x] E2E（改寫現有的 test_crop_ui）：預覽能載入，裁切輸出的尺寸正確，剪輯輸出的長度正確
