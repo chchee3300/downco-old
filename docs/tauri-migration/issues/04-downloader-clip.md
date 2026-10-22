@@ -4,8 +4,8 @@
 
 **Blocked by:** 03（Downloader：下載佇列（合併、只下載音訊、分開存檔、進度、取消））
 
-**Status:** ready-for-agent
+**Status:** done（ClipModal 拖拉待使用者真機驗證）
 
-- [ ] --download-sections 和 --force-keyframes-at-cuts 參數由 Rust 端建構，用 `cargo test` 覆蓋
-- [ ] 進度為 N/A 的情況由解析器過濾掉，用 `cargo test` 覆蓋
-- [ ] E2E：從短片下載一段 2 到 5 秒的片段，用 ffmpeg 量測輸出長度在容差內
+- [x] --download-sections 和 --force-keyframes-at-cuts 參數由 Rust 端建構，用 `cargo test` 覆蓋
+- [x] 進度為 N/A 的情況由解析器過濾掉，用 `cargo test` 覆蓋
+- [x] E2E：從短片下載一段 2 到 5 秒的片段，用 ffmpeg 量測輸出長度在容差內
