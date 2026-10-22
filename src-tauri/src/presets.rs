@@ -70,6 +70,27 @@ pub fn builtins() -> Vec<Preset> {
   out
 }
 
+// The Converter's input lists (useFileManager.js), mirrored by hand.
+const INPUT_EXTS: [(&str, &[&str]); 4] = [
+  ("video", &["mp4", "mkv", "avi", "mov", "webm"]),
+  ("image", &["jpg", "jpeg", "png", "webp", "avif", "gif", "ico"]),
+  ("audio", &["mp3", "wav", "aac", "flac", "ogg"]),
+  ("pdf", &["pdf"]),
+];
+
+/// video | image | audio | pdf by extension (case-insensitive), as the Converter decides.
+pub fn file_type_of(path: &str) -> Option<&'static str> {
+  let ext = std::path::Path::new(path).extension()?.to_str()?.to_ascii_lowercase();
+  INPUT_EXTS.iter().find(|(_, exts)| exts.contains(&ext.as_str())).map(|(t, _)| *t)
+}
+
+/// Whether a background launch converts `path` with `preset` or marks it
+/// skipped. Only the type matters: an input already in the target format
+/// is still converted (re-encoded with the preset's settings, `_converted`).
+pub fn applies(preset: &Preset, path: &str) -> bool {
+  file_type_of(path) == Some(preset.file_type.as_str())
+}
+
 /// The store (a JSON array of presets); built-ins when the file doesn't exist.
 pub fn load(path: &Path) -> Result<Vec<Preset>, String> {
   match std::fs::read_to_string(path) {
@@ -139,6 +160,24 @@ mod tests {
     let pdf = get("pdf-compress");
     assert_eq!((pdf.file_type.as_str(), pdf.settings.clone()), ("pdf", json!({ "optimize": "compress" })));
     assert!(all.iter().all(|p| p.name.is_none()));
+  }
+
+  #[test]
+  fn presets_apply_only_to_their_file_type() {
+    let all = builtins();
+    let get = |id: &str| all.iter().find(|p| p.id == id).unwrap();
+    let mp4 = get("video-to-mp4");
+    assert!(applies(mp4, r"C:\片 段.MOV"));
+    assert!(applies(mp4, "a.mp4"), "same-format input is converted, not skipped");
+    assert!(!applies(mp4, "a.mp3"));
+    assert!(!applies(mp4, "a.gif"), "gif is an image input");
+    assert!(!applies(mp4, "noext"));
+    assert!(!applies(mp4, "a.txt"));
+    assert!(applies(get("image-to-pdf"), "a.jpeg"));
+    assert!(!applies(get("image-to-pdf"), "a.pdf"));
+    assert!(applies(get("pdf-compress"), "a.PDF"));
+    assert!(applies(get("audio-to-ogg"), "a.flac"));
+    assert!(!applies(get("audio-to-ogg"), r"folder.mp3\inner"));
   }
 
   #[test]

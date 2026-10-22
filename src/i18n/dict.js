@@ -30,6 +30,11 @@ export const dict = {
     'progress.status.error': 'Failed',
     'progress.status.cancelled': 'Cancelled',
     'progress.status.skipped': 'Skipped: not supported by this preset',
+    'progress.cancel': 'Cancel',
+    'progress.cancelAll': 'Cancel all',
+    'progress.unknownPreset': 'This preset no longer exists',
+    'progress.notifyTitle': 'Conversion finished',
+    'progress.notifyBody': 'Click to open the output folder.',
 
     'settings.title': 'Settings',
     'settings.closeBehavior.heading': 'When closing the window',
@@ -97,6 +102,11 @@ export const dict = {
     'progress.status.error': '失敗',
     'progress.status.cancelled': '已取消',
     'progress.status.skipped': '已略過：不支援此預設',
+    'progress.cancel': '取消',
+    'progress.cancelAll': '全部取消',
+    'progress.unknownPreset': '這個預設已經不存在',
+    'progress.notifyTitle': '轉檔完成',
+    'progress.notifyBody': '點一下打開輸出資料夾。',
 
     'settings.title': '設定',
     'settings.closeBehavior.heading': '關閉視窗時',

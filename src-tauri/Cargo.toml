@@ -38,3 +38,6 @@ tauri-plugin-single-instance = "2"
 [target.'cfg(windows)'.dependencies]
 # Taskbar light/dark (tray icon colour): HKCU ...\Themes\Personalize.
 winreg = "0.55"
+# Progress-window success toast with a click callback (tauri-plugin-notification
+# drops the handle); same version that plugin already pulls in.
+notify-rust = "4.18"

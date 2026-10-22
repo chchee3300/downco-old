@@ -1,7 +1,8 @@
 mod presets;
 mod self_install;
 
-use std::sync::Mutex;
+use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::{Arc, Mutex};
 use serde::{Deserialize, Serialize};
 use tauri::{Emitter, Manager, WebviewUrl, WebviewWindowBuilder};
 
@@ -74,9 +75,104 @@ async fn queue_background(app: tauri::AppHandle, preset_id: String, files: Vec<S
   Ok(())
 }
 
+/// One file for the progress window: its preset (None = unknown id, an
+/// error row) and whether that preset applies (false = a "skipped" row).
+#[derive(Serialize)]
+struct ProgressJob {
+  path: String,
+  preset: Option<presets::Preset>,
+  applies: bool,
+}
+
+/// Drains the queued batches, one entry per file, in launch order.
 #[tauri::command]
-fn take_progress_jobs(queue: tauri::State<ProgressQueue>) -> Vec<ProgressBatch> {
-  std::mem::take(&mut *queue.0.lock().unwrap())
+fn take_progress_jobs(app: tauri::AppHandle, queue: tauri::State<ProgressQueue>) -> Result<Vec<ProgressJob>, String> {
+  let batches = std::mem::take(&mut *queue.0.lock().unwrap());
+  if batches.is_empty() {
+    return Ok(vec![]);
+  }
+  let all = presets::load(&presets_path(&app)?)?;
+  Ok(batches.into_iter().flat_map(|b| {
+    let preset = all.iter().find(|p| p.id == b.preset_id).cloned();
+    b.files.into_iter().map(move |path| {
+      let applies = preset.as_ref().is_some_and(|p| presets::applies(p, &path));
+      ProgressJob { path, preset: preset.clone(), applies }
+    })
+  }).collect())
+}
+
+/// Success toasts still on screen. Clicking one runs in this process, so a
+/// background-only app stays alive while one shows (bounded by TOAST_WAIT).
+#[derive(Default)]
+struct Toasts(AtomicUsize);
+
+// ponytail: Windows' default toast banner is ~5-7 s; a click after the app
+// has exited (from the Action Center) does nothing. Upgrade: a COM toast
+// activator registered by the installer.
+#[cfg(windows)]
+const TOAST_WAIT: std::time::Duration = std::time::Duration::from_secs(10);
+
+/// Nothing showing: the main window was never revealed (or is hidden with no
+/// tray to bring it back) and no toast is waiting for a click.
+fn idle<R: tauri::Runtime>(app: &tauri::AppHandle<R>) -> bool {
+  let main_visible = app.get_webview_window("main").is_some_and(|m| m.is_visible().unwrap_or(false));
+  !main_visible && app.tray_by_id("sorai-tray").is_none() && app.state::<Toasts>().0.load(Ordering::SeqCst) == 0
+}
+
+/// "All converted" toast; a click reveals `reveal` (an output file) in its folder.
+#[tauri::command]
+fn notify_done(app: tauri::AppHandle, title: String, body: String, reveal: String) -> Result<(), String> {
+  #[cfg(windows)]
+  {
+    use tauri_plugin_opener::OpenerExt;
+    let mut n = notify_rust::Notification::new();
+    n.summary(&title).body(&body);
+    // Same as tauri-plugin-notification: the app's AUMID only exists once
+    // installed; dev builds post under PowerShell's.
+    let exe = tauri::utils::platform::current_exe().map_err(|e| e.to_string())?;
+    let dir = exe.parent().map(|d| d.to_string_lossy().into_owned()).unwrap_or_default();
+    let sep = std::path::MAIN_SEPARATOR;
+    if !dir.ends_with(&format!("{sep}target{sep}debug")) && !dir.ends_with(&format!("{sep}target{sep}release")) {
+      n.app_id(&app.config().identifier);
+    }
+    let handle = n.show().map_err(|e| e.to_string())?;
+    app.state::<Toasts>().0.fetch_add(1, Ordering::SeqCst);
+    // Whichever comes first (click/dismiss or TOAST_WAIT) releases the toast.
+    let released = Arc::new(AtomicBool::new(false));
+    let release = {
+      let app = app.clone();
+      move || {
+        if !released.swap(true, Ordering::SeqCst) {
+          app.state::<Toasts>().0.fetch_sub(1, Ordering::SeqCst);
+          if app.get_webview_window(PROGRESS).is_none() && idle(&app) {
+            app.exit(0);
+          }
+        }
+      }
+    };
+    let (r1, r2) = (release.clone(), release);
+    let app2 = app.clone();
+    std::thread::spawn(move || {
+      let _ = handle.wait_for_response(|r: &notify_rust::NotificationResponse| {
+        if matches!(r, notify_rust::NotificationResponse::Default | notify_rust::NotificationResponse::Action(_)) {
+          let _ = app2.opener().reveal_item_in_dir(&reveal);
+        }
+      });
+      r1();
+    });
+    std::thread::spawn(move || {
+      std::thread::sleep(TOAST_WAIT);
+      r2();
+    });
+    Ok(())
+  }
+  #[cfg(not(windows))]
+  {
+    // No click callback through the plugin here; right-click presets are Windows-only.
+    use tauri_plugin_notification::NotificationExt;
+    let _ = reveal;
+    app.notification().builder().title(title).body(body).show().map_err(|e| e.to_string())
+  }
 }
 
 // Whether the taskbar (where the tray icon sits) is light. On Windows that's
@@ -104,6 +200,7 @@ pub fn run() {
     .manage(ColdBackground(is_background_launch(&cold_argv)))
     .manage(LaunchQueue(Mutex::new(vec![cold_argv])))
     .manage(ProgressQueue::default())
+    .manage(Toasts::default())
     // Must be the first plugin. Keyed on the app identifier: scripts/tauri-dev.mjs
     // gives dev/E2E builds a per-CDP-port identifier so worktrees don't collide.
     .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
@@ -127,17 +224,12 @@ pub fn run() {
     .plugin(tauri_plugin_notification::init())
     .plugin(tauri_plugin_sorai_converter::init())
     .plugin(tauri_plugin_sorai_downloader::init())
-    .invoke_handler(tauri::generate_handler![take_launch_args, taskbar_is_light, launch_is_background, list_presets, queue_background, take_progress_jobs])
-    // Closing the progress window ends the app when nothing else is showing:
-    // the main window was never revealed (background-only cold start) and
-    // isn't parked in the tray.
+    .invoke_handler(tauri::generate_handler![take_launch_args, taskbar_is_light, launch_is_background, list_presets, queue_background, take_progress_jobs, notify_done])
+    // Closing the progress window ends the app when nothing else is showing
+    // (see idle; a pending toast ends it on release instead).
     .on_window_event(|w, e| {
-      if w.label() == PROGRESS && matches!(e, tauri::WindowEvent::Destroyed) {
-        let app = w.app_handle();
-        let main_visible = app.get_webview_window("main").is_some_and(|m| m.is_visible().unwrap_or(false));
-        if !main_visible && app.tray_by_id("sorai-tray").is_none() {
-          app.exit(0);
-        }
+      if w.label() == PROGRESS && matches!(e, tauri::WindowEvent::Destroyed) && idle(w.app_handle()) {
+        w.app_handle().exit(0);
       }
     })
     .setup(|app| {

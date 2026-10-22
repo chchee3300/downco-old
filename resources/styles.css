@@ -2633,3 +2633,19 @@ select.input { display: none; }
   width: 100%;
   height: 4px;
 }
+.progress-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.progress-row-head .progress-row-status {
+  margin-left: auto;
+}
+.progress-row-cancel {
+  flex-shrink: 0;
+  padding: 0 6px;
+}
+.progress-cancel-all {
+  align-self: flex-end;
+  margin-top: auto;
+}

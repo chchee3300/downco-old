@@ -3652,6 +3652,7 @@ name = "sorai-toolkit"
 version = "0.1.0"
 dependencies = [
  "log",
+ "notify-rust",
  "serde",
  "serde_json",
  "tauri",
