@@ -115,18 +115,20 @@ export const tests = {
     }
   },
 
-  'converter: audio converts to ogg (libvorbis, bitrate)': async ({ page }) => {
+  // 320k on the mono fixture: libvorbis ABR used to reject it ("encoder
+  // setup failed"); the plugin now maps the bitrate onto VBR -q:a.
+  'converter: audio converts to ogg (libvorbis VBR quality from the bitrate)': async ({ page }) => {
     const song = join(dir, 'song 一.mp3')
     copyFileSync(join(fixtures, 'test_fixture_audio.mp3'), song)
     await open(page, [song])
     try {
       await set(page, '#audio-format', '.ogg')
-      await set(page, '#audio-bitrate', '192k')
+      await set(page, '#audio-bitrate', '320k')
       assert.match(await run(page, 1), /^Completed 1 of 1/)
       const p = probe(join(dir, 'song 一_converted.ogg'))
       assert.match(p.streams, /Audio: vorbis/)
       assert.ok(Math.abs(p.duration - 2) < 0.2, `duration ${p.duration}`)
-      assert.match(await log(page), /-c:a libvorbis -b:a 192k/)
+      assert.match(await log(page), /-c:a libvorbis -q:a 9/)
     } finally {
       await backToHub(page)
     }
