@@ -1,3 +1,37 @@
+# [2.0.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.10.2...v2.0.0) (2026-10-22)
+
+
+* feat!: remove Neutralino, the app is Tauri-only ([6c90d8c](https://github.com/chchee3300/sorai-toolkit/commit/6c90d8c85efbabe1dae77a82f8b3372e17b70852))
+
+
+### Bug Fixes
+
+* **build:** rerun tauri_build when platform config or sidecars change ([58d215d](https://github.com/chchee3300/sorai-toolkit/commit/58d215dac7a81602848cf9cf4254c3ea88fd8e8f))
+* **deps:** lock the Tauri plugin versions of the converter and downloader ([e925337](https://github.com/chchee3300/sorai-toolkit/commit/e925337a615246910a5821e8627d0bea34fd845f))
+* **dev:** watch only sibling plugin/src, not build.rs-generated permissions ([33b6287](https://github.com/chchee3300/sorai-toolkit/commit/33b6287f537ef364b9b3e338376daf6da15b664b))
+* hub review fixes (argv, notifications, launch batches, dev-only close capability) ([62d01d8](https://github.com/chchee3300/sorai-toolkit/commit/62d01d8f6e25081fd72d648eb3f063cb02e24d25))
+* **linux:** ship ffmpeg/yt-dlp in /usr/lib/<app>/, drop Conflicts/Replaces/Provides ([547a043](https://github.com/chchee3300/sorai-toolkit/commit/547a0433d292033dd5e36e49c80aa61b4e637413))
+
+
+### Features
+
+* asset protocol for converter thumbnails, converter add-files E2E, drop Phase 0 probe ([419f6f5](https://github.com/chchee3300/sorai-toolkit/commit/419f6f5abbdf1f97ed83371afdc23f9963781af9))
+* bundle qpdf (with DLLs) and img2pdf sidecars on Windows; PDF E2E ([a133730](https://github.com/chchee3300/sorai-toolkit/commit/a133730372efe4b6d1483dabcc462690332898b7))
+* register tool plugins, cross-repo dev mode, dialogs module and E2E runner ([4f459d4](https://github.com/chchee3300/sorai-toolkit/commit/4f459d405e474365fb2a101c2d186629273c926f))
+* self-install Finder Quick Actions and Nautilus scripts from Rust ([5c08f3f](https://github.com/chchee3300/sorai-toolkit/commit/5c08f3ff64dd947a612ed4118524de0c441b71c1))
+* single-instance plugin with forwarded launch args and debounced pendingLaunch ([dbd79c8](https://github.com/chchee3300/sorai-toolkit/commit/dbd79c8dc9f72b3029980903e1370b89defc68bb))
+* Tauri v2 shell skeleton with sidecars and native drag-drop probe ([a34d7ce](https://github.com/chchee3300/sorai-toolkit/commit/a34d7cec73ffa845bc95fba45fd2973fa2361102)), closes [neutralinojs#1795](https://github.com/neutralinojs/issues/1795)
+* Tauri window lifecycle, close behavior, tray, notification and theme icon ([1bd5113](https://github.com/chchee3300/sorai-toolkit/commit/1bd5113e93c6f7ccd453831a8831746e3a36ed8d))
+* **updater:** official builds update via Tauri updater plugin, self-built open release page ([2ac498f](https://github.com/chchee3300/sorai-toolkit/commit/2ac498fa3310ca854d2e3ef4f1125d780049b1c7))
+* **windows:** per-user NSIS installer with context menu install hooks ([f1e03eb](https://github.com/chchee3300/sorai-toolkit/commit/f1e03ebc34355c0d1f1171bb16a077c5b6c423b3))
+
+
+### BREAKING CHANGES
+
+* 1.x (Neutralino) installs can't auto-update to this version. Windows: uninstall the old SORAI Toolkit first (Settings -> Apps), then run the new installer -- uninstalling the old one afterwards deletes the new right-click menu. macOS: replace the app in Applications. Linux: install the new .deb/.rpm over the old one.
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+
 ## [1.10.2](https://github.com/chchee3300/sorai-toolkit/compare/v1.10.1...v1.10.2) (2026-07-20)
 
 
