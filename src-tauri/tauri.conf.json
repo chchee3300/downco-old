@@ -33,7 +33,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "PLACEHOLDER-maintainer-runs-npx-tauri-signer-generate-and-pastes-the-.key.pub-contents-here-see-README-Releases",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IEMyOTQzRjg5RjgzMzE2NDUKUldSRkZqUDRpVCtVd3QyajZuY21YTjZlSzlQaTgyVVRGMStubEJzYkhnL3A5T2hlZ1NsUFp6L1oK",
       "endpoints": ["https://github.com/chchee3300/sorai-toolkit/releases/latest/download/latest.json"],
       "windows": { "installMode": "passive" }
     }
