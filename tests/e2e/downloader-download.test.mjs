@@ -1,5 +1,5 @@
 // Downloader queue through the real plugin: yt-dlp sidecar spawned by the
-// Rust job runner, ffmpeg sidecar for merging. Ported from the Neutralino-era
+// Rust job runner, ffmpeg sidecar for merging. Ported from the old
 // tests/test_download.js. Needs network.
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'

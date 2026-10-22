@@ -1,4 +1,4 @@
-// Trim / Crop modals end to end (ported from the Neutralino-era test_crop_ui.js):
+// Trim / Crop modals end to end (ported from the old test_crop_ui.js):
 // the preview really loads through the asset protocol (queued file added to
 // the scope at runtime, nothing else readable), the crop rect drags / snaps /
 // clears, and real ffmpeg output has the cropped size / trimmed length.

@@ -1,4 +1,4 @@
-// Converter jobs end to end (ported from the Neutralino-era test_conversion.js):
+// Converter jobs end to end (ported from the old test_conversion.js):
 // real ffmpeg sidecar runs, outputs checked with ffmpeg itself. Video /
 // audio / image once each, a failing file doesn't stop the batch, output
 // names never overwrite, "under 5 MB" really is under 5,000,000 bytes, and

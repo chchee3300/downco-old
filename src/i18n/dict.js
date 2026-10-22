@@ -63,7 +63,7 @@ export const dict = {
     'about.developer': 'Developer',
     'about.license': 'License',
     'about.homepage': 'Homepage',
-    'about.description': 'SORAI Toolkit is a desktop suite of local file tools — currently a video/image/audio/PDF Converter and a video Downloader — built with Neutralino.js and React. Everything runs on your own machine; no file is ever uploaded anywhere.',
+    'about.description': 'SORAI Toolkit is a desktop suite of local file tools — currently a video/image/audio/PDF Converter and a video Downloader — built with Tauri and React. Everything runs on your own machine; no file is ever uploaded anywhere.',
     'about.thirdPartyHeading': 'Third-party software',
     'about.viewFullLicenses': 'View full third-party license details',
     'about.close': 'Close',
@@ -123,7 +123,7 @@ export const dict = {
     'about.developer': '軟體開發者',
     'about.license': '授權方式',
     'about.homepage': '專案首頁',
-    'about.description': 'SORAI Toolkit 是一套本機檔案工具箱，目前包含影片/圖片/音訊/PDF 轉檔工具與影片下載工具，使用 Neutralino.js 與 React 打造。所有處理都在你自己的電腦上完成，不會上傳任何檔案。',
+    'about.description': 'SORAI Toolkit 是一套本機檔案工具箱，目前包含影片/圖片/音訊/PDF 轉檔工具與影片下載工具，使用 Tauri 與 React 打造。所有處理都在你自己的電腦上完成，不會上傳任何檔案。',
     'about.thirdPartyHeading': '第三方軟體',
     'about.viewFullLicenses': '查看完整第三方授權內容',
     'about.close': '關閉',
@@ -131,7 +131,7 @@ export const dict = {
 }
 
 // Non-hook, point-in-time translation for text used in imperative
-// Neutralino calls (tray menu item labels, os.showNotification) rather than
+// Tauri calls (tray menu item labels, sendNotification) rather than
 // rendered live from a key by a React component -- same tNow pattern
 // sorai-toolkit-converter/src/i18n/dict.js already uses for its progress
 // text, reads the current language at call time.

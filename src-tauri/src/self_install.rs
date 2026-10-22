@@ -4,7 +4,7 @@
 // per-user under ~/.local/share), unlike Windows' NSIS hook or KDE's
 // ServiceMenu files shipped in the deb/rpm. So the running app writes them at
 // every startup, idempotently, with no uninstall step (a removed app leaves
-// orphan entries -- accepted tradeoff). Ported 1:1 from the Neutralino-era
+// orphan entries -- accepted tradeoff). Ported 1:1 from the old JS
 // src/lib/macFinderServices.js + linuxNautilusScripts.js; content and rules
 // unchanged except the Automator UUIDs, which are now derived from the slug so
 // every rewrite is byte-identical.

@@ -10,8 +10,8 @@
 // still fetches and resolves the original git source before patching.)
 //
 // vite.config.mjs uses siblings() to alias the npm package to the sibling's
-// src/ for HMR. Default sibling = the `-tauri` integration worktree next to
-// the hub's; override with CONVERTER_REPO / DOWNLOADER_REPO.
+// src/ for HMR. Default sibling = ../sorai-toolkit-<tool> next to the hub;
+// override with CONVERTER_REPO / DOWNLOADER_REPO.
 //
 // CLI (`node scripts/siblings.mjs`) refreshes the links; it runs in
 // beforeDevCommand/beforeBuildCommand and from scripts/tauri-dev.mjs.
@@ -33,7 +33,7 @@ const hasCrate = (dir) => existsSync(join(dir, 'plugin', 'Cargo.toml'))
 export function siblings() {
   return TOOLS.flatMap(({ name, env }) => {
     const pkg = `sorai-toolkit-${name}`
-    const dir = resolve(process.env[env] || join(toolkit, `${pkg}-tauri`))
+    const dir = resolve(process.env[env] || join(toolkit, pkg))
     if (hasCrate(dir)) return [{ name, pkg, dir }]
     if (process.env[env]) throw new Error(`${env}=${dir} has no plugin/Cargo.toml`)
     return []

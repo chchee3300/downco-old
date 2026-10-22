@@ -17,7 +17,7 @@ const THIRD_PARTY_LINKS = [
   { name: 'yt-dlp', note: 'Unlicense', url: 'https://github.com/yt-dlp/yt-dlp/blob/master/LICENSE' },
   { name: 'qpdf', note: 'Apache-2.0', url: 'https://github.com/qpdf/qpdf/blob/main/LICENSE.txt' },
   { name: 'img2pdf', note: 'LGPL-3.0', url: 'https://gitlab.mister-muffin.de/josch/img2pdf/-/blob/master/LICENSE' },
-  { name: 'Neutralino.js', note: 'MIT', url: 'https://github.com/neutralinojs/neutralinojs/blob/main/LICENSE' },
+  { name: 'Tauri', note: 'MIT / Apache-2.0', url: 'https://github.com/tauri-apps/tauri/blob/dev/LICENSE_MIT' },
   { name: 'React', note: 'MIT', url: 'https://github.com/facebook/react/blob/main/LICENSE' },
 ]
 

@@ -1,13 +1,13 @@
 # SORAI Toolkit
 
-A desktop suite of local, no-upload file tools, built with [Neutralino.js](https://neutralino.js.org/) and React. This is the **hub repo**: the installable app itself — window shell, main-menu hub, theme, and in-app updates — composing individual tools that each live in their own repo.
+A desktop suite of local, no-upload file tools, built with [Tauri v2](https://tauri.app/) and React. This is the **hub repo**: the installable app itself — window shell, main-menu hub, tray, single instance, theme, in-app updates, packaging — composing individual tools that each live in their own repo.
 
 ## Tools
 
 - **Converter** ([`sorai-toolkit-converter`](https://github.com/chchee3300/sorai-toolkit-converter)) — convert video, image, audio, and PDF files locally.
 - **Downloader** ([`sorai-toolkit-downloader`](https://github.com/chchee3300/sorai-toolkit-downloader)) — download a video from a URL, pick a format, and save it locally (via `yt-dlp`).
 
-Each tool repo is consumed here as an npm git dependency (`package.json`'s `dependencies`) and built automatically via its own `prepare` lifecycle script on `npm install` — no manual build step needed for either.
+Each tool repo is a Tauri plugin: a Rust crate (`plugin/`, the command building, output parsing and process running) plus a React UI package. Both halves come from one npm git dependency (`package.json`'s `dependencies`, built by the tool's own `prepare` script on `npm install`); `src-tauri/Cargo.toml` points at the crate inside it through a link that `scripts/siblings.mjs` generates.
 
 ## Installation
 
@@ -29,14 +29,14 @@ The first Tauri release can't be installed by a 1.x app's built-in updater; inst
 
 ## How it works
 
-The UI (React + Vite, in `src/`) runs inside a [Neutralino.js](https://neutralino.js.org/) shell, which gives it native filesystem access and the ability to spawn local command-line tools. Each tool's own conversion/download logic lives in its own repo; this repo provides the shared runtime globals both tools call into (`resources/js/lib/platform.js` and friends — `window.EstellaLib.*`) plus the actual bundled third-party binaries:
+The UI (React + Vite, in `src/`) runs in the system webview of a [Tauri](https://tauri.app/) app (`src-tauri/`). The hub's Rust side registers the two tool plugins and the shell features (single instance, updater, dialogs, notifications, tray); each tool's Rust plugin runs the bundled command-line tools as Tauri sidecars:
 
 - [`ffmpeg`](https://ffmpeg.org/) — video/image/audio conversion (Converter) and stream merging (Downloader, via `--ffmpeg-location`). Bundled on every platform.
 - [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) — video metadata/download (Downloader). Bundled on every platform, fetched live from yt-dlp's own GitHub releases (not a pinned version, since it cuts releases often).
 - [`qpdf`](https://qpdf.readthedocs.io/) — PDF optimization (Converter). Bundled on Windows; on macOS/Linux it's a system-installed dependency (`brew`/`apt`/etc.).
 - [`img2pdf`](https://gitlab.mister-muffin.de/josch/img2pdf) — image-to-PDF conversion (Converter). Bundled on Windows; on macOS/Linux it's a system-installed dependency (`pip`).
 
-These live in per-platform folders under `binaries/` (`win_x64/`, `mac_x64/`, `mac_arm64/`, `linux_x64/`), fetched by `setup.mjs`.
+`setup.mjs` downloads these into per-platform folders under `binaries/` (`win_x64/`, `mac_x64/`, `mac_arm64/`, `linux_x64/`); `scripts/copy-sidecars.mjs` copies them into `src-tauri/binaries/` under the names Tauri's `externalBin` expects, before every `tauri dev`/`tauri build`.
 
 Inter and Noto Sans TC (思源黑體) are bundled locally as `@font-face` woff2 files under `resources/fonts/` (so Traditional Chinese UI text renders consistently even fully offline); JetBrains Mono still loads from Google Fonts.
 
@@ -44,85 +44,57 @@ Inter and Noto Sans TC (思源黑體) are bundled locally as `@font-face` woff2 
 
 Building from source needs:
 
-- [Node.js](https://nodejs.org/) (for the Vite build and `setup.mjs`)
-- The [Neutralino CLI](https://neutralino.js.org/docs/cli/neu-cli) — installed automatically by `npm run setup`
+- [Node.js](https://nodejs.org/) and a [Rust toolchain](https://rustup.rs/) (see Tauri's [prerequisites](https://tauri.app/start/prerequisites/) for the per-OS system packages, e.g. webkit2gtk on Linux)
 - Windows, macOS, or Linux
 - **macOS/Linux only**: `qpdf` and `img2pdf` must be installed system-wide for Converter's PDF features (`brew install qpdf` / `sudo apt install qpdf`, and `pip install img2pdf`) — ffmpeg and yt-dlp are bundled on every platform. This applies whether you built from source or installed a pre-built `.deb`/`.rpm`/`.dmg`.
 
 ## Setup
 
 ```bash
-npm install
-npm run setup
+npm ci
+npm run setup     # node setup.mjs: downloads ffmpeg + yt-dlp (all platforms) into binaries/, plus
+                  # qpdf/img2pdf on Windows; on macOS/Linux it checks for system qpdf/img2pdf
 ```
 
-`npm install` also triggers each tool repo's own `prepare` script (via its git dependency), building `sorai-toolkit-converter`/`sorai-toolkit-downloader`'s `dist/index.js` automatically.
-
-`npm run setup` chains everything a fresh clone needs:
-
-```bash
-npm install -g @neutralinojs/neu@11.7.1   # pinned -- see note below
-neu update                                 # fetches the Neutralino client lib + runtime binaries (bin/, gitignored)
-node scripts/copy-neutralino-client.mjs    # neu update writes the client lib to web-dist/js/ (per
-                                            # neutralino.config.json's clientLibrary); vite.config.mjs
-                                            # re-copies it from resources/js/ (its source of truth, also
-                                            # gitignored) on every build, so this needs doing once
-node setup.mjs                             # downloads ffmpeg + yt-dlp (all platforms) into binaries/, plus
-                                            # qpdf/img2pdf on Windows; on macOS/Linux it checks for system
-                                            # qpdf/img2pdf and prints install hints if missing
-```
-
-The `@neutralinojs/neu` version is pinned rather than left at `latest`: as of this writing, the latest published version (`11.7.2`) declares a `uuid` dependency range that resolves to an ESM-only release, which crashes its own (CommonJS) code with `ERR_REQUIRE_ESM` on install. `11.7.1` is the last version that doesn't have this problem — worth re-checking occasionally in case upstream fixes it.
+`npm ci` also triggers each tool repo's own `prepare` script (via its git dependency), building `sorai-toolkit-converter`/`sorai-toolkit-downloader`'s `dist/index.js`.
 
 ## Development
 
 ```bash
-npm run dev         # start the Vite dev server (UI only, in a browser)
-neu run             # launch the Neutralino desktop shell -- serves whatever's already in web-dist/,
-                     # it does NOT build anything itself; run `npm run build` first (or use dev:watch below)
-npm run dev:watch   # rebuilds automatically on save, then launches neu run -- see below
+npm run tauri:dev   # Vite dev server + tauri dev, one command
 ```
 
-`neu run` serves the app from `web-dist/`, which is built from `src/` via Vite — `npm run build` regenerates it.
+If `sorai-toolkit-converter`/`sorai-toolkit-downloader` are checked out as sibling folders next to this one (override the paths with `CONVERTER_REPO`/`DOWNLOADER_REPO`), dev mode uses them instead of `node_modules`: their `src/` hot-reloads through Vite and edits to their `plugin/` crate rebuild and restart the app. Without siblings it uses the npm git dependency's copy.
 
-Changing a tool's own logic (Converter/Downloader) happens in that tool's own repo. Since those are consumed here as npm git dependencies, editing their source doesn't touch this repo's `node_modules` copy on its own — either `npm install` again (or `npm update sorai-toolkit-converter`/`sorai-toolkit-downloader`) once those changes are pushed, or, for local iteration before pushing:
-
-```bash
-npm run dev:watch
-```
-
-`scripts/dev-watch.mjs` rebuilds whichever of this hub or a sibling `sorai-toolkit-converter`/`sorai-toolkit-downloader` checkout just changed, copies the tool's `dist/` into this repo's `node_modules`, rebuilds `web-dist/`, and launches `neu run` — which then live-reloads on every subsequent save. Assumes the two tool repos are cloned as sibling folders next to this one; override with `CONVERTER_REPO`/`DOWNLOADER_REPO` env vars otherwise. Windows/macOS only (uses `fs.watch({ recursive: true })`, unsupported on Linux).
+Other env vars: `VITE_PORT` (default 5173) and `CDP_PORT` (default 9229, the WebView2 remote-debugging port the E2E tests connect to) — set both to run several checkouts side by side.
 
 ## Project structure
 
 ```
-src/                 Hub shell (main menu, hamburger menu, theme, in-app update banner)
-resources/           Static assets served by Neutralino (icons, styles, neutralino.js client,
-                      platform/command-builder libs shared by both tools)
-binaries/            Bundled conversion binaries, per platform (fetched by setup.mjs):
+src/                 Hub UI (main menu, hamburger menu, settings, about, update banner)
+src-tauri/           Tauri app: Rust entry (lib.rs, self_install.rs), tauri*.conf.json, capabilities, icons
+resources/           Stylesheet, fonts, icons, and the UI-only runtime globals both tools use
+                      (liquid-glass.js, lib/i18n.js, lib/range-fill.js)
+binaries/            Bundled third-party binaries, per platform (fetched by setup.mjs, gitignored):
                        win_x64/    ffmpeg.exe, yt-dlp.exe, qpdf.exe, img2pdf.exe + runtime DLLs
                        mac_x64/    ffmpeg, yt-dlp
                        mac_arm64/  ffmpeg, yt-dlp
                        linux_x64/  ffmpeg, yt-dlp
-bin/                 Neutralino runtime binaries (per-platform)
-tests/               Regression/E2E test scripts and their fixture files (tests/fixtures/)
-packaging/           Per-platform installer/package build scripts (linux/, windows/, macos/)
-scripts/             Setup and CI helper scripts (neutralino.js client copy, version computation/stamping)
-neutralino.config.json   Neutralino app configuration (window size, allowed native APIs, etc.)
-setup.mjs            Downloads the third-party conversion binaries (cross-platform)
+tests/e2e/           End-to-end tests against the real Tauri window (fixtures in tests/fixtures/)
+packaging/           Right-click menu generators (Windows NSIS hook, KDE ServiceMenus)
+scripts/             Dev/build helpers (tauri-dev, siblings, copy-sidecars, version stamping, updater manifest)
+setup.mjs            Downloads the third-party binaries (cross-platform)
 ```
 
 ## Testing
 
 ```bash
-node tests/test_conversion.js        # Converter golden-master regression suite
-node tests/test_drop.js              # Converter file drag-and-drop behavior
-node tests/test_crop_ui.js           # Converter image crop UI
-node tests/test_image_crop_commands.js
-node tests/test_download.js          # Downloader: real metadata fetch + real download, through the hub
+npm run test:e2e                  # every tests/e2e/*.test.mjs
+npm run test:e2e -- converter     # only files whose name contains "converter"
+(cd src-tauri && cargo test)      # hub Rust (self-install file generation)
 ```
 
-All drive the real composed app end-to-end via Playwright and a `neu run` instance, so they must be run from the project root. Fixtures live in `tests/fixtures/`.
+`test:e2e` starts `tauri dev` with a fresh WebView2 profile, connects Playwright over CDP to the real window, and runs real conversions/downloads (the Downloader tests need network). Each tool's pure logic is tested in its own repo with `cd plugin && cargo test`. Drag-and-drop, the tray, and right-click menus need a real mouse and aren't automated.
 
 ## Releases
 

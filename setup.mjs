@@ -6,9 +6,8 @@
 // it via --ffmpeg-location to merge separate video/audio streams). qpdf
 // and img2pdf are bundled on Windows only -- on macOS/Linux they're
 // system-installed dependencies (brew/apt/pip), so this script only probes
-// for them and prints install hints rather than downloading anything. See
-// resources/js/lib/platform.js for the runtime path/command resolution that
-// matches this layout.
+// for them and prints install hints rather than downloading anything.
+// scripts/copy-sidecars.mjs turns this layout into Tauri sidecars.
 import { execFileSync, execSync } from 'node:child_process';
 import { existsSync, mkdirSync, rmSync, readdirSync, copyFileSync, chmodSync } from 'node:fs';
 import { platform, arch } from 'node:os';

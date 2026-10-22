@@ -2,7 +2,6 @@ mod self_install;
 
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
-use tauri_plugin_shell::ShellExt;
 
 // argv of the cold start plus every launch a second instance forwarded;
 // the frontend drains it (useSingleInstance.js) on mount and on each
@@ -12,25 +11,6 @@ struct LaunchQueue(Mutex<Vec<Vec<String>>>);
 #[tauri::command]
 fn take_launch_args(queue: tauri::State<LaunchQueue>) -> Vec<Vec<String>> {
   std::mem::take(&mut *queue.0.lock().unwrap())
-}
-
-// Phase 0 probe: proves both sidecars resolve and execute from the bundle.
-#[tauri::command]
-async fn sidecar_versions(app: tauri::AppHandle) -> Result<Vec<String>, String> {
-  let mut out = Vec::new();
-  for (name, arg) in [("ffmpeg", "-version"), ("yt-dlp", "--version")] {
-    let res = app
-      .shell()
-      .sidecar(name)
-      .map_err(|e| e.to_string())?
-      .arg(arg)
-      .output()
-      .await
-      .map_err(|e| e.to_string())?;
-    let first = String::from_utf8_lossy(&res.stdout).lines().next().unwrap_or("").to_string();
-    out.push(format!("{name}: {first}"));
-  }
-  Ok(out)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -56,7 +36,7 @@ pub fn run() {
     .plugin(tauri_plugin_notification::init())
     .plugin(tauri_plugin_sorai_converter::init())
     .plugin(tauri_plugin_sorai_downloader::init())
-    .invoke_handler(tauri::generate_handler![sidecar_versions, take_launch_args])
+    .invoke_handler(tauri::generate_handler![take_launch_args])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(

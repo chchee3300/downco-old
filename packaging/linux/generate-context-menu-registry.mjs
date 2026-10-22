@@ -43,7 +43,7 @@
 // fires once per selected file (like Windows Explorer turned out to,
 // see the Windows generator's own comment) is also unverified -- but
 // doesn't matter functionally either way, since the app's own
-// single-instance queue+debounce (src/lib/instanceLock.js,
+// single-instance queue+debounce (tauri-plugin-single-instance +
 // src/hooks/useSingleInstance.js) reassembles either shape into one
 // batched pendingLaunch.
 import fs from 'node:fs'

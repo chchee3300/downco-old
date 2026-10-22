@@ -26,11 +26,13 @@ binary itself remains fully subject to its own license terms.
 
 - **Inter** — [SIL Open Font License 1.1](https://github.com/rsms/inter/blob/master/LICENSE.txt).
 - **Noto Sans TC** (思源黑體) — [SIL Open Font License 1.1](https://github.com/notofonts/noto-cjk/blob/main/Sans/OFL.txt).
-- **JetBrains Mono** (loaded via Google Fonts CDN, not bundled as a file) — [Apache License 2.0](https://github.com/JetBrains/JetBrainsMono/blob/master/OFL.txt).
+- **JetBrains Mono** (loaded via Google Fonts CDN, not bundled as a file) — [SIL Open Font License 1.1](https://github.com/JetBrains/JetBrainsMono/blob/master/OFL.txt).
 
 ## Key runtime/UI dependencies
 
-- **Neutralino.js** — MIT.
+- **Tauri** — [MIT](https://github.com/tauri-apps/tauri/blob/dev/LICENSE_MIT) or [Apache-2.0](https://github.com/tauri-apps/tauri/blob/dev/LICENSE_APACHE-2.0), at your option. Compiled into the app binary, together with the Rust crates it depends on (overwhelmingly MIT/Apache-2.0; run `cargo tree` in `src-tauri/` for the full list).
+- **Tauri plugins** (`tauri-plugin-shell`, `-dialog`, `-opener`, `-process`, `-updater`, `-notification`, `-single-instance`, `-log`, plus their `@tauri-apps/plugin-*` JS bindings and `@tauri-apps/api`) — MIT or Apache-2.0, same terms as Tauri: <https://github.com/tauri-apps/plugins-workspace>.
+- **WebView** — not bundled: Windows uses the system's Microsoft Edge WebView2 Runtime, macOS the system WKWebView, Linux the distro's webkit2gtk (LGPL, installed as a package dependency).
 - **React / React DOM** — MIT.
 - **liquid-glass-react** — MIT.
 

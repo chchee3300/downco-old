@@ -1,9 +1,9 @@
 const FORMAT_PREFIX = '--sorai-convert-to='
 const QUICK_ACTION_PREFIX = '--sorai-quick-action='
 
-// Parses this app's own launch-time CLI args (window.NL_ARGS on a cold
-// start, or an equivalent argv array forwarded from a second instance --
-// see useSingleInstance.js) into the shape ConverterApp's pendingLaunch prop
+// Parses this app's own launch-time CLI args (the cold-start argv, or one
+// forwarded from a second instance -- both drained from Rust by
+// useSingleInstance.js) into the shape ConverterApp's pendingLaunch prop
 // expects.
 //
 // Every launch path this app controls places one of the two --sorai-*
@@ -14,7 +14,7 @@ const QUICK_ACTION_PREFIX = '--sorai-quick-action='
 // So file paths are "every non-flag token following the recognized
 // flag" -- not anything positional/heuristic about looking like a path.
 // This also naturally drops the binary's own argv[0] path and any
-// Neutralino-internal flags that precede it, since those never come
+// runtime-internal flags that precede it, since those never come
 // after our own flag in any command line we build.
 export function parseLaunchArgs(argv) {
   if (!Array.isArray(argv)) return null

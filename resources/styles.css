@@ -1500,7 +1500,7 @@ select.input { display: none; }
   filter: brightness(1.15);
 }
 
-/* WebKit / Blink (Chrome, Neutralino) */
+/* WebKit / Blink (Chrome, WebView2) */
 .range-input::-webkit-slider-container {
   overflow: visible;
 }

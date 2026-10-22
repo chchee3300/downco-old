@@ -4,11 +4,10 @@
   "license": "MIT",
   "scripts": {
     "dev": "vite",
-    "dev:watch": "node scripts/dev-watch.mjs",
     "build": "vite build",
     "preview": "vite preview",
     "release": "semantic-release",
-    "setup": "npm install -g @neutralinojs/neu@11.7.1 && neu update && node scripts/copy-neutralino-client.mjs && node setup.mjs",
+    "setup": "node setup.mjs",
     "tauri": "tauri",
     "tauri:dev": "node scripts/tauri-dev.mjs",
     "test:e2e": "node tests/e2e/run.mjs"
@@ -16,10 +15,9 @@
   "dependencies": {
     "@tauri-apps/api": "^2.12.4",
     "@tauri-apps/plugin-dialog": "^2.8.3",
+    "@tauri-apps/plugin-notification": "^2.7.0",
     "@tauri-apps/plugin-opener": "^2.7.2",
     "@tauri-apps/plugin-process": "^2.4.0",
-    "@tauri-apps/plugin-notification": "^2.7.0",
-    "@tauri-apps/plugin-shell": "^2.5.0",
     "@tauri-apps/plugin-updater": "^2.14.0",
     "liquid-glass-react": "^1.1.1",
     "react": "^19.2.7",

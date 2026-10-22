@@ -1,6 +1,5 @@
 // Cross-package language state -- current language, persistence, and
-// change notification, same window.EstellaLib attach pattern as the rest of
-// resources/js/lib/ (see platform.js). Deliberately does NOT own any
+// change notification, attached to window.EstellaLib like range-fill.js. Deliberately does NOT own any
 // translation strings itself: those live in each consuming package's own
 // src/i18n/dict.js (hub, sorai-toolkit-converter, sorai-toolkit-downloader
 // each own their own UI copy, same reasoning the multi-repo split already

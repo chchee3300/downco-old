@@ -3,8 +3,7 @@ import { Image } from '@tauri-apps/api/image'
 
 // The window is created hidden (tauri.conf.json "visible": false) so a
 // secondary instance never flashes one. The primary reveals it here; the
-// tray "Open" item reuses the same call. None of the Neutralino-era
-// off-screen/iconic workarounds are needed under Tauri.
+// tray "Open" item reuses the same call.
 export async function revealMainWindow({ center = false } = {}) {
   const w = getCurrentWindow()
   if (center) await w.center()
