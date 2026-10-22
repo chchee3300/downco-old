@@ -59,6 +59,12 @@ export const tests = {
     assert.deepEqual(errors, [])
     assert.equal(await win(page, 'is_visible'), false)
     assert.notEqual(await invoke(page, 'plugin:tray|get_by_id', { id: 'sorai-tray' }), null)
+    // Tray icon colour follows the taskbar's own light/dark setting.
+    if (process.platform === 'win32') {
+      const { execSync } = await import('node:child_process')
+      const reg = execSync('reg query HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize /v SystemUsesLightTheme').toString()
+      assert.equal(await invoke(page, 'taskbar_is_light'), /0x1\b/.test(reg))
+    }
     assert.equal(appRunning(), true)
     await win(page, 'show') // tray "Open" needs a real mouse; restore directly
     assert.equal(await win(page, 'is_visible'), true)

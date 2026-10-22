@@ -13,6 +13,23 @@ fn take_launch_args(queue: tauri::State<LaunchQueue>) -> Vec<Vec<String>> {
   std::mem::take(&mut *queue.0.lock().unwrap())
 }
 
+// Whether the taskbar (where the tray icon sits) is light. On Windows that's
+// its own setting, separate from the app theme (Windows 10's default is light
+// apps + dark taskbar). None elsewhere: the frontend falls back to the
+// window theme (macOS tints its template tray icon itself).
+#[tauri::command]
+fn taskbar_is_light() -> Option<bool> {
+  #[cfg(windows)]
+  {
+    let key = winreg::RegKey::predef(winreg::enums::HKEY_CURRENT_USER)
+      .open_subkey(r"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize")
+      .ok()?;
+    key.get_value::<u32, _>("SystemUsesLightTheme").ok().map(|v| v != 0)
+  }
+  #[cfg(not(windows))]
+  None
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -37,7 +54,7 @@ pub fn run() {
     .plugin(tauri_plugin_notification::init())
     .plugin(tauri_plugin_sorai_converter::init())
     .plugin(tauri_plugin_sorai_downloader::init())
-    .invoke_handler(tauri::generate_handler![take_launch_args])
+    .invoke_handler(tauri::generate_handler![take_launch_args, taskbar_is_light])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(

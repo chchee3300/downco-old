@@ -4,8 +4,10 @@ import { TrayIcon } from '@tauri-apps/api/tray'
 import { Menu } from '@tauri-apps/api/menu'
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
 import { tNow } from '../i18n/dict.js'
+import { invoke } from '@tauri-apps/api/core'
 import { imageFromUrl, revealMainWindow } from '../lib/mainWindow.js'
-import trayIconUrl from '../../resources/icons/trayIcon.png'
+import trayIconDark from '../../resources/icons/trayIcon-dark.png'
+import trayIconLight from '../../resources/icons/trayIcon-light.png'
 
 // Owns the window's close-requested -> (ask | minimize-to-tray | quit) hook.
 // Storage key/pattern mirrors useTheme.js's 'sorai-theme' -- localStorage,
@@ -15,6 +17,13 @@ const TRAY_ID = 'sorai-tray'
 
 // destroy() skips close-requested; the last window going away ends the app.
 const quitApp = () => getCurrentWindow().destroy()
+
+// White mark on a dark taskbar, black on a light one. The taskbar's own
+// setting (Windows), else the system theme the window reports.
+async function trayIcon() {
+  const light = (await invoke('taskbar_is_light').catch(() => null)) ?? (await getCurrentWindow().theme()) === 'light'
+  return imageFromUrl(light ? trayIconLight : trayIconDark)
+}
 
 const buildTrayMenu = () =>
   Menu.new({
@@ -48,7 +57,7 @@ export function useCloseBehavior() {
       await (await TrayIcon.getById(TRAY_ID))?.close()
       trayRef.current = await TrayIcon.new({
         id: TRAY_ID,
-        icon: await imageFromUrl(trayIconUrl),
+        icon: await trayIcon(),
         iconAsTemplate: true, // macOS only
         tooltip: 'SORAI Toolkit',
         menu: await buildTrayMenu(),
@@ -57,6 +66,10 @@ export function useCloseBehavior() {
           if (e.type === 'Click' && e.button === 'Left' && e.buttonState === 'Up') revealMainWindow()
         },
       })
+    } else {
+      // A taskbar-only colour switch doesn't change the window theme, so no
+      // ThemeChanged event: re-check whenever we go to the tray.
+      trayRef.current.setIcon(await trayIcon()).catch(console.error)
     }
     await getCurrentWindow().hide()
     if (!hasNotifiedThisSessionRef.current) {
@@ -85,6 +98,17 @@ export function useCloseBehavior() {
       unlisten.then((fn) => fn())
     }
   }, [minimizeToTray])
+
+  // Follow a system light/dark switch (the window gets one ThemeChanged per
+  // Windows colour-setting change, taskbar included).
+  useEffect(() => {
+    const unlisten = getCurrentWindow().onThemeChanged(() => {
+      if (trayRef.current) trayIcon().then((img) => trayRef.current.setIcon(img)).catch(console.error)
+    })
+    return () => {
+      unlisten.then((fn) => fn())
+    }
+  }, [])
 
   // Tray menu labels are native, not React-rendered: rebuild the menu on a
   // language switch if the tray already exists.

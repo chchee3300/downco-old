@@ -34,3 +34,7 @@ tauri-plugin-notification = "2"
 tauri-plugin-sorai-converter = { path = "../.plugins/converter/plugin" }
 tauri-plugin-sorai-downloader = { path = "../.plugins/downloader/plugin" }
 tauri-plugin-single-instance = "2"
+
+[target.'cfg(windows)'.dependencies]
+# Taskbar light/dark (tray icon colour): HKCU ...\Themes\Personalize.
+winreg = "0.55"
