@@ -4,8 +4,8 @@
 
 **Blocked by:** 10（Hub：單一實例、啟動參數、pendingLaunch）
 
-**Status:** ready-for-agent
+**Status:** done（macOS/GNOME 未真機驗證；deb/rpm 實際安裝的 binary 名稱由第 14 張確認）
 
-- [ ] 寫檔改走 Rust 端或 fs plugin，冪等覆寫；非 GNOME 的 Linux 不寫任何檔案
-- [ ] 產生內容的純函式用 `cargo test` 或 JS 單元測試覆蓋（檔案清單、執行權限、參數字串）
-- [ ] 沒有真機可以驗證，要在 CLAUDE.md 明確標註為未驗證
+- [x] 寫檔改走 Rust 端或 fs plugin，冪等覆寫；非 GNOME 的 Linux 不寫任何檔案
+- [x] 產生內容的純函式用 `cargo test` 或 JS 單元測試覆蓋（檔案清單、執行權限、參數字串）
+- [x] 沒有真機可以驗證，要在 CLAUDE.md 明確標註為未驗證

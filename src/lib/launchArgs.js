@@ -3,7 +3,7 @@ const QUICK_ACTION_PREFIX = '--sorai-quick-action='
 
 // Parses this app's own launch-time CLI args (window.NL_ARGS on a cold
 // start, or an equivalent argv array forwarded from a second instance --
-// see instanceLock.js) into the shape ConverterApp's pendingLaunch prop
+// see useSingleInstance.js) into the shape ConverterApp's pendingLaunch prop
 // expects.
 //
 // Every launch path this app controls places one of the two --sorai-*

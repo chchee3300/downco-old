@@ -1,3 +1,5 @@
+mod self_install;
+
 use std::sync::Mutex;
 use tauri::{Emitter, Manager};
 use tauri_plugin_shell::ShellExt;
@@ -63,6 +65,8 @@ pub fn run() {
             .build(),
         )?;
       }
+      // macOS Finder Quick Actions / GNOME Nautilus Scripts (no-op elsewhere).
+      std::thread::spawn(self_install::install);
       Ok(())
     })
     .run(tauri::generate_context!())
