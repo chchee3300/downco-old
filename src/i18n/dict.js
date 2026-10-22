@@ -24,6 +24,13 @@ export const dict = {
     'hamburger.lang.en': 'English',
     'hamburger.lang.zh-TW': '繁體中文',
 
+    'progress.status.queued': 'Waiting',
+    'progress.status.running': 'Converting',
+    'progress.status.success': 'Done',
+    'progress.status.error': 'Failed',
+    'progress.status.cancelled': 'Cancelled',
+    'progress.status.skipped': 'Skipped: not supported by this preset',
+
     'settings.title': 'Settings',
     'settings.closeBehavior.heading': 'When closing the window',
     'settings.closeBehavior.ask': 'Ask me every time',
@@ -83,6 +90,13 @@ export const dict = {
     'hamburger.about': '關於',
     'hamburger.lang.en': 'English',
     'hamburger.lang.zh-TW': '繁體中文',
+
+    'progress.status.queued': '等待中',
+    'progress.status.running': '轉檔中',
+    'progress.status.success': '完成',
+    'progress.status.error': '失敗',
+    'progress.status.cancelled': '已取消',
+    'progress.status.skipped': '已略過：不支援此預設',
 
     'settings.title': '設定',
     'settings.closeBehavior.heading': '關閉視窗時',

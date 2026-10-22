@@ -1,6 +1,8 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { getCurrentWindow } from '@tauri-apps/api/window'
 import App from './App.jsx'
+import ProgressApp from './components/ProgressApp.jsx'
 import './index.css'
 
 // UI-only runtime globals, imported for their side effects:
@@ -14,6 +16,8 @@ import './lib/dialogs.js'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    {/* The `progress` window (src-tauri/src/lib.rs queue_background) loads
+        this same frontend but only renders the background-convert view. */}
+    {getCurrentWindow().label === 'progress' ? <ProgressApp /> : <App />}
   </StrictMode>,
 )

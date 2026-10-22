@@ -1,10 +1,13 @@
 const FORMAT_PREFIX = '--sorai-convert-to='
 const QUICK_ACTION_PREFIX = '--sorai-quick-action='
+// Right-click preset: converts in the progress window, main window untouched.
+const PRESET_PREFIX = '--sorai-preset='
 
 // Parses this app's own launch-time CLI args (the cold-start argv, or one
 // forwarded from a second instance -- both drained from Rust by
 // useSingleInstance.js) into the shape ConverterApp's pendingLaunch prop
-// expects.
+// expects. `preset` (a preset id) instead routes the files to the
+// progress window (useSingleInstance.js -> queue_background).
 //
 // Every launch path this app controls places one of the two --sorai-*
 // flags first and the selected file paths after it:
@@ -21,6 +24,7 @@ export function parseLaunchArgs(argv) {
 
   let format = null
   let quickAction = null
+  let preset = null
   const files = []
   let sawFlag = false
 
@@ -29,6 +33,12 @@ export function parseLaunchArgs(argv) {
 
     if (arg.startsWith(FORMAT_PREFIX)) {
       format = arg.slice(FORMAT_PREFIX.length)
+      sawFlag = true
+      continue
+    }
+
+    if (arg.startsWith(PRESET_PREFIX)) {
+      preset = arg.slice(PRESET_PREFIX.length) || null
       sawFlag = true
       continue
     }
@@ -49,5 +59,5 @@ export function parseLaunchArgs(argv) {
   }
 
   if (!sawFlag || files.length === 0) return null
-  return { files, format, quickAction }
+  return { files, format, quickAction, preset }
 }
