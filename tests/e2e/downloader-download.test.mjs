@@ -135,6 +135,17 @@ export const tests = {
       // No progressive format without a JS runtime: the preview must fall
       // back to a video-only stream and actually decode, not degrade.
       await page.waitForFunction(() => document.querySelector('#clip-modal video')?.readyState >= 2, null, { timeout: 30_000 })
+      // ...and its separate audio stream plays along, in sync.
+      await page.evaluate(() => document.querySelector('#clip-modal video').play())
+      await page.waitForTimeout(2000)
+      const av = await page.evaluate(() => {
+        const v = document.querySelector('#clip-modal video')
+        const a = document.getElementById('clip-audio-player')
+        const r = { src: a.hasAttribute('src'), playing: !a.paused, drift: Math.abs(a.currentTime - v.currentTime) }
+        v.pause()
+        return r
+      })
+      assert.ok(av.src && av.playing && av.drift < 0.5, `preview audio ${JSON.stringify(av)}`)
       await dragThumb(page, 'clip-thumb-left', 2, total)
       await dragThumb(page, 'clip-thumb-right', 6, total)
       const start = await page.$eval('#clip-label-start', (el) => parseFloat(el.textContent))
