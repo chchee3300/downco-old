@@ -2,8 +2,8 @@
 // real ffmpeg sidecar runs, outputs checked with ffmpeg itself. Video /
 // audio / image once each, a failing file doesn't stop the batch, output
 // names never overwrite, "under 5 MB" really is under 5,000,000 bytes, and
-// cancel kills ffmpeg and cleans the partial file. PDF / image->PDF are
-// ticket 08.
+// cancel kills ffmpeg and cleans the partial file. PDF compress (qpdf) and
+// image->PDF (img2pdf) run the real Windows sidecars; outputs checked with qpdf.
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdtempSync, readdirSync, statSync, writeFileSync } from 'node:fs'
@@ -15,6 +15,12 @@ import { stubDialogs } from './helpers.mjs'
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const fixtures = join(root, 'tests', 'fixtures')
 const FFMPEG = join(root, 'binaries', 'win_x64', 'ffmpeg.exe')
+const QPDF = join(root, 'binaries', 'win_x64', 'qpdf.exe')
+// qpdf --check exits non-zero on a broken PDF (throws here).
+const pdfPages = (file) => {
+  execFileSync(QPDF, ['--check', file], { stdio: 'pipe' })
+  return Number(execFileSync(QPDF, ['--show-npages', file], { encoding: 'utf8' }))
+}
 const dir = mkdtempSync(join(tmpdir(), 'sorai 轉檔 job '))
 
 // `ffmpeg -i` banner: stream lines + duration of an output file.
@@ -166,6 +172,36 @@ export const tests = {
       assert.match(p.streams, /Audio: aac/)
       const texts = await page.evaluate(() => window.__progressTexts)
       assert.ok(texts.some((t) => /\(1\/1\) - ([1-9]\d?)%/.test(t)), `no intermediate percent in ${JSON.stringify(texts)}`)
+    } finally {
+      await backToHub(page)
+    }
+  },
+
+  'converter: PDF compress runs qpdf and yields a valid, smaller file': async ({ page }) => {
+    const doc = join(dir, '文件 一.pdf')
+    copyFileSync(join(fixtures, 'test_fixture.pdf'), doc)
+    await open(page, [doc])
+    try {
+      await set(page, '#pdf-optimize', 'compress')
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      assert.match(await log(page), /> Executing: qpdf --stream-data=compress /)
+      const out = join(dir, '文件 一_converted.pdf')
+      assert.equal(pdfPages(out), pdfPages(doc))
+      assert.ok(statSync(out).size < statSync(doc).size, `${statSync(out).size} >= ${statSync(doc).size}`)
+    } finally {
+      await backToHub(page)
+    }
+  },
+
+  'converter: image -> PDF runs img2pdf, one valid PDF page per image (as before)': async ({ page }) => {
+    const imgs = ['圖 一.png', '圖 二.png'].map((n) => join(dir, n))
+    for (const i of imgs) copyFileSync(join(fixtures, 'test_in.png'), i)
+    await open(page, imgs)
+    try {
+      await set(page, '#image-format', '.pdf')
+      assert.match(await run(page, 2), /^Completed 2 of 2/)
+      assert.match(await log(page), /> Executing: img2pdf /)
+      for (const n of ['圖 一', '圖 二']) assert.equal(pdfPages(join(dir, `${n}_converted.pdf`)), 1)
     } finally {
       await backToHub(page)
     }

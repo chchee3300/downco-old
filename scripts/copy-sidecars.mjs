@@ -2,7 +2,7 @@
 // src-tauri/binaries/<name>-<target-triple>[.exe] -- the naming Tauri's
 // bundle.externalBin requires. Runs before every `tauri dev`/`tauri build`.
 import { execSync } from 'node:child_process'
-import { copyFileSync, mkdirSync, existsSync } from 'node:fs'
+import { copyFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs'
 import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -12,8 +12,12 @@ const platform = { win32: 'win_x64', linux: 'linux_x64' }[process.platform]
   ?? (process.arch === 'arm64' ? 'mac_arm64' : 'mac_x64')
 const ext = process.platform === 'win32' ? '.exe' : ''
 
-// ponytail: ffmpeg + yt-dlp only; qpdf/img2pdf (and qpdf's DLLs) join in Phase 2.
-const SIDECARS = ['ffmpeg', 'yt-dlp']
+// qpdf/img2pdf are bundled on Windows only (setup.mjs); macOS/Linux use the
+// system installs from PATH (the converter plugin falls back to PATH when no
+// sidecar sits next to the exe). Must match externalBin in tauri.conf.json
+// + tauri.windows.conf.json.
+const win = process.platform === 'win32'
+const SIDECARS = ['ffmpeg', 'yt-dlp', ...(win ? ['qpdf', 'img2pdf'] : [])]
 
 const destDir = join(root, 'src-tauri', 'binaries')
 mkdirSync(destDir, { recursive: true })
@@ -24,5 +28,13 @@ for (const name of SIDECARS) {
     process.exit(1)
   }
   copyFileSync(src, join(destDir, `${name}-${triple}${ext}`))
+}
+// qpdf.exe's DLLs (names change between qpdf releases, so take them all):
+// bundled as resources (tauri.windows.conf.json) -> land next to qpdf.exe,
+// where Windows' DLL search looks first.
+if (win) {
+  for (const f of readdirSync(join(root, 'binaries', platform)).filter((f) => f.endsWith('.dll'))) {
+    copyFileSync(join(root, 'binaries', platform, f), join(destDir, f))
+  }
 }
 console.log(`sidecars ready for ${triple}`)
