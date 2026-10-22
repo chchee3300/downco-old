@@ -21,10 +21,13 @@ export function tauriDev({ vitePort, cdpPort, userDataDir, stdio = 'inherit' }) 
   // Only plugin/src: build.rs rewrites plugin/permissions/ on every build, and
   // watching that (or plugin/target) makes the app rebuild+restart mid-E2E --
   // worse when other worktrees build against the same sibling concurrently.
+  // Per-port identifier: tauri-plugin-single-instance keys on it, so without
+  // this a dev/E2E window would forward its launch to (and exit into) the
+  // installed app or another worktree's window instead of starting.
   const watch = siblings().flatMap((s) => ['--additional-watch-folders', join(s.dir, 'plugin', 'src')])
   return spawn(
     process.execPath,
-    [join(root, 'node_modules', '@tauri-apps', 'cli', 'tauri.js'), 'dev', '--config', JSON.stringify({ build: { devUrl } }), ...watch],
+    [join(root, 'node_modules', '@tauri-apps', 'cli', 'tauri.js'), 'dev', '--config', JSON.stringify({ identifier: `com.soraitoolkit.hub.dev${cdpPort}`, build: { devUrl } }), ...watch],
     {
       cwd: root,
       stdio,

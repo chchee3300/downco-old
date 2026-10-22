@@ -14,10 +14,11 @@ export const stubDialogs = (page, results) =>
     for (const [name, value] of Object.entries(r)) window.SoraiDialogs[name] = async () => value
   }, results)
 
-// Is this worktree's app exe (src-tauri/target/**/sorai-toolkit.exe) running?
-// Scoped by path so other worktrees' windows don't count. Windows only.
-export function appRunning() {
+// How many of this worktree's app exes (src-tauri/target/**/sorai-toolkit.exe)
+// are running? Scoped by path so other worktrees' windows don't count. Windows only.
+export function appCount() {
   const target = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src-tauri', 'target').replace(/'/g, "''")
   const ps = `@(Get-CimInstance Win32_Process -Filter "Name='sorai-toolkit.exe'" | ? { $_.ExecutablePath -like '${target}\*' }).Count`
-  return Number(execFileSync('powershell', ['-NoProfile', '-Command', ps], { encoding: 'utf8' }).trim()) > 0
+  return Number(execFileSync('powershell', ['-NoProfile', '-Command', ps], { encoding: 'utf8' }).trim())
 }
+export const appRunning = () => appCount() > 0
