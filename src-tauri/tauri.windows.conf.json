@@ -1,7 +1,14 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "bundle": {
+    "targets": ["nsis"],
     "externalBin": ["binaries/ffmpeg", "binaries/yt-dlp", "binaries/qpdf", "binaries/img2pdf"],
-    "resources": { "binaries/*.dll": "./" }
+    "resources": { "binaries/*.dll": "./" },
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "installerHooks": "../packaging/windows/context-menu.generated.nsh"
+      }
+    }
   }
 }

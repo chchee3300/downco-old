@@ -25,7 +25,7 @@
 
 # Regenerated fresh by generate-context-menu-registry.mjs before every
 # installer build -- never hand-edited, never stale in git.
-/packaging/windows/context-menu.generated.iss
+/packaging/windows/context-menu.generated.nsh
 
 # Same convention, Linux side -- regenerated fresh by
 # packaging/linux/generate-context-menu-registry.mjs before every
