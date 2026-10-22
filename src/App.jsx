@@ -32,9 +32,9 @@ function App() {
   const closeBehavior = useCloseBehavior()
   // Explorer/Finder/Files right-click launches (cold start or forwarded
   // from a second instance) both land here as the same pendingLaunch
-  // shape -- see useSingleInstance.js. !ready/!isPrimary render nothing
-  // below (a secondary instance never shows a window at all).
-  const { ready, isPrimary, pendingLaunch } = useSingleInstance()
+  // shape -- see useSingleInstance.js. A secondary instance exits in Rust
+  // (single-instance plugin) before this ever renders.
+  const { pendingLaunch } = useSingleInstance()
 
   useEffect(() => {
     if (pendingLaunch) setCurrentTool('converter')
@@ -45,27 +45,20 @@ function App() {
   // time hook the way Windows' registry (installer.iss) or KDE Dolphin's
   // ServiceMenu (packaging/linux/build.sh) do -- see macFinderServices.js
   // / linuxNautilusScripts.js for why the app self-installs these itself,
-  // idempotently, on every primary-instance startup. Each is a no-op on
+  // idempotently, on every startup. Each is a no-op on
   // the "wrong" platform (checked via EstellaLib.platform.getOS() /
   // XDG_CURRENT_DESKTOP respectively) and swallows its own errors, so a
   // failure here never blocks startup or the normal file-open flow.
   useEffect(() => {
-    if (!isPrimary || !ready) return
     const os = window.EstellaLib?.platform.getOS()
     if (os === 'Darwin') ensureFinderServicesInstalled().catch(() => {})
     if (os === 'Linux') ensureNautilusScriptsInstalled().catch(() => {})
-  }, [isPrimary, ready])
+  }, [])
 
   // Reuses HubMenu.jsx's own `hub.tool.<id>.label` dict keys instead of a
   // separate TOOL_LABELS map, so the breadcrumb and the hub card never
   // drift out of sync the way two hand-duplicated literal strings could.
   const toolLabel = currentTool === 'hub' ? undefined : t(`hub.tool.${currentTool}.label`)
-
-  // Window stays invisible (see neutralino.config.json's modes.window.hidden)
-  // until we know whether this process is the primary instance -- a
-  // secondary instance hands its launch off to the primary and exits
-  // without ever rendering anything real.
-  if (!ready || !isPrimary) return null
 
   return (
     <div className="app-shell">
