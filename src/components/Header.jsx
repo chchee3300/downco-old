@@ -14,7 +14,7 @@ import logoLight from '../../resources/icons/appIcon-light.png'
 // breadcrumb; toolLabel is looked up by the caller (App.jsx) since
 // HubMenu's TOOLS array is the single source of truth for tool display
 // names.
-export default function Header({ toolLabel, showBackToHub, onBackToHub, theme, onToggleTheme, updater, closeBehavior, presetsRequest }) {
+export default function Header({ toolLabel, showBackToHub, onBackToHub, theme, onToggleTheme, updater, closeBehavior, presetsRequest, onEditPreset }) {
   const { t } = useTranslation()
   // Only the mark itself is the click target -- "Toolkit" / the breadcrumb
   // text next to it reads as a label, not a button, so it stays a plain
@@ -59,6 +59,7 @@ export default function Header({ toolLabel, showBackToHub, onBackToHub, theme, o
           updater={updater}
           closeBehavior={closeBehavior}
           presetsRequest={presetsRequest}
+          onEditPreset={onEditPreset}
         />
       </div>
     </header>

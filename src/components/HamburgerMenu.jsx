@@ -137,7 +137,7 @@ const LANG_FLAG_ICONS = {
 // mounted through the closing animation instead of disappearing instantly.
 const CLOSE_ANIM_MS = 100
 
-export default function HamburgerMenu({ theme, onToggleTheme, updater, closeBehavior, presetsRequest }) {
+export default function HamburgerMenu({ theme, onToggleTheme, updater, closeBehavior, presetsRequest, onEditPreset }) {
   const { t, lang } = useTranslation()
   const FlagIcon = LANG_FLAG_ICONS[lang]
   // Quiet notification dot -- toggle button + the About row both get one
@@ -377,6 +377,7 @@ export default function HamburgerMenu({ theme, onToggleTheme, updater, closeBeha
           focusSection={settingsFocus}
           closeBehavior={closeBehavior?.behavior}
           onChangeCloseBehavior={closeBehavior?.setBehavior}
+          onEditPreset={(p) => { setSettingsOpen(false); setSettingsFocus(null); onEditPreset(p) }}
         />,
         document.body,
       )}

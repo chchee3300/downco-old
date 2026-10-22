@@ -1756,6 +1756,13 @@ select.input { display: none; }
   background: var(--surface-2);
 }
 
+/* Converter SettingsPanel.jsx's PresetEditor (edit-preset mode): one panel. */
+.preset-editor {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
 /* ── Execute row ── */
 /* Converter SettingsPanel.jsx's "Save as right-click preset" row. */
 .preset-save-row {

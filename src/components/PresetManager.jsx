@@ -6,7 +6,9 @@ import { useTranslation } from '../hooks/useTranslation.js'
 // deleted, or all restored to the built-ins. Goes through window.SoraiPresets
 // (src/lib/presets.js), which rewrites the Explorer menu after each edit.
 // Reloads whenever the modal opens, so a preset saved from the Converter shows up.
-export default function PresetManager({ open }) {
+// "Edit" hands the preset (+ its shown label) to onEdit: App.jsx opens the
+// Converter's edit-preset mode and brings Settings back when it closes.
+export default function PresetManager({ open, onEdit }) {
   const { t } = useTranslation()
   const [list, setList] = useState([])
   const [error, setError] = useState('')
@@ -56,6 +58,7 @@ export default function PresetManager({ open }) {
               onBlur={(e) => rename(p, e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter') e.currentTarget.blur() }}
             />
+            <button type="button" className="btn btn-ghost btn-xs preset-edit" onClick={() => onEdit({ ...p, label: label(p) })}>{t('settings.presets.edit')}</button>
             <button type="button" className="btn btn-ghost btn-xs preset-up" disabled={i === 0} aria-label={t('settings.presets.moveUp')} onClick={() => move(i, -1)}>↑</button>
             <button type="button" className="btn btn-ghost btn-xs preset-down" disabled={i === list.length - 1} aria-label={t('settings.presets.moveDown')} onClick={() => move(i, 1)}>↓</button>
             <button type="button" className="btn btn-ghost btn-xs preset-delete" aria-label={t('settings.presets.delete')} onClick={() => run(window.SoraiPresets.remove(p.id))}>✕</button>

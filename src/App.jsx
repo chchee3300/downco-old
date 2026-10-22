@@ -34,6 +34,21 @@ function App() {
   // shape -- see useSingleInstance.js. A secondary instance exits in Rust
   // (single-instance plugin) before this ever renders.
   const { pendingLaunch, presetsRequest } = useSingleInstance()
+  // Settings -> a preset's "Edit": the Converter's edit-preset mode, opened
+  // over whichever tool was showing (the Converter keeps its queue and
+  // settings: it stays mounted). Closing it returns to that tool with the
+  // presets section of Settings reopened (same counter as --sorai-presets).
+  const [editing, setEditing] = useState(null) // { preset, from } | null
+  const [editsClosed, setEditsClosed] = useState(0)
+  const editPreset = (preset) => {
+    setEditing({ preset, from: currentTool })
+    setCurrentTool('converter')
+  }
+  const endEdit = () => {
+    setCurrentTool(editing.from)
+    setEditing(null)
+    setEditsClosed((n) => n + 1)
+  }
 
   // The Explorer menu follows the presets and language: rewrite it on every
   // start (repairs a deleted menu, replaces 2.0.0's) and language switch.
@@ -56,15 +71,16 @@ function App() {
       <Header
         toolLabel={toolLabel}
         showBackToHub={currentTool !== 'hub'}
-        onBackToHub={() => setCurrentTool('hub')}
+        onBackToHub={() => { setEditing(null); setCurrentTool('hub') }}
         theme={theme}
         onToggleTheme={toggleTheme}
         updater={updater}
         closeBehavior={closeBehavior}
-        presetsRequest={presetsRequest}
+        presetsRequest={presetsRequest + editsClosed}
+        onEditPreset={editPreset}
       />
       {currentTool === 'hub' && <HubMenu onSelectTool={setCurrentTool} />}
-      {currentTool === 'converter' && <ConverterApp pendingLaunch={pendingLaunch} />}
+      {currentTool === 'converter' && <ConverterApp pendingLaunch={pendingLaunch} editPreset={editing?.preset ?? null} onEditDone={endEdit} />}
       {currentTool === 'downloader' && <DownloaderApp />}
       {/* Self-built copies (see useUpdateChecker.js's IS_OFFICIAL_BUILD)
           never had a real silent-install to offer anyway -- the toast's

@@ -9,7 +9,7 @@ const CLOSE_BEHAVIOR_OPTIONS = ['ask', 'tray', 'quit']
 // guide, point 7). v1 has exactly one section (close behavior); more
 // sections are meant to be appended as additional .settings-section blocks
 // without restructuring this component.
-export default function SettingsModal({ open, onClose, closeBehavior, onChangeCloseBehavior, focusSection }) {
+export default function SettingsModal({ open, onClose, closeBehavior, onChangeCloseBehavior, focusSection, onEditPreset }) {
   const { t } = useTranslation()
   const modalContentRef = useRef(null)
   const onCloseRef = useRef(onClose)
@@ -87,7 +87,7 @@ export default function SettingsModal({ open, onClose, closeBehavior, onChangeCl
           {/* --sorai-presets ("Manage presets…" in the Explorer menu) scrolls here. */}
           <section id="settings-presets" className="settings-section">
             <h4 className="field-label settings-section-title">{t('settings.presets.heading')}</h4>
-            <PresetManager open={open} />
+            <PresetManager open={open} onEdit={onEditPreset} />
           </section>
 
           <button type="button" className="btn btn-outline about-modal-close" onClick={onClose}>
