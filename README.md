@@ -16,7 +16,7 @@ Pick one:
 - **Download a pre-built package** — grab the file for your OS from the [latest release](https://github.com/chchee3300/sorai-toolkit/releases/latest):
   - **Windows** — `sorai-toolkit_*_x64-setup.exe`. Per-user install into `%LOCALAPPDATA%\SORAI Toolkit\`, no admin prompt; adds the Explorer right-click menu.
   - **macOS** — `sorai-toolkit_*_mac_x64.dmg` (Intel) or `*_mac_arm64.dmg` (Apple Silicon). Open it and drag the app into Applications. These builds aren't code-signed, so the first launch needs right-click → Open (or System Settings → Privacy & Security → "Open Anyway") to get past Gatekeeper.
-  - **Linux** — `sorai-toolkit_*_amd64.deb` (`sudo apt install ./sorai-toolkit_*_amd64.deb`) or `sorai-toolkit-*.x86_64.rpm` (`sudo dnf install ./sorai-toolkit-*.x86_64.rpm`). Both pull in `qpdf`, `img2pdf`, webkit2gtk and gtk3, and install the KDE Dolphin right-click menu. They ship their own `ffmpeg` and `yt-dlp` into `/usr/bin`, so they **replace a distro `ffmpeg`/`yt-dlp` package** if one is installed (deb: Conflicts/Replaces/Provides; rpm: Conflicts/Provides, so dnf asks for `--allowerasing`).
+  - **Linux** — `sorai-toolkit_*_amd64.deb` (`sudo apt install ./sorai-toolkit_*_amd64.deb`) or `sorai-toolkit-*.x86_64.rpm` (`sudo dnf install ./sorai-toolkit-*.x86_64.rpm`). Both pull in `qpdf`, `img2pdf`, webkit2gtk and gtk3, and install the KDE Dolphin right-click menu. They ship their own `ffmpeg` and `yt-dlp` in `/usr/lib/SORAI Toolkit/` (not on `PATH`), so a distro `ffmpeg`/`yt-dlp` package is left alone.
 - **Build it yourself from source** — see [Setup](#setup) below.
 
 ### Upgrading from 1.x (the Neutralino builds)

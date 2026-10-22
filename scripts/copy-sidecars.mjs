@@ -20,16 +20,21 @@ const ext = process.platform === 'win32' ? '.exe' : ''
 // + tauri.windows.conf.json.
 const win = process.platform === 'win32'
 const SIDECARS = ['ffmpeg', 'yt-dlp', ...(win ? ['qpdf', 'img2pdf'] : [])]
+// Linux ships them as resources, not externalBin (tauri.linux.conf.json):
+// deb/rpm put externalBin in /usr/bin, on top of the distro's ffmpeg/yt-dlp.
+// Resources land in /usr/lib/<app>/ under their plain names.
+const linux = process.platform === 'linux'
 
 const destDir = join(root, 'src-tauri', 'binaries')
-mkdirSync(destDir, { recursive: true })
+mkdirSync(linux ? join(destDir, 'linux') : destDir, { recursive: true })
 for (const name of SIDECARS) {
   const src = join(root, 'binaries', platform, name + ext)
   if (!existsSync(src)) {
     console.error(`missing ${src} -- run \`node setup.mjs\` first`)
     process.exit(1)
   }
-  copyFileSync(src, join(destDir, `${name}-${triple}${ext}`))
+  // copyFileSync keeps the exec bit; the deb/rpm bundlers take the mode from the file.
+  copyFileSync(src, linux ? join(destDir, 'linux', name) : join(destDir, `${name}-${triple}${ext}`))
 }
 // qpdf.exe's DLLs (names change between qpdf releases, so take them all):
 // bundled as resources (tauri.windows.conf.json) -> land next to qpdf.exe,

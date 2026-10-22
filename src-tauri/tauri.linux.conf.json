@@ -2,18 +2,15 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "bundle": {
     "targets": ["deb", "rpm"],
+    "externalBin": [],
+    "resources": { "binaries/linux/ffmpeg": "ffmpeg", "binaries/linux/yt-dlp": "yt-dlp" },
     "linux": {
       "deb": {
         "depends": ["qpdf", "img2pdf"],
-        "provides": ["ffmpeg", "yt-dlp"],
-        "conflicts": ["ffmpeg", "yt-dlp"],
-        "replaces": ["ffmpeg", "yt-dlp"],
         "files": { "/usr/share/kio/servicemenus": "../packaging/linux/context-menu.generated" }
       },
       "rpm": {
         "depends": ["/usr/bin/qpdf", "/usr/bin/img2pdf"],
-        "provides": ["ffmpeg", "yt-dlp"],
-        "conflicts": ["ffmpeg", "ffmpeg-free", "yt-dlp"],
         "files": { "/usr/share/kio/servicemenus": "../packaging/linux/context-menu.generated" }
       }
     }
