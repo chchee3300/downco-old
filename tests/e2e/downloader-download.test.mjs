@@ -21,6 +21,25 @@ function streams(file) {
   return { video: /Stream #\d+:\d+.*Video:/.test(out), audio: /Stream #\d+:\d+.*Audio:/.test(out) }
 }
 
+function seconds(file) {
+  const out = spawnSync(ffmpeg, ['-hide_banner', '-i', file], { encoding: 'utf8' }).stderr
+  const [, h, m, s] = out.match(/Duration: (\d+):(\d+):([\d.]+)/) ?? []
+  return h == null ? NaN : h * 3600 + m * 60 + Number(s)
+}
+
+// Same synthetic drag the slider handler listens for (mousedown on the
+// thumb, mousemove/mouseup on window) -- separate evaluates so React has
+// flushed the mousedown state before mousemove reads it. No real mouse.
+async function dragThumb(page, id, sec, total) {
+  const { x, y } = await page.$eval('#clip-slider-container', (el, f) => {
+    const r = el.getBoundingClientRect()
+    return { x: r.left + f * r.width, y: r.top + r.height / 2 }
+  }, sec / total)
+  await page.$eval(`#${id}`, (el, p) => el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: p.x, clientY: p.y })), { x, y })
+  await page.evaluate((p) => window.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX: p.x, clientY: p.y })), { x, y })
+  await page.evaluate((p) => window.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, clientX: p.x, clientY: p.y })), { x, y })
+}
+
 // yt-dlp / ffmpeg processes started from THIS worktree's dev build (other
 // worktrees' E2E runs may have their own going at the same time).
 function ourSidecars() {
@@ -101,6 +120,39 @@ export const tests = {
       for (const f of files) assert.match(f, /\[[^\]]+\]\.\w+$/)
       const kinds = files.map(streams).map((s) => `${s.video}/${s.audio}`).sort()
       assert.deepEqual(kinds, ['false/true', 'true/false'])
+    } finally {
+      await leave(page, out)
+    }
+  },
+
+  'downloader: a 2s-6s ClipModal range downloads a ~4s file, progress never shows NaN': async ({ page }) => {
+    const out = await prepare(page, ZOO)
+    try {
+      await page.click('.queue-item .btn-trim')
+      await page.locator('#clip-modal:not(.hidden)').waitFor()
+      const total = await page.$eval('#clip-label-end', (el) => parseFloat(el.textContent))
+      assert.ok(total > 15, `full duration by default, got ${total}`)
+      await dragThumb(page, 'clip-thumb-left', 2, total)
+      await dragThumb(page, 'clip-thumb-right', 6, total)
+      const start = await page.$eval('#clip-label-start', (el) => parseFloat(el.textContent))
+      const end = await page.$eval('#clip-label-end', (el) => parseFloat(el.textContent))
+      assert.ok(Math.abs(start - 2) < 0.3 && Math.abs(end - 6) < 0.3, `range ${start}-${end}`)
+      await page.click('#btn-save-clip')
+      await page.locator('#clip-modal').waitFor({ state: 'hidden' })
+      assert.equal(await page.textContent('.queue-item .val-chip.secondary.tabular-nums'), '0:02–0:06')
+      // Record every progress text the clip download shows (yt-dlp reports
+      // N/A percent while ffmpeg does the cut).
+      await page.evaluate(() => {
+        window.__clipTexts = []
+        const el = document.getElementById('progress-text')
+        new MutationObserver(() => window.__clipTexts.push(el.textContent)).observe(el, { childList: true, characterData: true, subtree: true })
+      })
+      const files = await download(page, out)
+      const texts = await page.evaluate(() => window.__clipTexts)
+      assert.ok(!texts.some((t) => /NaN/.test(t)), texts.join(' | '))
+      assert.equal(files.length, 1, files.join(', '))
+      const len = seconds(files[0])
+      assert.ok(Math.abs(len - 4) <= 1.5, `clip length ${len}s, want 4±1.5`)
     } finally {
       await leave(page, out)
     }
