@@ -4,9 +4,9 @@
 
 **Blocked by:** 10（Hub：單一實例、啟動參數、pendingLaunch）
 
-**Status:** ready-for-agent
+**Status:** done（檔案總管真實右鍵多選待使用者驗證）
 
-- [ ] Tauri bundler 產出 per-user 的 NSIS 安裝檔，sidecar 和 resource 都正確打包
-- [ ] 右鍵選單的產生腳本改成輸出 NSIS installer hook（安裝時寫入、解除安裝時清除），格式清單的同步規則不變
-- [ ] 本機跑 `tauri build` 之後，用 /S 靜默安裝、啟動、解除安裝都成功，機器狀態還原乾淨
+- [x] Tauri bundler 產出 per-user 的 NSIS 安裝檔，sidecar 和 resource 都正確打包
+- [x] 右鍵選單的產生腳本改成輸出 NSIS installer hook（安裝時寫入、解除安裝時清除），格式清單的同步規則不變
+- [x] 本機跑 `tauri build` 之後，用 /S 靜默安裝、啟動、解除安裝都成功，機器狀態還原乾淨
 - [ ] 使用者真機驗證：右鍵多選 3 個檔案轉檔，只開一個視窗，而且 3 個檔案都進到佇列
