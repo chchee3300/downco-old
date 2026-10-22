@@ -13,6 +13,8 @@ import '../resources/js/lib/i18n.js'
 import '../resources/js/lib/range-fill.js'
 // Installs window.SoraiDialogs (native file/folder pickers, E2E-replaceable).
 import './lib/dialogs.js'
+// Installs window.SoraiPresets (right-click presets; Converter saves through it).
+import './lib/presets.js'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

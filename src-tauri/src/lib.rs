@@ -64,6 +64,53 @@ fn list_presets(app: tauri::AppHandle) -> Result<Vec<presets::Preset>, String> {
   presets::load(&presets_path(&app)?)
 }
 
+// Edits for window.SoraiPresets (src/lib/presets.js), which rewrites the
+// Explorer menu after each one. Sync commands run on the main thread, so
+// these load-modify-save cycles never interleave.
+fn edit_presets<T>(app: &tauri::AppHandle, f: impl FnOnce(&mut Vec<presets::Preset>) -> Result<T, String>) -> Result<T, String> {
+  let path = presets_path(app)?;
+  let mut list = presets::load(&path)?;
+  let out = f(&mut list)?;
+  presets::save(&path, &list)?;
+  Ok(out)
+}
+
+/// Adds (no id) or overwrites (existing id) a preset; returns it as saved.
+#[tauri::command]
+fn save_preset(app: tauri::AppHandle, preset: presets::PresetInput) -> Result<presets::Preset, String> {
+  edit_presets(&app, |list| presets::upsert(list, preset))
+}
+
+#[tauri::command]
+fn delete_preset(app: tauri::AppHandle, id: String) -> Result<Vec<presets::Preset>, String> {
+  edit_presets(&app, |list| {
+    list.retain(|p| p.id != id);
+    Ok(list.clone())
+  })
+}
+
+#[tauri::command]
+fn reorder_presets(app: tauri::AppHandle, ids: Vec<String>) -> Result<Vec<presets::Preset>, String> {
+  edit_presets(&app, |list| {
+    *list = presets::reorder(std::mem::take(list), &ids);
+    Ok(list.clone())
+  })
+}
+
+/// Back to the built-ins: removes the store, so later built-in changes apply too.
+#[tauri::command]
+fn restore_presets(app: tauri::AppHandle) -> Result<Vec<presets::Preset>, String> {
+  match std::fs::remove_file(presets_path(&app)?) {
+    Err(e) if e.kind() != std::io::ErrorKind::NotFound => Err(e.to_string()),
+    _ => Ok(presets::builtins()),
+  }
+}
+
+#[tauri::command]
+fn preset_name(file_type: String, format: String, settings: serde_json::Value, lang: String) -> String {
+  presets::suggest_name(&file_type, &format, &settings, &lang)
+}
+
 /// One debounced launch batch for the progress window (main -> Rust -> progress).
 #[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
@@ -268,7 +315,7 @@ pub fn run() {
     .plugin(tauri_plugin_notification::init())
     .plugin(tauri_plugin_sorai_converter::init())
     .plugin(tauri_plugin_sorai_downloader::init())
-    .invoke_handler(tauri::generate_handler![take_launch_args, taskbar_is_light, launch_is_background, list_presets, register_context_menu, context_menu_entries, queue_background, take_progress_jobs, notify_done])
+    .invoke_handler(tauri::generate_handler![take_launch_args, taskbar_is_light, launch_is_background, list_presets, register_context_menu, context_menu_entries, queue_background, take_progress_jobs, notify_done, save_preset, delete_preset, reorder_presets, restore_presets, preset_name])
     // Closing the progress window ends the app when nothing else is showing
     // (see idle; a pending toast ends it on release instead).
     .on_window_event(|w, e| {

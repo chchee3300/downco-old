@@ -604,6 +604,55 @@ body {
   margin: 0;
 }
 
+/* PresetManager.jsx (#settings-presets). Scrolls on its own: 20 built-ins. */
+.preset-fieldset {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.preset-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.preset-row {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.preset-type {
+  flex: 0 0 3.2rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.preset-name {
+  flex: 1;
+  min-width: 0;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.preset-error {
+  color: var(--danger);
+}
+
+.preset-restore {
+  align-self: flex-start;
+}
+
 .settings-radio-option {
   display: flex;
   align-items: center;
@@ -1708,6 +1757,22 @@ select.input { display: none; }
 }
 
 /* ── Execute row ── */
+/* Converter SettingsPanel.jsx's "Save as right-click preset" row. */
+.preset-save-row {
+  padding: 0 1.125rem 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.preset-save-row #preset-name {
+  flex: 1;
+  min-width: 10rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
 .execute-row {
   padding: 0.875rem 1.125rem;
   display: flex;

@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useTranslation } from '../hooks/useTranslation.js'
+import PresetManager from './PresetManager.jsx'
 
 const CLOSE_BEHAVIOR_OPTIONS = ['ask', 'tray', 'quit']
 
@@ -83,10 +84,10 @@ export default function SettingsModal({ open, onClose, closeBehavior, onChangeCl
             ))}
           </section>
 
-          {/* Filled in by ticket 04 (list, rename, delete, reorder, edit, restore). */}
+          {/* --sorai-presets ("Manage presets…" in the Explorer menu) scrolls here. */}
           <section id="settings-presets" className="settings-section">
             <h4 className="field-label settings-section-title">{t('settings.presets.heading')}</h4>
-            <p>{t('settings.presets.placeholder')}</p>
+            <PresetManager open={open} />
           </section>
 
           <button type="button" className="btn btn-outline about-modal-close" onClick={onClose}>

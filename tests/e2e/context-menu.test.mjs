@@ -3,56 +3,17 @@
 // build's identifier isn't the production one, so every write here lands in
 // HKCU\Software\SORAI Toolkit Dev\<identifier>\Classes, never the real menu.
 import assert from 'node:assert/strict'
-import { execFileSync, spawn } from 'node:child_process'
-import { copyFileSync, mkdtempSync, readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { copyFileSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { appCount, invoke } from './helpers.mjs'
+import { appCount, expectRegistryMatches, readRegistry, runExe as run } from './helpers.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const fixtures = join(here, '..', 'fixtures')
-const exe = join(here, '..', '..', 'src-tauri', 'target', 'debug', 'sorai-toolkit.exe')
 const dir = mkdtempSync(join(tmpdir(), 'sorai 選單 '))
 const rows = (page) => page.locator('.file-item')
-
-function run(args) {
-  const p = spawn(exe, args, { stdio: 'ignore' })
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(() => { p.kill(); reject(new Error(`${args[0]} did not exit`)) }, 30_000)
-    p.on('exit', (code) => { clearTimeout(t); resolve(code) })
-  })
-}
-
-// Every value under the classes root as { key, name, data }, keys relative to
-// the root. Written to a UTF-8 file: console output would go through the ANSI codepage.
-function readRegistry(root) {
-  const out = join(dir, 'reg.json')
-  const ps = `
-    $base = 'HKEY_CURRENT_USER\\${root.replace(/'/g, "''")}\\'
-    $vals = @(Get-ChildItem -LiteralPath ('Registry::' + $base) -Recurse | ForEach-Object {
-      $k = $_
-      foreach ($n in $k.GetValueNames()) { [pscustomobject]@{ key = $k.Name.Substring($base.Length); name = $n; data = $k.GetValue($n) } }
-    })
-    [System.IO.File]::WriteAllText('${out.replace(/'/g, "''")}', (ConvertTo-Json -InputObject $vals -Compress -Depth 3), [System.Text.Encoding]::UTF8)`
-  execFileSync('powershell', ['-NoProfile', '-Command', ps])
-  return JSON.parse(readFileSync(out, 'utf8').replace(/^﻿/, ''))
-}
-
-const sorted = (vals) => vals.map(({ key, name, data }) => ({ key, name, data })).sort((a, b) => (a.key + '|' + a.name).localeCompare(b.key + '|' + b.name))
-
-async function expectRegistryMatches(page, lang) {
-  const { root, values } = await invoke(page, 'context_menu_entries', { lang })
-  assert.ok(!/^Software\\Classes$/i.test(root), `dev build must not target ${root}`)
-  const want = sorted(values)
-  let got
-  for (let i = 0; i < 50; i++) {
-    got = sorted(readRegistry(root))
-    if (JSON.stringify(got) === JSON.stringify(want)) return root
-    await page.waitForTimeout(200)
-  }
-  assert.deepEqual(got, want)
-}
 
 async function backToHub(page) {
   if (await page.locator('#mixed-type-modal:not(.hidden)').count()) await page.locator('#btn-mixed-type-cancel').click()

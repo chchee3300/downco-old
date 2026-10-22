@@ -93,8 +93,6 @@ pub fn load(path: &Path) -> Result<Vec<Preset>, String> {
 }
 
 /// Writes the whole list (temp file + rename, so a crash never leaves half a file).
-/// No command writes yet: the edit commands (ticket 04) will.
-#[allow(dead_code)]
 pub fn save(path: &Path, presets: &[Preset]) -> Result<(), String> {
   let err = |e: std::io::Error| format!("{}: {e}", path.display());
   if let Some(dir) = path.parent() {
@@ -103,6 +101,122 @@ pub fn save(path: &Path, presets: &[Preset]) -> Result<(), String> {
   let tmp = path.with_extension("json.tmp");
   std::fs::write(&tmp, serde_json::to_string_pretty(presets).unwrap()).map_err(err)?;
   std::fs::rename(&tmp, path).map_err(err)
+}
+
+/// What the Converter (or the hub's manager) sends to save: no `id` = a new
+/// preset; an existing `id` = overwrite it in place (its `labelKey` and list
+/// position stay). A blank `name` clears it (a built-in falls back to its label).
+#[derive(Deserialize, Clone, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct PresetInput {
+  #[serde(default)]
+  pub id: Option<String>,
+  #[serde(default)]
+  pub name: Option<String>,
+  pub file_type: String,
+  pub format: String,
+  pub settings: Value,
+}
+
+const FILE_TYPES: [&str; 4] = ["video", "image", "audio", "pdf"];
+
+/// Adds or overwrites; returns the saved preset. New ids are `user-<n>`, which
+/// stays inside the `[A-Za-z0-9._-]` set the registry command line needs.
+pub fn upsert(list: &mut Vec<Preset>, input: PresetInput) -> Result<Preset, String> {
+  if !FILE_TYPES.contains(&input.file_type.as_str()) {
+    return Err(format!("unknown file type {:?}", input.file_type));
+  }
+  if !input.format.starts_with('.') || !input.settings.is_object() {
+    return Err("format must be \".ext\" and settings an object".into());
+  }
+  let name = input.name.map(|n| n.trim().to_string()).filter(|n| !n.is_empty());
+  let at = match &input.id {
+    Some(id) => Some(list.iter().position(|p| &p.id == id).ok_or_else(|| format!("no preset {id:?}"))?),
+    None => None,
+  };
+  let label_key = at.and_then(|i| list[i].label_key.clone());
+  if name.is_none() && label_key.is_none() {
+    return Err("a preset needs a name".into());
+  }
+  let id = match at {
+    Some(i) => list[i].id.clone(),
+    None => (1..).map(|n| format!("user-{n}")).find(|id| list.iter().all(|p| &p.id != id)).unwrap(),
+  };
+  let p = Preset { id, name, label_key, file_type: input.file_type, format: input.format, settings: input.settings };
+  match at {
+    Some(i) => list[i] = p.clone(),
+    None => list.push(p.clone()),
+  }
+  Ok(p)
+}
+
+/// The listed ids first, in that order; anything not listed keeps its
+/// relative order after them (a stale list never drops a preset).
+pub fn reorder(list: Vec<Preset>, ids: &[String]) -> Vec<Preset> {
+  let (mut listed, rest): (Vec<_>, Vec<_>) = list.into_iter().partition(|p| ids.contains(&p.id));
+  listed.sort_by_key(|p| ids.iter().position(|i| i == &p.id));
+  listed.extend(rest);
+  listed
+}
+
+/// Auto-generated name, e.g. "MP4・畫質 70・30fps": the format, then only the
+/// settings that differ from the Converter's defaults.
+pub fn suggest_name(file_type: &str, format: &str, settings: &Value, lang: &str) -> String {
+  let zh = lang == "zh-TW";
+  let num = |k: &str| settings[k].as_f64();
+  let mut parts = vec![if file_type == "pdf" { "PDF".to_string() } else { format.trim_start_matches('.').to_uppercase() }];
+  let quality = |q: f64| if zh { format!("畫質 {q}") } else { format!("Quality {q}") };
+  let speed = num("speed").filter(|s| *s != 1.0).map(|s| format!("{s}×"));
+  match file_type {
+    "video" => {
+      if settings["targetSizeMode"] == true {
+        let mb = num("targetSizeMB").unwrap_or(0.0);
+        parts.push(if zh { format!("{mb}MB 以下") } else { format!("Under {mb} MB") });
+      } else {
+        let codec = match settings["codec"].as_str() {
+          Some("libx265") => Some("H.265"),
+          Some("libvpx-vp9") => Some("VP9"),
+          Some("libsvtav1") => Some("AV1"),
+          _ => None,
+        };
+        if let Some(c) = codec.filter(|_| format != ".gif") {
+          parts.push(c.into());
+        }
+        if let Some(q) = num("quality").filter(|q| *q != 100.0) {
+          parts.push(quality(q));
+        }
+      }
+      if let Some(f) = num("fps") {
+        parts.push(format!("{}fps", f.round()));
+      }
+      parts.extend(speed);
+    }
+    "image" if format != ".pdf" => {
+      if let Some(q) = num("quality").filter(|q| *q != 85.0) {
+        parts.push(quality(q));
+      }
+      if let Some(s) = num("scale").filter(|s| *s != 100.0) {
+        parts.push(if zh { format!("縮放 {s}%") } else { format!("Scale {s}%") });
+      }
+    }
+    "audio" => {
+      if let Some(b) = settings["bitrate"].as_str().filter(|b| *b != "320k" && ![".flac", ".wav"].contains(&format)) {
+        parts.push(b.into());
+      }
+      parts.extend(speed);
+    }
+    "pdf" => parts.push(
+      match (settings["optimize"].as_str() == Some("compress"), zh) {
+        (true, true) => "壓縮",
+        (true, false) => "Compress",
+        (false, true) => "線性化",
+        (false, false) => "Linearize",
+      }
+      .into(),
+    ),
+    _ => {}
+  }
+  parts.join(if zh { "・" } else { " · " })
 }
 
 #[cfg(test)]
@@ -208,5 +322,91 @@ mod tests {
     std::fs::write(d.join(FILE_NAME), "{not json").unwrap();
     assert!(load(&d.join(FILE_NAME)).is_err());
     let _ = std::fs::remove_dir_all(&d);
+  }
+
+  fn input(id: Option<&str>, name: Option<&str>) -> PresetInput {
+    PresetInput {
+      id: id.map(Into::into),
+      name: name.map(Into::into),
+      file_type: "audio".into(),
+      format: ".mp3".into(),
+      settings: json!({ "format": ".mp3", "bitrate": "192k", "speed": 1.0 }),
+    }
+  }
+
+  #[test]
+  fn upsert_adds_new_presets_with_registry_safe_ids() {
+    let mut list = builtins();
+    let a = upsert(&mut list, input(None, Some("  MP3・192k "))).unwrap();
+    let b = upsert(&mut list, input(None, Some("second"))).unwrap();
+    assert_eq!((a.id.as_str(), a.name.as_deref(), a.label_key.as_deref()), ("user-1", Some("MP3・192k"), None));
+    assert_eq!(b.id, "user-2");
+    assert_eq!(list.len(), 22);
+    assert_eq!(list.last().unwrap(), &b);
+    // A freed id is reused; it's always [A-Za-z0-9._-].
+    list.retain(|p| p.id != "user-1");
+    assert_eq!(upsert(&mut list, input(None, Some("third"))).unwrap().id, "user-1");
+  }
+
+  #[test]
+  fn upsert_overwrites_in_place_keeping_label_key() {
+    let mut list = builtins();
+    let p = upsert(&mut list, input(Some("audio-to-mp3"), Some("Mine"))).unwrap();
+    assert_eq!((p.id.as_str(), p.label_key.as_deref(), p.name.as_deref()), ("audio-to-mp3", Some("preset.convertTo"), Some("Mine")));
+    assert_eq!(list.len(), 20);
+    assert_eq!(list.iter().position(|q| q.id == "audio-to-mp3"), Some(14));
+    assert_eq!(list[14].settings["bitrate"], "192k");
+    // Blank name on a built-in goes back to its label.
+    let p = upsert(&mut list, input(Some("audio-to-mp3"), Some(" "))).unwrap();
+    assert_eq!(p.name, None);
+  }
+
+  #[test]
+  fn upsert_rejects_bad_input() {
+    let mut list = builtins();
+    assert!(upsert(&mut list, input(None, None)).is_err(), "user preset without a name");
+    assert!(upsert(&mut list, input(None, Some(""))).is_err());
+    assert!(upsert(&mut list, input(Some("nope"), Some("x"))).is_err(), "unknown id");
+    let mut bad = input(None, Some("x"));
+    bad.file_type = "text".into();
+    assert!(upsert(&mut list, bad).is_err());
+    let mut bad = input(None, Some("x"));
+    bad.settings = json!(null);
+    assert!(upsert(&mut list, bad).is_err());
+    assert_eq!(list, builtins());
+  }
+
+  #[test]
+  fn reorder_follows_ids_and_never_drops_presets() {
+    let ids = |l: &[Preset]| l.iter().map(|p| p.id.clone()).collect::<Vec<_>>();
+    let list: Vec<Preset> = builtins().into_iter().take(3).collect(); // mp4, mkv, webm
+    let out = reorder(list, &["video-to-webm".into(), "video-to-mp4".into(), "ghost".into()]);
+    assert_eq!(ids(&out), ["video-to-webm", "video-to-mp4", "video-to-mkv"]);
+  }
+
+  #[test]
+  fn suggested_names_list_format_then_non_default_settings() {
+    let n = |t: &str, f: &str, s: Value, l: &str| suggest_name(t, f, &s, l);
+    assert_eq!(n("video", ".mp4", default_settings("video", ".mp4"), "zh-TW"), "MP4");
+    let mut v = default_settings("video", ".mp4");
+    v["quality"] = json!(70);
+    v["fps"] = json!(29.97);
+    assert_eq!(n("video", ".mp4", v.clone(), "zh-TW"), "MP4・畫質 70・30fps");
+    v["codec"] = json!("libx265");
+    v["speed"] = json!(1.5);
+    assert_eq!(n("video", ".mkv", v.clone(), "en"), "MKV · H.265 · Quality 70 · 30fps · 1.5×");
+    assert_eq!(n("video", ".gif", v.clone(), "en"), "GIF · Quality 70 · 30fps · 1.5×", "no codec on gif");
+    v["targetSizeMode"] = json!(true);
+    v["targetSizeMB"] = json!(25);
+    v["fps"] = json!(null);
+    v["speed"] = json!(1.0);
+    assert_eq!(n("video", ".mp4", v, "zh-TW"), "MP4・25MB 以下", "target size ignores codec/quality");
+
+    assert_eq!(n("image", ".webp", json!({ "quality": 70, "scale": 50 }), "zh-TW"), "WEBP・畫質 70・縮放 50%");
+    assert_eq!(n("image", ".pdf", json!({ "quality": 70, "scale": 50 }), "en"), "PDF", "img2pdf ignores both");
+    assert_eq!(n("audio", ".mp3", json!({ "bitrate": "192k", "speed": 1.0 }), "en"), "MP3 · 192k");
+    assert_eq!(n("audio", ".flac", json!({ "bitrate": "192k", "speed": 0.5 }), "en"), "FLAC · 0.5×", "no bitrate on lossless");
+    assert_eq!(n("pdf", ".pdf", json!({ "optimize": "compress" }), "zh-TW"), "PDF・壓縮");
+    assert_eq!(n("pdf", ".pdf", json!({ "optimize": "linearize" }), "en"), "PDF · Linearize");
   }
 }
