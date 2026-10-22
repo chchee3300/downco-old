@@ -8,11 +8,15 @@ const CLOSE_BEHAVIOR_OPTIONS = ['ask', 'tray', 'quit']
 // guide, point 7). v1 has exactly one section (close behavior); more
 // sections are meant to be appended as additional .settings-section blocks
 // without restructuring this component.
-export default function SettingsModal({ open, onClose, closeBehavior, onChangeCloseBehavior }) {
+export default function SettingsModal({ open, onClose, closeBehavior, onChangeCloseBehavior, focusSection }) {
   const { t } = useTranslation()
   const modalContentRef = useRef(null)
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
+
+  useEffect(() => {
+    if (open && focusSection) document.getElementById(`settings-${focusSection}`)?.scrollIntoView({ block: 'start' })
+  }, [open, focusSection])
 
   useEffect(() => {
     if (!open) return undefined
@@ -77,6 +81,12 @@ export default function SettingsModal({ open, onClose, closeBehavior, onChangeCl
                 {t(`settings.closeBehavior.${value}`)}
               </label>
             ))}
+          </section>
+
+          {/* Filled in by ticket 04 (list, rename, delete, reorder, edit, restore). */}
+          <section id="settings-presets" className="settings-section">
+            <h4 className="field-label settings-section-title">{t('settings.presets.heading')}</h4>
+            <p>{t('settings.presets.placeholder')}</p>
           </section>
 
           <button type="button" className="btn btn-outline about-modal-close" onClick={onClose}>

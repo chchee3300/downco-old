@@ -7,7 +7,7 @@
     "frontendDist": "../web-dist",
     "devUrl": "http://localhost:5173",
     "beforeDevCommand": "node scripts/copy-sidecars.mjs && node scripts/siblings.mjs && npm run dev",
-    "beforeBuildCommand": "node scripts/copy-sidecars.mjs && node scripts/siblings.mjs && node packaging/windows/generate-context-menu-registry.mjs && node packaging/linux/generate-context-menu-registry.mjs && npm run build"
+    "beforeBuildCommand": "node scripts/copy-sidecars.mjs && node scripts/siblings.mjs && node packaging/linux/generate-context-menu-registry.mjs && npm run build"
   },
   "app": {
     "windows": [

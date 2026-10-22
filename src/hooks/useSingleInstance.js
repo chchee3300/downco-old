@@ -18,6 +18,8 @@ const DEBOUNCE_MS = 500
 // Refs, not effect locals: StrictMode's double mount must share one batch/seq.
 export function useSingleInstance() {
   const [pendingLaunch, setPendingLaunch] = useState(null)
+  // Bumped per --sorai-presets launch; HamburgerMenu opens settings on it.
+  const [presetsRequest, setPresetsRequest] = useState(0)
   const seq = useRef(0)
   const batch = useRef(null)
   const timer = useRef(null)
@@ -44,6 +46,10 @@ export function useSingleInstance() {
       for (const argv of await invoke('take_launch_args')) {
         const args = parseLaunchArgs(argv)
         if (!args) continue
+        if (args.presets) {
+          setPresetsRequest((n) => n + 1)
+          continue
+        }
         // A different action (e.g. "to MP3" then "to OGG", or another preset) is its own batch.
         const b = batch.current
         if (b && (b.format !== args.format || b.preset !== args.preset || JSON.stringify(b.quickAction) !== JSON.stringify(args.quickAction))) flush()
@@ -58,5 +64,5 @@ export function useSingleInstance() {
     return () => unlisten.then((f) => f())
   }, [])
 
-  return { pendingLaunch }
+  return { pendingLaunch, presetsRequest }
 }

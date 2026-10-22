@@ -70,18 +70,10 @@ pub fn builtins() -> Vec<Preset> {
   out
 }
 
-// The Converter's input lists (useFileManager.js), mirrored by hand.
-const INPUT_EXTS: [(&str, &[&str]); 4] = [
-  ("video", &["mp4", "mkv", "avi", "mov", "webm"]),
-  ("image", &["jpg", "jpeg", "png", "webp", "avif", "gif", "ico"]),
-  ("audio", &["mp3", "wav", "aac", "flac", "ogg"]),
-  ("pdf", &["pdf"]),
-];
-
 /// video | image | audio | pdf by extension (case-insensitive), as the Converter decides.
 pub fn file_type_of(path: &str) -> Option<&'static str> {
   let ext = std::path::Path::new(path).extension()?.to_str()?.to_ascii_lowercase();
-  INPUT_EXTS.iter().find(|(_, exts)| exts.contains(&ext.as_str())).map(|(t, _)| *t)
+  crate::context_menu::INPUT_EXTS.iter().find(|(_, exts)| exts.contains(&ext.as_str())).map(|(t, _)| *t)
 }
 
 /// Whether a background launch converts `path` with `preset` or marks it

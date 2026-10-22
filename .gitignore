@@ -16,13 +16,8 @@
 # Release job output (release.yml "Collect release assets", scripts/updater-manifest.mjs)
 /release-assets
 
-# Regenerated fresh by generate-context-menu-registry.mjs before every
-# installer build -- never hand-edited, never stale in git.
-/packaging/windows/context-menu.generated.nsh
-
-# Same convention, Linux side -- regenerated fresh by
-# packaging/linux/generate-context-menu-registry.mjs before every
-# .deb/.rpm build.
+# Regenerated fresh by packaging/linux/generate-context-menu-registry.mjs
+# before every .deb/.rpm build -- never hand-edited, never stale in git.
 /packaging/linux/context-menu.generated/
 
 *.log

@@ -4,6 +4,14 @@
 // mechanism this feeds. Keys use a `component.field` naming convention for
 // readability only -- they're not actually nested, just flat strings, so
 // translate() never needs a path-walker.
+import menuStrings from './menu-strings.json'
+
+// Context-menu and built-in preset labels live in menu-strings.json, the one
+// copy shared with the Rust registry writer (src-tauri/src/context_menu.rs).
+// `{name}` placeholders -> params.
+const fromMenuStrings = (lang) =>
+  Object.fromEntries(Object.entries(menuStrings[lang]).map(([k, s]) => [k, (p) => s.replace(/\{(\w+)\}/g, (_, n) => p[n] ?? '')]))
+
 export const dict = {
   en: {
     'hub.tool.converter.label': 'Converter',
@@ -35,12 +43,15 @@ export const dict = {
     'progress.unknownPreset': 'This preset no longer exists',
     'progress.notifyTitle': 'Conversion finished',
     'progress.notifyBody': 'Click to open the output folder.',
+    ...fromMenuStrings('en'),
 
     'settings.title': 'Settings',
     'settings.closeBehavior.heading': 'When closing the window',
     'settings.closeBehavior.ask': 'Ask me every time',
     'settings.closeBehavior.tray': 'Minimize to the system tray',
     'settings.closeBehavior.quit': 'Quit the app',
+    'settings.presets.heading': 'Right-click presets',
+    'settings.presets.placeholder': 'Managing presets is coming soon.',
     'settings.close': 'Close',
 
     'closeConfirm.title': 'Close SORAI Toolkit?',
@@ -107,12 +118,15 @@ export const dict = {
     'progress.unknownPreset': '這個預設已經不存在',
     'progress.notifyTitle': '轉檔完成',
     'progress.notifyBody': '點一下打開輸出資料夾。',
+    ...fromMenuStrings('zh-TW'),
 
     'settings.title': '設定',
     'settings.closeBehavior.heading': '關閉視窗時',
     'settings.closeBehavior.ask': '每次都詢問',
     'settings.closeBehavior.tray': '自動縮到背景執行',
     'settings.closeBehavior.quit': '直接結束程式',
+    'settings.presets.heading': '右鍵選單預設',
+    'settings.presets.placeholder': '管理預設的功能即將推出。',
     'settings.close': '關閉',
 
     'closeConfirm.title': '要關閉 SORAI Toolkit 嗎？',
