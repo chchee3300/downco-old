@@ -26,7 +26,7 @@ const until = async (page, what, fn, timeout = 30_000) => {
 }
 // MUIVerb of each item in the .mp3 cascade, in menu order.
 const mp3Menu = (reg) =>
-  reg.filter((v) => /^\.mp3\\shell\\SORAIToolkit\\shell\\\d{3}$/.test(v.key) && v.name === 'MUIVerb')
+  reg.filter((v) => /^SystemFileAssociations\\\.mp3\\shell\\SORAIToolkit\\shell\\\d{3}$/.test(v.key) && v.name === 'MUIVerb')
     .sort((a, b) => a.key.localeCompare(b.key)).map((v) => v.data)
 
 // GlassSelect's hidden <select>: native setter + events.

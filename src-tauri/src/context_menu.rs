@@ -1,7 +1,7 @@
 //! Windows Explorer right-click menu, written by the app from the current
 //! presets and language: `entries()` is the pure part (what to write),
 //! `write()` the thin registry layer. Classic cascading verbs under
-//! `HKCU\<root>\.<ext>\shell\SORAIToolkit`: the presets that apply to the
+//! `HKCU\<root>\SystemFileAssociations\.<ext>\shell\SORAIToolkit`: the presets that apply to the
 //! extension's type (list order), then (separator) "Open in SORAI Toolkit…"
 //! and "Manage presets…".
 
@@ -21,6 +21,20 @@ pub const INPUT_EXTS: [(&str, &[&str]); 4] = [
 ];
 
 pub const MENU_KEY: &str = "SORAIToolkit";
+
+/// Where an extension's menu lives, relative to the classes root.
+/// `SystemFileAssociations` is read for every file of that extension;
+/// `.<ext>\shell` (2.0.0's location) is ignored as soon as the extension has
+/// a default app (a ProgID / UserChoice such as VLC or a Store app), which
+/// is the normal case -- the menu simply didn't show there.
+pub fn ext_key(ext: &str) -> String {
+  format!(r"SystemFileAssociations\.{ext}\shell\{MENU_KEY}")
+}
+
+/// 2.0.0 and pre-release builds wrote here; removed on every write.
+fn legacy_key(ext: &str) -> String {
+  format!(r".{ext}\shell\{MENU_KEY}")
+}
 pub const PRODUCTION_ID: &str = "com.soraitoolkit.hub";
 /// Language `--sorai-register-menu` (installer/updater) falls back to when
 /// the app never wrote a menu (no `LANG_FILE` yet).
@@ -108,7 +122,7 @@ pub fn entries(presets: &[Preset], lang: &str, exe: &str) -> Vec<RegValue> {
   let str = |v: &str| RegData::Str(v.into());
   for (file_type, exts) in INPUT_EXTS {
     for ext in exts {
-      let root = format!(r".{ext}\shell\{MENU_KEY}");
+      let root = ext_key(ext);
       put(&root, "MUIVerb", str("SORAI Toolkit"));
       put(&root, "Icon", RegData::Str(format!("\"{exe}\",0")));
       put(&root, "SubCommands", str(""));
@@ -142,10 +156,15 @@ pub fn write(root: &str, values: &[RegValue]) -> std::io::Result<()> {
   let hkcu = RegKey::predef(HKEY_CURRENT_USER);
   for (_, exts) in INPUT_EXTS {
     for ext in exts {
-      match hkcu.delete_subkey_all(format!(r"{root}\.{ext}\shell\{MENU_KEY}")) {
-        Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(e),
-        _ => {}
+      for key in [ext_key(ext), legacy_key(ext)] {
+        match hkcu.delete_subkey_all(format!(r"{root}\{key}")) {
+          Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(e),
+          _ => {}
+        }
       }
+      // 2.0.0 may have created `.<ext>\shell` just for us: drop it if now empty
+      // (delete_subkey refuses a key with subkeys, which is what we want).
+      let _ = hkcu.delete_subkey(format!(r"{root}\.{ext}\shell"));
     }
   }
   for v in values {
@@ -216,7 +235,7 @@ mod tests {
   /// (MUIVerb, command) of each submenu item of `.ext`, in order.
   fn items(v: &[RegValue], ext: &str) -> Vec<(String, String)> {
     (1..)
-      .map(|i| format!(r".{ext}\shell\SORAIToolkit\shell\{i:03}"))
+      .map(|i| format!(r"{}\shell\{i:03}", ext_key(ext)))
       .map_while(|k| match (get(v, &k, "MUIVerb"), get(v, &format!(r"{k}\command"), "")) {
         (Some(RegData::Str(l)), Some(RegData::Str(c))) => Some((l.clone(), c.clone())),
         _ => None,
@@ -231,12 +250,13 @@ mod tests {
   fn every_input_extension_gets_the_cascade_root() {
     let v = entries(&builtins(), "en", EXE);
     for ext in ["mp4", "mkv", "avi", "mov", "webm", "jpg", "jpeg", "png", "webp", "avif", "gif", "ico", "mp3", "wav", "aac", "flac", "ogg", "pdf"] {
-      let root = format!(r".{ext}\shell\SORAIToolkit");
+      let root = ext_key(ext);
       assert_eq!(get(&v, &root, "MUIVerb"), s("SORAI Toolkit").as_ref(), "{ext}");
       assert_eq!(get(&v, &root, "SubCommands"), s("").as_ref());
       assert_eq!(get(&v, &root, "Icon"), s(&format!("\"{EXE}\",0")).as_ref());
     }
-    assert!(!v.iter().any(|r| r.key.starts_with(".txt")));
+    assert!(!v.iter().any(|r| r.key.contains(".txt")));
+    assert!(v.iter().all(|r| r.key.starts_with(r"SystemFileAssociations\.")));
   }
 
   #[test]
@@ -258,8 +278,8 @@ mod tests {
       ]
     );
     // Separator above "Open…" only.
-    assert_eq!(get(&v, r".mp4\shell\SORAIToolkit\shell\008", "CommandFlags"), Some(&RegData::Dword(0x20)));
-    assert_eq!(v.iter().filter(|r| r.key.starts_with(".mp4\\") && r.name == "CommandFlags").count(), 1);
+    assert_eq!(get(&v, &format!(r"{}\shell\008", ext_key("mp4")), "CommandFlags"), Some(&RegData::Dword(0x20)));
+    assert_eq!(v.iter().filter(|r| r.key.starts_with(&ext_key("mp4")) && r.name == "CommandFlags").count(), 1);
   }
 
   #[test]
@@ -296,8 +316,11 @@ mod tests {
     let nsh = include_str!("../../packaging/windows/installer-hooks.nsh");
     for (_, exts) in INPUT_EXTS {
       for ext in exts {
-        assert!(nsh.contains(&format!(r#"DeleteRegKey HKCU "Software\Classes\.{ext}\shell\SORAIToolkit""#)), "{ext}");
-        assert!(nsh.contains(&format!(r#"DeleteRegKey /ifempty HKCU "Software\Classes\.{ext}\shell""#)), "{ext}");
+        for key in [ext_key(ext), legacy_key(ext)] {
+          assert!(nsh.contains(&format!(r#"DeleteRegKey HKCU "Software\Classes\{key}""#)), "{key}");
+          let shell = key.trim_end_matches(&format!(r"\{MENU_KEY}")).to_string();
+          assert!(nsh.contains(&format!(r#"DeleteRegKey /ifempty HKCU "Software\Classes\{shell}""#)), "{shell}");
+        }
       }
     }
     assert!(nsh.contains("--sorai-register-menu"));

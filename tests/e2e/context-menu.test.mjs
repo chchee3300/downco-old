@@ -42,7 +42,7 @@ export const tests = {
       rmSync(join(process.env.APPDATA, identifier, 'menu-lang.txt'))
       assert.equal(await run(['--sorai-register-menu']), 0)
       await expectRegistryMatches(page, 'zh-TW')
-      const muiverb = readRegistry(root).find((v) => v.key === '.mp3\\shell\\SORAIToolkit\\shell\\001' && v.name === 'MUIVerb')
+      const muiverb = readRegistry(root).find((v) => v.key === 'SystemFileAssociations\\.mp3\\shell\\SORAIToolkit\\shell\\001' && v.name === 'MUIVerb')
       assert.equal(muiverb.data, '轉成 WAV')
     } finally {
       await setLang('en')
