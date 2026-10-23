@@ -3,6 +3,7 @@ import { openUrl } from '@tauri-apps/plugin-opener'
 import { relaunch } from '@tauri-apps/plugin-process'
 import { check } from '@tauri-apps/plugin-updater'
 import versionInfo from '../version.json'
+import { isBackgroundLaunch } from '../lib/mainWindow.js'
 
 // GitHub owner/repo this app is published from -- see .github/workflows/release.yml.
 const REPO = 'chchee3300/sorai-toolkit'
@@ -76,8 +77,11 @@ export function useUpdateChecker() {
     }
   }, [])
 
+  // Not on a right-click preset's hidden cold start: one per click would eat
+  // GitHub's 60 unauthenticated requests/hour. ponytail: if that session's
+  // main window is opened later, it checks only from the menu.
   useEffect(() => {
-    checkForUpdate()
+    isBackgroundLaunch().then((bg) => bg || checkForUpdate()).catch(console.error)
   }, [checkForUpdate])
 
   const installUpdate = useCallback(async () => {

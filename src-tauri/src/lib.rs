@@ -267,8 +267,8 @@ fn taskbar_is_light() -> Option<bool> {
 /// AppHandle yet on this path.
 fn register_menu_and_exit(identifier: &str) -> i32 {
   let Some(appdata) = std::env::var_os("APPDATA") else { return 1 };
-  let path = std::path::Path::new(&appdata).join(identifier).join(presets::FILE_NAME);
-  match context_menu::register(&path, identifier, context_menu::INSTALL_LANG) {
+  let dir = std::path::Path::new(&appdata).join(identifier);
+  match context_menu::register(&dir.join(presets::FILE_NAME), identifier, &context_menu::saved_lang(&dir)) {
     Ok(()) => 0,
     Err(e) => {
       eprintln!("--sorai-register-menu: {e}");
@@ -282,7 +282,8 @@ pub fn run() {
   let cold_argv: Vec<String> = std::env::args_os().map(|a| a.to_string_lossy().into_owned()).collect();
   let context = tauri::generate_context!();
   // The installer's post-install hook: write the menu (built-ins / saved
-  // presets, Chinese labels) and exit before any window or plugin exists.
+  // presets, the app's last menu language, else Chinese) and exit before any
+  // window or plugin exists.
   if cold_argv.iter().any(|a| a == "--sorai-register-menu") {
     std::process::exit(register_menu_and_exit(&context.config().identifier));
   }
@@ -335,8 +336,17 @@ pub fn run() {
       std::thread::spawn(self_install::install);
       Ok(())
     })
-    .run(context)
-    .expect("error while building tauri application");
+    .build(context)
+    .expect("error while building tauri application")
+    .run(|app, e| {
+      // Dev/E2E builds write a scoped menu tree on start; don't leave it behind.
+      // (A second instance exits in single-instance setup, before this loop.)
+      #[cfg(windows)]
+      if let tauri::RunEvent::Exit = e {
+        context_menu::remove_dev_tree(&app.config().identifier);
+      }
+      let _ = (app, e);
+    });
 }
 
 #[cfg(test)]

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { createPortal } from 'react-dom'
 import Header from './components/Header.jsx'
@@ -12,6 +12,7 @@ import { useTranslation } from './hooks/useTranslation.js'
 import { useUpdateChecker } from './hooks/useUpdateChecker.js'
 import { useCloseBehavior } from './hooks/useCloseBehavior.js'
 import { useSingleInstance } from './hooks/useSingleInstance.js'
+import { isBackgroundLaunch } from './lib/mainWindow.js'
 
 // Hub shell: owns which tool is currently shown. Plain conditional
 // rendering, not a router -- there's no history/deep-linking need for a
@@ -51,9 +52,13 @@ function App() {
   }
 
   // The Explorer menu follows the presets and language: rewrite it on every
-  // start (repairs a deleted menu, replaces 2.0.0's) and language switch.
+  // start (repairs a deleted menu, replaces 2.0.0's) and language switch --
+  // but not on a right-click preset's hidden cold start (one per click).
+  // ponytail: such a session rewrites only once the language changes.
+  const startLang = useRef(lang)
   useEffect(() => {
-    invoke('register_context_menu', { lang }).catch(console.error)
+    const skip = lang === startLang.current ? isBackgroundLaunch() : Promise.resolve(false)
+    skip.then((bg) => bg || invoke('register_context_menu', { lang })).catch(console.error)
   }, [lang])
 
   useEffect(() => {

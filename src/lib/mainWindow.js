@@ -1,5 +1,12 @@
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { Image } from '@tauri-apps/api/image'
+import { invoke } from '@tauri-apps/api/core'
+
+// Cold start was a right-click preset (Rust launch_is_background): the main
+// window stays hidden, and its start-up work (reveal, update check, menu
+// rewrite) is skipped. Asked once per page.
+let background
+export const isBackgroundLaunch = () => (background ??= invoke('launch_is_background'))
 
 // The window is created hidden (tauri.conf.json "visible": false) so a
 // secondary instance never flashes one. The primary reveals it here; the

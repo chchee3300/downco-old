@@ -22,8 +22,12 @@ pub const INPUT_EXTS: [(&str, &[&str]); 4] = [
 
 pub const MENU_KEY: &str = "SORAIToolkit";
 pub const PRODUCTION_ID: &str = "com.soraitoolkit.hub";
-/// Language of the menu `--sorai-register-menu` (the installer) writes.
+/// Language `--sorai-register-menu` (installer/updater) falls back to when
+/// the app never wrote a menu (no `LANG_FILE` yet).
 pub const INSTALL_LANG: &str = "zh-TW";
+/// Beside presets.json: the language of the last menu written, so the
+/// installer/updater rewrite keeps the user's language.
+pub const LANG_FILE: &str = "menu-lang.txt";
 /// ECF_SEPARATORBEFORE: a separator above "Open in SORAI Toolkit…".
 const SEPARATOR_BEFORE: u32 = 0x20;
 
@@ -68,9 +72,14 @@ fn label(p: &Preset, s: &HashMap<String, String>) -> String {
   match p.label_key.as_ref().and_then(|k| s.get(k)) {
     Some(t) => t
       .replace("{format}", &p.format.trim_start_matches('.').to_uppercase())
-      .replace("{mb}", &p.settings["targetSizeMB"].to_string()),
+      .replace("{mb}", &number_text(&p.settings["targetSizeMB"])),
     None => p.id.clone(),
   }
+}
+
+/// 25, 25.0 and "25" all read "25"; 2.5 stays "2.5" (f64's Display drops `.0`).
+fn number_text(v: &serde_json::Value) -> String {
+  v.as_f64().or_else(|| v.as_str()?.trim().parse().ok()).map(|n| n.to_string()).unwrap_or_default()
 }
 
 /// `&` is a menu accelerator prefix; `&&` shows a literal one.
@@ -153,12 +162,36 @@ pub fn exe_path() -> Result<String, String> {
   Ok(std::env::current_exe().map_err(|e| e.to_string())?.display().to_string())
 }
 
-/// Loads the presets and rewrites the menu (no-op off Windows).
+/// Removes a dev/E2E build's scoped tree (on app exit); never the real menu.
+#[cfg(windows)]
+pub fn remove_dev_tree(identifier: &str) {
+  use winreg::{RegKey, enums::HKEY_CURRENT_USER};
+  if identifier == PRODUCTION_ID {
+    return;
+  }
+  let hkcu = RegKey::predef(HKEY_CURRENT_USER);
+  let _ = hkcu.delete_subkey_all(format!(r"Software\SORAI Toolkit Dev\{identifier}"));
+  let _ = hkcu.delete_subkey(r"Software\SORAI Toolkit Dev"); // only succeeds once empty
+}
+
+/// The language last written to the menu in `dir` (the presets folder), else `INSTALL_LANG`.
+pub fn saved_lang(dir: &std::path::Path) -> String {
+  std::fs::read_to_string(dir.join(LANG_FILE))
+    .map(|s| s.trim().to_string())
+    .ok()
+    .filter(|s| !s.is_empty())
+    .unwrap_or_else(|| INSTALL_LANG.into())
+}
+
+/// Loads the presets, rewrites the menu (no-op off Windows) and remembers `lang`.
 pub fn register(presets_path: &std::path::Path, identifier: &str, lang: &str) -> Result<(), String> {
   let values = entries(&crate::presets::load(presets_path)?, lang, &exe_path()?);
   #[cfg(windows)]
   write(&classes_root(identifier), &values).map_err(|e| e.to_string())?;
   let _ = (values, identifier);
+  if let Some(dir) = presets_path.parent() {
+    std::fs::create_dir_all(dir).and_then(|_| std::fs::write(dir.join(LANG_FILE), lang)).map_err(|e| e.to_string())?;
+  }
   Ok(())
 }
 
@@ -264,6 +297,29 @@ mod tests {
       }
     }
     assert!(nsh.contains("--sorai-register-menu"));
+  }
+
+  #[test]
+  fn compress_label_formats_the_size_as_a_plain_number() {
+    let mut p = builtins().into_iter().find(|p| p.id == "video-under-25mb").unwrap();
+    let s = strings("en");
+    for (mb, want) in [(json!(25), "25"), (json!(25.0), "25"), (json!("25"), "25"), (json!(" 2.5 "), "2.5"), (json!(2.5), "2.5")] {
+      p.settings["targetSizeMB"] = mb;
+      assert_eq!(label(&p, &s), format!("Compress under {want} MB"));
+    }
+  }
+
+  #[test]
+  fn register_menu_reuses_the_last_language_else_chinese() {
+    let d = std::env::temp_dir().join(format!("sorai-menu-lang-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&d);
+    assert_eq!(saved_lang(&d), "zh-TW");
+    std::fs::create_dir_all(&d).unwrap();
+    std::fs::write(d.join(LANG_FILE), " \n").unwrap();
+    assert_eq!(saved_lang(&d), "zh-TW");
+    std::fs::write(d.join(LANG_FILE), "en").unwrap();
+    assert_eq!(saved_lang(&d), "en");
+    let _ = std::fs::remove_dir_all(&d);
   }
 
   #[test]

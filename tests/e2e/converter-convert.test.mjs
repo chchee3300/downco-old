@@ -115,6 +115,33 @@ export const tests = {
     }
   },
 
+  'converter: WebM offers only VP9/AV1 and estimates with the codec it encodes': async ({ page }) => {
+    // Big enough (~2 MB) that the 0.1 MB estimate rounding tells H.264 from VP9.
+    const clip = join(dir, 'webm 估計.mp4')
+    execFileSync(FFMPEG, ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=640x360:rate=30', '-t', '4', '-b:v', '4M', clip])
+    await open(page, [clip])
+    const est = async (prev) => {
+      await page.waitForFunction((p) => { const t = document.getElementById('file-est-0').textContent; return /→ ~/.test(t) && t !== p }, prev, { timeout: 10_000 })
+      return page.locator('#file-est-0').textContent()
+    }
+    const codecs = () => page.$$eval('#video-codec option', (os) => os.map((o) => o.value))
+    try {
+      const mp4 = await est(null)
+      assert.equal(await page.$eval('#video-codec', (s) => s.value), 'libx264')
+      await set(page, '#video-format', '.webm')
+      const webm = await est(mp4) // VP9's factor, not H.264's
+      assert.equal(await page.$eval('#video-codec', (s) => s.value), 'libvpx-vp9')
+      assert.deepEqual(await codecs(), ['libvpx-vp9', 'libsvtav1'])
+      await set(page, '#video-codec', 'libvpx-vp9')
+      await page.waitForTimeout(500)
+      assert.equal(await page.locator('#file-est-0').textContent(), webm, 'shown codec and estimate disagree')
+      await set(page, '#video-format', '.mp4')
+      assert.deepEqual(await codecs(), ['libx264', 'libx265', 'libvpx-vp9', 'libsvtav1'])
+    } finally {
+      await backToHub(page)
+    }
+  },
+
   // 320k on the mono fixture: libvorbis ABR used to reject it ("encoder
   // setup failed"); the plugin now maps the bitrate onto VBR -q:a.
   'converter: audio converts to ogg (libvorbis VBR quality from the bitrate)': async ({ page }) => {

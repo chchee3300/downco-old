@@ -4,7 +4,7 @@
 // HKCU\Software\SORAI Toolkit Dev\<identifier>\Classes, never the real menu.
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { copyFileSync, mkdtempSync } from 'node:fs'
+import { copyFileSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -24,7 +24,7 @@ async function backToHub(page) {
 }
 
 export const tests = {
-  'context menu: language switch rewrites it, --sorai-register-menu writes Chinese and exits': async ({ page }) => {
+  'context menu: language switch rewrites it, --sorai-register-menu keeps the last language (else Chinese) and exits': async ({ page }) => {
     const setLang = (l) => page.evaluate((x) => window.EstellaLib.i18n.setLang(x), l)
     let root
     try {
@@ -32,9 +32,15 @@ export const tests = {
       root = await expectRegistryMatches(page, 'zh-TW')
       await setLang('en')
       await expectRegistryMatches(page, 'en')
-      // The installer hook: writes and exits 0 before single-instance, no window.
+      // The installer hook: writes and exits 0 before single-instance, no
+      // window, in the language the app last wrote...
       assert.equal(await run(['--sorai-register-menu']), 0)
       assert.equal(appCount(), 1)
+      await expectRegistryMatches(page, 'en')
+      // ...or Chinese when the app never wrote one.
+      const identifier = root.split('\\').at(-2)
+      rmSync(join(process.env.APPDATA, identifier, 'menu-lang.txt'))
+      assert.equal(await run(['--sorai-register-menu']), 0)
       await expectRegistryMatches(page, 'zh-TW')
       const muiverb = readRegistry(root).find((v) => v.key === '.mp3\\shell\\SORAIToolkit\\shell\\001' && v.name === 'MUIVerb')
       assert.equal(muiverb.data, '轉成 WAV')

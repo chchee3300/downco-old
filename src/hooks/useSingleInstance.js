@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { parseLaunchArgs } from '../lib/launchArgs.js'
-import { revealMainWindow } from '../lib/mainWindow.js'
+import { isBackgroundLaunch, revealMainWindow } from '../lib/mainWindow.js'
 
 // Explorer/Finder/Files fires one invocation PER SELECTED FILE for a
 // multi-selection right-click, so a 5-file "Convert to OGG" is 5 launches.
@@ -28,7 +28,7 @@ export function useSingleInstance() {
     // The window is created hidden; a secondary instance exits in Rust
     // before ever getting here, so whoever runs this is the primary. A
     // background-only cold start (--sorai-preset) leaves it hidden.
-    invoke('launch_is_background')
+    isBackgroundLaunch()
       .then((bg) => bg || revealMainWindow({ center: true }))
       .catch(console.error)
 

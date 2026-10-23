@@ -1,9 +1,10 @@
 // Background preset launches while the main window is open: the progress
 // window runs 2 jobs at once, skips files the preset doesn't apply to,
 // merges a later launch into the same window, cancels per row / all, stays
-// open on any failure, and leaves the app (and the Converter queue) alone.
+// open on any failure (a later all-success run still toasts), closing it
+// mid-run cancels the job, and leaves the app (and the Converter queue) alone.
 import assert from 'node:assert/strict'
-import { execFileSync, spawn } from 'node:child_process'
+import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -14,6 +15,13 @@ const hub = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const exe = join(hub, 'src-tauri', 'target', 'debug', 'sorai-toolkit.exe')
 const FFMPEG = join(hub, 'binaries', 'win_x64', 'ffmpeg.exe')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+// ffmpeg started by THIS worktree's build (others may run their own).
+function ourFfmpeg() {
+  const dir = join(hub, 'src-tauri', 'target')
+  const ps = `Get-CimInstance Win32_Process | ? { $_.ExecutablePath -and $_.ExecutablePath.StartsWith('${dir}', 'OrdinalIgnoreCase') -and $_.Name -match '^ffmpeg' } | % { $_.ProcessId }`
+  return spawnSync('powershell', ['-NoProfile', '-Command', ps], { encoding: 'utf8' }).stdout.split(/\r?\n/).filter(Boolean)
+}
 
 async function until(what, fn, timeout = 30_000) {
   const end = Date.now() + timeout
@@ -48,9 +56,9 @@ function makeClip(path) {
 export const tests = {
   'preset launches with the main window open: 2 at once, skip, merge, cancel, stays open on failure, app untouched': async ({ page, browser }) => {
     const dir = mkdtempSync(join(tmpdir(), 'sorai 進度 '))
-    const [v1, v2, v3, v4, v5] = ['一 段.mp4', 'v2.mp4', 'v3.mp4', 'v4.mp4', 'v5.mp4'].map((n) => join(dir, n))
+    const [v1, v2, v3, v4, v5, v6, v7] = ['一 段.mp4', 'v2.mp4', 'v3.mp4', 'v4.mp4', 'v5.mp4', 'v6.mp4', 'v7.mp4'].map((n) => join(dir, n))
     makeClip(v1)
-    for (const v of [v2, v3, v4, v5]) copyFileSync(v1, v)
+    for (const v of [v2, v3, v4, v5, v6, v7]) copyFileSync(v1, v)
     const song = join(dir, 'song.mp3')
     copyFileSync(join(hub, 'tests', 'fixtures', 'test_fixture_audio.mp3'), song)
     const broken = join(dir, 'broken.mp4')
@@ -112,8 +120,29 @@ export const tests = {
       await sleep(4000)
       assert.equal((await progressPages(browser)).length, 1, 'progress window closed despite failures')
       assert.equal(await invoke(page, 'plugin:window|is_visible', { label: 'main' }), true)
-      await invoke(progress, 'plugin:window|destroy', { label: 'progress' }).catch(() => {}) // page dies mid-call
+
+      // A later all-success run toasts like a fresh window, but the earlier
+      // failures still keep the window open.
+      const toasts = []
+      await progress.route(/ipc\.localhost\/notify_done/, (r) => {
+        toasts.push(r.request().postDataJSON())
+        return r.fulfill({ status: 200, headers: { 'Tauri-Response': 'ok', 'Content-Type': 'application/json' }, body: 'null' })
+      })
+      await launchEach('--sorai-preset=video-to-webm', [v6])
+      await until('v6 to succeed', async () => (await statuses(progress))[v6] === 'success', 60_000)
+      await until('the toast', () => toasts.length === 1, 5000)
+      assert.equal(toasts[0].reveal, v6.replace(/\.mp4$/, '_converted.webm'))
+      await sleep(4000)
+      assert.equal((await progressPages(browser)).length, 1, 'progress window closed despite earlier failures')
+
+      // X mid-run: the job is cancelled (no ffmpeg left, no partial output), then the window closes.
+      await launchEach('--sorai-preset=video-to-webm', [v7])
+      await until('v7 to run', async () => (await statuses(progress))[v7] === 'running')
+      await until('its ffmpeg', () => ourFfmpeg().length > 0, 15_000)
+      await invoke(progress, 'plugin:window|close', { label: 'progress' }).catch(() => {}) // page dies mid-call
       await until('the progress window to go', async () => (await progressPages(browser)).length === 0)
+      assert.deepEqual(ourFfmpeg(), [], 'ffmpeg still running after closing the progress window')
+      assert.ok(!existsSync(v7.replace(/\.mp4$/, '_converted.webm')), 'closing mid-run left an output')
       await sleep(1000)
       assert.equal(appCount(), 1, 'app exited with the main window open')
       const titles = await page.locator('.file-item .queue-item-title').evaluateAll((els) => els.map((e) => e.getAttribute('title')))

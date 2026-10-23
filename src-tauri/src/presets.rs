@@ -173,10 +173,12 @@ pub fn suggest_name(file_type: &str, format: &str, settings: &Value, lang: &str)
         let mb = num("targetSizeMB").unwrap_or(0.0);
         parts.push(if zh { format!("{mb}MB 以下") } else { format!("Under {mb} MB") });
       } else {
+        // WebM encodes VP9 unless AV1 was picked (Converter effective_codec).
         let codec = match settings["codec"].as_str() {
+          Some("libsvtav1") => Some("AV1"),
+          _ if format == ".webm" => None,
           Some("libx265") => Some("H.265"),
           Some("libvpx-vp9") => Some("VP9"),
-          Some("libsvtav1") => Some("AV1"),
           _ => None,
         };
         if let Some(c) = codec.filter(|_| format != ".gif") {
@@ -396,6 +398,7 @@ mod tests {
     v["speed"] = json!(1.5);
     assert_eq!(n("video", ".mkv", v.clone(), "en"), "MKV · H.265 · Quality 70 · 30fps · 1.5×");
     assert_eq!(n("video", ".gif", v.clone(), "en"), "GIF · Quality 70 · 30fps · 1.5×", "no codec on gif");
+    assert_eq!(n("video", ".webm", v.clone(), "en"), "WEBM · Quality 70 · 30fps · 1.5×", "webm encodes VP9, not H.265");
     v["targetSizeMode"] = json!(true);
     v["targetSizeMB"] = json!(25);
     v["fps"] = json!(null);

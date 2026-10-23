@@ -15,9 +15,13 @@ const ACTIVE = ['queued', 'running']
 // The `progress` window (src/main.jsx renders this for that label). Drains
 // files queued by the main window (Rust take_progress_jobs, which already
 // resolved each file's preset and whether it applies), converts 2 at a time
-// through the Converter plugin into each source's own folder, and closes
-// itself 3 s after everything succeeded (with a toast); Rust (lib.rs) then
-// ends the app if nothing else is showing. Any error/cancel keeps it open.
+// through the Converter plugin into each source's own folder. Each run (busy
+// until idle again) that ends with outputs and no error/cancel toasts. The
+// window closes itself 3 s after a run unless any error/cancel row is showing:
+// errors stay visible until the user closes the window, even across later
+// all-success runs. Rust (lib.rs) then ends the app if nothing else is
+// showing. Closing it (X) mid-run cancels everything first (no headless jobs,
+// no partial outputs), then closes.
 // Rows: { key, path, status: queued|running|success|error|cancelled|skipped, percent, message }.
 export default function ProgressApp() {
   useTheme()
@@ -28,7 +32,11 @@ export default function ProgressApp() {
   const active = useRef(0)
   const jobIds = useRef(new Map()) // key -> plugin jobId, while running
   const cancelled = useRef(new Set()) // keys cancelled before their job id existed
-  const failed = useRef(false)
+  const failed = useRef(false) // an error/cancel row is showing (never cleared: rows stay)
+  const runFailed = useRef(false) // ...in the current run (no toast)
+  const closing = useRef(false)
+  const rowsRef = useRef(rows)
+  rowsRef.current = rows
   const lastOut = useRef(null)
   const closeTimer = useRef(null)
   const nextKey = useRef(0)
@@ -38,7 +46,7 @@ export default function ProgressApp() {
     const i = queue.current.findIndex((j) => j.key === key)
     if (i >= 0) {
       queue.current.splice(i, 1)
-      failed.current = true
+      failed.current = runFailed.current = true
       update(key, { status: 'cancelled' })
       settle()
     } else if (jobIds.current.has(key)) {
@@ -47,16 +55,25 @@ export default function ProgressApp() {
       cancelled.current.add(key) // still probing / starting
     }
   }
-  const cancelAll = () => rows.filter((r) => ACTIVE.includes(r.status)).forEach((r) => cancel(r.key))
+  // Refs, not `rows`: also called from the close handler, and rows just
+  // drained may not be rendered yet.
+  const cancelAll = () => {
+    const keys = new Set([...queue.current.map((j) => j.key), ...rowsRef.current.filter((r) => ACTIVE.includes(r.status)).map((r) => r.key)])
+    keys.forEach(cancel)
+  }
 
-  // Everything finished: stay open on any failure, else toast + close.
+  // A run finished: toast if it produced outputs without failures; close
+  // unless a failure is showing (or right away when the user is closing).
   function settle() {
-    if (active.current || queue.current.length || failed.current) return
-    if (lastOut.current) {
+    if (active.current || queue.current.length) return
+    if (closing.current) return getCurrentWindow().destroy()
+    if (lastOut.current && !runFailed.current) {
       invoke('notify_done', { title: tNow('progress.notifyTitle'), body: tNow('progress.notifyBody'), reveal: lastOut.current }).catch(console.error)
-      lastOut.current = null
     }
-    closeTimer.current = setTimeout(() => getCurrentWindow().destroy(), AUTO_CLOSE_MS)
+    lastOut.current = null
+    runFailed.current = false
+    clearTimeout(closeTimer.current)
+    if (!failed.current) closeTimer.current = setTimeout(() => getCurrentWindow().destroy(), AUTO_CLOSE_MS)
   }
 
   // One file: probe (duration/fps drive progress and target-size bitrates),
@@ -86,7 +103,7 @@ export default function ProgressApp() {
       convertOne(job)
         .catch((e) => ({ status: 'error', message: String(e) }))
         .then((result) => {
-          if (result.status !== 'success') failed.current = true
+          if (result.status !== 'success') failed.current = runFailed.current = true
           update(job.key, { status: result.status, message: result.message ?? null, ...(result.status === 'success' && { percent: 100 }) })
           active.current--
           pump()
@@ -102,7 +119,7 @@ export default function ProgressApp() {
       clearTimeout(closeTimer.current) // new files arrived during the 3 s
       const added = jobs.map(({ path, preset, applies }) => {
         const key = nextKey.current++
-        if (!preset) failed.current = true
+        if (!preset) failed.current = runFailed.current = true
         else if (applies) queue.current.push({ key, path, preset })
         const status = !preset ? 'error' : applies ? 'queued' : 'skipped'
         return { key, path, status, percent: 0, message: preset ? null : tNow('progress.unknownPreset') }
@@ -112,9 +129,20 @@ export default function ProgressApp() {
       settle() // a batch of only skipped files
     }
 
+    // X while busy: cancel everything, settle() destroys once it's all done
+    // (the runner removes partial outputs; its backstop bounds the wait).
+    const unclose = getCurrentWindow().onCloseRequested((e) => {
+      if (!active.current && !queue.current.length) return
+      e.preventDefault()
+      closing.current = true
+      cancelAll()
+    })
     const unlisten = listen('sorai://progress-jobs', () => drain().catch(console.error))
     drain().catch(console.error)
-    return () => unlisten.then((f) => f())
+    return () => {
+      unlisten.then((f) => f())
+      unclose.then((f) => f())
+    }
   }, [])
 
   const anyActive = rows.some((r) => ACTIVE.includes(r.status))

@@ -5,9 +5,10 @@
 // devUrl with its own Vite and drives the exe directly over its own CDP port.
 // audio-to-ogg on the mono fixture also guards the Converter's libvorbis
 // fix (320k ABR used to fail on mono); the .png row is skipped, which still
-// counts as all-succeeded.
+// counts as all-succeeded. The dev menu tree goes with the dev app (lib.rs
+// RunEvent::Exit), and a hidden preset start doesn't rewrite it.
 import assert from 'node:assert/strict'
-import { execFileSync, spawn } from 'node:child_process'
+import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdtempSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -32,6 +33,9 @@ async function until(what, fn, timeout = 30_000) {
   }
 }
 
+const devTreeExists = (cdpPort) =>
+  spawnSync('reg', ['query', `HKCU\\Software\\SORAI Toolkit Dev\\com.soraitoolkit.hub.dev${cdpPort}`], { stdio: 'ignore' }).status === 0
+
 const exited = (p) => p.exitCode !== null ? Promise.resolve(p.exitCode) : new Promise((r) => p.on('exit', r))
 
 export const tests = {
@@ -42,6 +46,7 @@ export const tests = {
     }
     const { vitePort, cdpPort } = ports()
     const devUrl = `http://localhost:${vitePort}`
+    assert.equal(devTreeExists(cdpPort), false, 'the dev app left its menu tree behind')
     const cdp = cdpPort + 1 // the dev app's port may linger in TIME_WAIT
     // tauri dev takes its Vite down once the app is gone; don't race it.
     await until('the dev Vite to stop', async () => !(await up(devUrl)), 10_000).catch(() => {})
@@ -85,6 +90,7 @@ export const tests = {
       await until('both rows to succeed, one skipped', done, 90_000)
       const doneAt = Date.now()
       assert.equal(mainShown, false, 'main window was shown')
+      assert.equal(devTreeExists(cdpPort), false, 'a background start rewrote the menu')
       assert.deepEqual((await rows.evaluateAll((els) => els.map((e) => e.title))).sort(), [...files, picture].sort())
 
       for (const f of files) {
