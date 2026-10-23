@@ -1,3 +1,25 @@
+# [2.1.0](https://github.com/chchee3300/sorai-toolkit/compare/v2.0.0...v2.1.0) (2026-10-23)
+
+
+### Bug Fixes
+
+* context-menu review fixes for the progress window, background starts and the menu ([b492777](https://github.com/chchee3300/sorai-toolkit/commit/b492777ea1b98157f378a097345046e9991c9f22))
+* **deps:** lock the converter and downloader with right-click presets ([68d26d0](https://github.com/chchee3300/sorai-toolkit/commit/68d26d01c037318cf17b5e5ddd61dfdc8d23af5a))
+* serialize context-menu writes and count toasts for E2E ([743f175](https://github.com/chchee3300/sorai-toolkit/commit/743f1754df13d57f036f669339f796d4bb559612))
+* **windows:** write the context menu under SystemFileAssociations ([da167b3](https://github.com/chchee3300/sorai-toolkit/commit/da167b348aa986c0eecef7414d39828d19a460b9))
+* write the context menu in call order so a quick language switch wins ([96313e1](https://github.com/chchee3300/sorai-toolkit/commit/96313e16acc794f1a70969ae8f981e0383a247ce))
+
+
+### Features
+
+* app writes the Explorer context menu from presets and language ([0df19c0](https://github.com/chchee3300/sorai-toolkit/commit/0df19c03bcbc5e7b0c599ca4f07fcf88e3c0b3a2))
+* edit a right-click preset in the Converter from Settings ([d70568f](https://github.com/chchee3300/sorai-toolkit/commit/d70568fe1767c49d947231ed7d1f23168174cd7b))
+* preset store and background convert via --sorai-preset ([24dc98c](https://github.com/chchee3300/sorai-toolkit/commit/24dc98c016dfb61ad6d1ef82575e4569edbf83c4))
+* progress window is a frameless translucent panel in the bottom-right corner ([f8c0f74](https://github.com/chchee3300/sorai-toolkit/commit/f8c0f7422b660cf3b388e6f35ddb87ecfb6c1b0e))
+* progress window runs 2 jobs, cancels, skips via Rust, notifies on success ([8e337b0](https://github.com/chchee3300/sorai-toolkit/commit/8e337b09a6bb20d0ade824d58064f52160e9bab3))
+* save right-click presets from the Converter and manage them in Settings ([e4dd570](https://github.com/chchee3300/sorai-toolkit/commit/e4dd57061966215a452f602f5641bfa1a4eb326d)), closes [#settings-presets](https://github.com/chchee3300/sorai-toolkit/issues/settings-presets)
+* tray icon uses the SORAI logo, white or black to match the taskbar theme ([76d255e](https://github.com/chchee3300/sorai-toolkit/commit/76d255e50a52aacebbb2b406e1fdcf6c87e5ac7f))
+
 # [2.0.0](https://github.com/chchee3300/sorai-toolkit/compare/v1.10.2...v2.0.0) (2026-10-22)
 
 
