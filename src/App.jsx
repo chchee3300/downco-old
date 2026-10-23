@@ -55,10 +55,15 @@ function App() {
   // start (repairs a deleted menu, replaces 2.0.0's) and language switch --
   // but not on a right-click preset's hidden cold start (one per click).
   // ponytail: such a session rewrites only once the language changes.
+  // Chained so writes land in call order (a language switch right after
+  // start must not be overwritten by the start-up write).
   const startLang = useRef(lang)
+  const menuWrites = useRef(Promise.resolve())
   useEffect(() => {
-    const skip = lang === startLang.current ? isBackgroundLaunch() : Promise.resolve(false)
-    skip.then((bg) => bg || invoke('register_context_menu', { lang })).catch(console.error)
+    menuWrites.current = menuWrites.current
+      .then(isBackgroundLaunch)
+      .then((bg) => (bg && lang === startLang.current) || invoke('register_context_menu', { lang }))
+      .catch(console.error)
   }, [lang])
 
   useEffect(() => {
