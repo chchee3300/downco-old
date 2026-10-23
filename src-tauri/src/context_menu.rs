@@ -184,7 +184,11 @@ pub fn saved_lang(dir: &std::path::Path) -> String {
 }
 
 /// Loads the presets, rewrites the menu (no-op off Windows) and remembers `lang`.
+/// Serialized: the async command runs on a thread pool, and two overlapping
+/// delete-then-write passes (start-up + language switch) would mix languages.
 pub fn register(presets_path: &std::path::Path, identifier: &str, lang: &str) -> Result<(), String> {
+  static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+  let _guard = LOCK.lock().unwrap_or_else(|e| e.into_inner());
   let values = entries(&crate::presets::load(presets_path)?, lang, &exe_path()?);
   #[cfg(windows)]
   write(&classes_root(identifier), &values).map_err(|e| e.to_string())?;

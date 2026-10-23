@@ -27,6 +27,7 @@ export default function ProgressApp() {
   useTheme()
   const { t } = useTranslation()
   const [rows, setRows] = useState([])
+  const [toasts, setToasts] = useState(0) // .progress-app[data-toasts], for E2E
   // Refs, not effect locals: StrictMode's double mount shares one pool.
   const queue = useRef([]) // { key, path, preset }
   const active = useRef(0)
@@ -69,6 +70,7 @@ export default function ProgressApp() {
     if (closing.current) return getCurrentWindow().destroy()
     if (lastOut.current && !runFailed.current) {
       invoke('notify_done', { title: tNow('progress.notifyTitle'), body: tNow('progress.notifyBody'), reveal: lastOut.current }).catch(console.error)
+      setToasts((n) => n + 1)
     }
     lastOut.current = null
     runFailed.current = false
@@ -147,7 +149,7 @@ export default function ProgressApp() {
 
   const anyActive = rows.some((r) => ACTIVE.includes(r.status))
   return (
-    <div className="progress-app">
+    <div className="progress-app" data-toasts={toasts}>
       <div className="progress-rows">
         {rows.map((r) => (
           <div key={r.key} className="progress-row" data-status={r.status} title={r.path}>

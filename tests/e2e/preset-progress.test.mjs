@@ -123,15 +123,12 @@ export const tests = {
 
       // A later all-success run toasts like a fresh window, but the earlier
       // failures still keep the window open.
-      const toasts = []
-      await progress.route(/ipc\.localhost\/notify_done/, (r) => {
-        toasts.push(r.request().postDataJSON())
-        return r.fulfill({ status: 200, headers: { 'Tauri-Response': 'ok', 'Content-Type': 'application/json' }, body: 'null' })
-      })
+      // (page.route doesn't see this window's own IPC calls, hence the counter.)
+      const toasts = () => progress.locator('.progress-app').getAttribute('data-toasts').then(Number)
+      assert.equal(await toasts(), 0, 'toasted a run with failures')
       await launchEach('--sorai-preset=video-to-webm', [v6])
       await until('v6 to succeed', async () => (await statuses(progress))[v6] === 'success', 60_000)
-      await until('the toast', () => toasts.length === 1, 5000)
-      assert.equal(toasts[0].reveal, v6.replace(/\.mp4$/, '_converted.webm'))
+      await until('the toast', async () => (await toasts()) === 1, 5000)
       await sleep(4000)
       assert.equal((await progressPages(browser)).length, 1, 'progress window closed despite earlier failures')
 
