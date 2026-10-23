@@ -136,14 +136,42 @@ async fn queue_background(app: tauri::AppHandle, preset_id: String, files: Vec<S
     return Ok(());
   }
   // Same frontend; src/main.jsx renders ProgressApp for this label.
-  WebviewWindowBuilder::new(&app, PROGRESS, WebviewUrl::App("index.html".into()))
+  // A notification-style panel: no title bar or close button (still on the
+  // taskbar, whose right-click "Close window" closes it), translucent, in the
+  // bottom-right corner of the monitor the user right-clicked on.
+  let w = WebviewWindowBuilder::new(&app, PROGRESS, WebviewUrl::App("index.html".into()))
     .title("SORAI Toolkit")
     .inner_size(420.0, 300.0)
     .resizable(false)
-    .center()
+    .decorations(false)
+    .transparent(true)
+    .shadow(false)
+    .always_on_top(true)
+    .visible(false)
     .build()
     .map_err(|e| e.to_string())?;
+  if let Some(pos) = bottom_right(&app, &w) {
+    let _ = w.set_position(pos);
+  }
+  let _ = w.show();
   Ok(())
+}
+
+/// Bottom-right of the work area (taskbar excluded) of the monitor under the
+/// cursor, else the primary one, with a small margin.
+fn bottom_right(app: &tauri::AppHandle, w: &tauri::WebviewWindow) -> Option<tauri::PhysicalPosition<i32>> {
+  let monitor = app
+    .cursor_position()
+    .ok()
+    .and_then(|c| app.monitor_from_point(c.x, c.y).ok().flatten())
+    .or_else(|| app.primary_monitor().ok().flatten())?;
+  let area = monitor.work_area();
+  let size = w.outer_size().ok()?;
+  let margin = (12.0 * monitor.scale_factor()).round() as i32;
+  Some(tauri::PhysicalPosition::new(
+    area.position.x + area.size.width as i32 - size.width as i32 - margin,
+    area.position.y + area.size.height as i32 - size.height as i32 - margin,
+  ))
 }
 
 /// One file for the progress window: its preset (None = unknown id, an

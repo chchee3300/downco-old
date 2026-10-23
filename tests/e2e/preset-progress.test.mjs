@@ -72,6 +72,15 @@ export const tests = {
     try {
       await launchEach('--sorai-preset=video-to-webm', [v1, v2, song, broken])
       const progress = await until('the progress window', async () => (await progressPages(browser))[0], 30_000)
+      // Notification-style: frameless, transparent page, bottom-right corner of a screen.
+      assert.equal(await invoke(page, 'plugin:window|is_decorated', { label: 'progress' }), false, 'progress window has a title bar')
+      const box = await progress.evaluate(() => ({
+        bg: getComputedStyle(document.body).backgroundColor,
+        right: screen.availLeft + screen.availWidth - (window.screenX + window.outerWidth),
+        bottom: screen.availTop + screen.availHeight - (window.screenY + window.outerHeight),
+      }))
+      assert.equal(box.bg, 'rgba(0, 0, 0, 0)', 'progress page paints a background')
+      assert.ok(box.right >= 0 && box.right < 40 && box.bottom >= 0 && box.bottom < 40, `not in the bottom-right corner: ${JSON.stringify(box)}`)
       await until('4 rows', async () => Object.keys(await statuses(progress)).length === 4)
 
       // A second launch mid-run lands in the same window.

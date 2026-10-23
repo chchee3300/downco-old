@@ -16,10 +16,14 @@ import './lib/dialogs.js'
 // Installs window.SoraiPresets (right-click presets; Converter saves through it).
 import './lib/presets.js'
 
+const isProgress = getCurrentWindow().label === 'progress'
+// Frameless + transparent window: styles.css keeps this page from painting.
+if (isProgress) document.documentElement.classList.add('progress-window')
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     {/* The `progress` window (src-tauri/src/lib.rs queue_background) loads
         this same frontend but only renders the background-convert view. */}
-    {getCurrentWindow().label === 'progress' ? <ProgressApp /> : <App />}
+    {isProgress ? <ProgressApp /> : <App />}
   </StrictMode>,
 )
