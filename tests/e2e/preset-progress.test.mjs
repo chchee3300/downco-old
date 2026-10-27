@@ -3,9 +3,10 @@
 // merges a later launch into the same window, cancels per row / all, stays
 // open on any failure (a later all-success run still toasts), closing it
 // mid-run cancels the job, and leaves the app (and the Converter queue) alone.
+// A PDF that can't get smaller still reads as a success, labelled as such.
 import assert from 'node:assert/strict'
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
-import { copyFileSync, existsSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdtempSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -165,5 +166,23 @@ export const tests = {
         await page.locator('.hub-card').first().waitFor()
       }
     }
+  },
+
+  'preset pdf-compress on an already compressed PDF: success row labelled "not smaller", window closes': async ({ browser }) => {
+    const dir = mkdtempSync(join(tmpdir(), 'sorai 進度 pdf '))
+    const doc = join(dir, '文件.pdf')
+    copyFileSync(join(hub, 'tests', 'fixtures', 'test_fixture.pdf'), doc)
+    const once = join(dir, '文件_converted.pdf')
+    const closed = () => until('the progress window to close', async () => !(await progressPages(browser)).length, 30_000)
+    await launchEach('--sorai-preset=pdf-compress', [doc])
+    await until('the first output', () => existsSync(once), 30_000)
+    await closed()
+    await launchEach('--sorai-preset=pdf-compress', [once])
+    const progress = await until('the progress window', async () => (await progressPages(browser))[0], 30_000)
+    const row = progress.locator('.progress-row')
+    await until('the row to finish', async () => (await row.getAttribute('data-status').catch(() => null)) === 'success', 30_000)
+    assert.equal(await row.locator('.progress-row-status').textContent(), "Done: can't be made smaller")
+    assert.equal(statSync(join(dir, '文件_converted_converted.pdf')).size, statSync(once).size)
+    await closed() // all success: auto-closes
   },
 }

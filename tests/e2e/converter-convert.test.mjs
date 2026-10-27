@@ -2,11 +2,12 @@
 // real ffmpeg sidecar runs, outputs checked with ffmpeg itself. Video /
 // audio / image once each, a failing file doesn't stop the batch, output
 // names never overwrite, "under 5 MB" really is under 5,000,000 bytes, and
-// cancel kills ffmpeg and cleans the partial file. PDF compress (qpdf) and
-// image->PDF (img2pdf) run the real Windows sidecars; outputs checked with qpdf.
+// cancel kills ffmpeg and cleans the partial file. PDF compress runs the
+// built-in compressor (qpdf for encrypted files), image->PDF the real img2pdf
+// sidecar; outputs checked with qpdf.
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { copyFileSync, existsSync, mkdtempSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -206,17 +207,35 @@ export const tests = {
     }
   },
 
-  'converter: PDF compress runs qpdf and yields a valid, smaller file': async ({ page }) => {
+  'converter: PDF compress is built in (smaller, valid), encrypted stays on qpdf, compressing again shows not-smaller': async ({ page }) => {
     const doc = join(dir, '文件 一.pdf')
     copyFileSync(join(fixtures, 'test_fixture.pdf'), doc)
-    await open(page, [doc])
+    // Owner password only: opens without one, and qpdf keeps the encryption.
+    const enc = join(dir, '加密 一.pdf')
+    execFileSync(QPDF, ['--encrypt', '', 'owner', '256', '--', doc, enc])
+    await open(page, [doc, enc])
+    const out = join(dir, '文件 一_converted.pdf')
+    try {
+      await set(page, '#pdf-optimize', 'compress')
+      assert.match(await run(page, 2), /^Completed 2 of 2/)
+      assert.match(await log(page), /> Executing: builtin-pdf-compress "[^"]*文件 一.pdf" /)
+      assert.match(await log(page), /> Executing: qpdf --stream-data=compress "[^"]*加密 一.pdf" /)
+      assert.equal(pdfPages(out), pdfPages(doc))
+      assert.ok(statSync(out).size < statSync(doc).size, `${statSync(out).size} >= ${statSync(doc).size}`)
+      assert.equal(await page.locator('.file-not-smaller').count(), 0)
+      assert.match(execFileSync(QPDF, ['--show-encryption', join(dir, '加密 一_converted.pdf')], { encoding: 'utf8' }), /R = 6/)
+    } finally {
+      await backToHub(page)
+    }
+
+    // Already compressed: success, the queue says so, output = a copy of the input.
+    await open(page, [out])
     try {
       await set(page, '#pdf-optimize', 'compress')
       assert.match(await run(page, 1), /^Completed 1 of 1/)
-      assert.match(await log(page), /> Executing: qpdf --stream-data=compress /)
-      const out = join(dir, '文件 一_converted.pdf')
-      assert.equal(pdfPages(out), pdfPages(doc))
-      assert.ok(statSync(out).size < statSync(doc).size, `${statSync(out).size} >= ${statSync(doc).size}`)
+      assert.equal(await page.locator('#file-size-0 .file-not-smaller').textContent(), "→ can't be made smaller")
+      const again = join(dir, '文件 一_converted_converted.pdf')
+      assert.ok(readFileSync(again).equals(readFileSync(out)))
     } finally {
       await backToHub(page)
     }

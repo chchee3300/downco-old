@@ -106,7 +106,7 @@ export default function ProgressApp() {
         .catch((e) => ({ status: 'error', message: String(e) }))
         .then((result) => {
           if (result.status !== 'success') failed.current = runFailed.current = true
-          update(job.key, { status: result.status, message: result.message ?? null, ...(result.status === 'success' && { percent: 100 }) })
+          update(job.key, { status: result.status, message: result.message ?? null, notSmaller: !!result.notSmaller, ...(result.status === 'success' && { percent: 100 }) })
           active.current--
           pump()
           settle()
@@ -155,7 +155,8 @@ export default function ProgressApp() {
           <div key={r.key} className="progress-row" data-status={r.status} title={r.path}>
             <div className="progress-row-head">
               <span className="progress-row-name">{baseName(r.path)}</span>
-              <span className="progress-row-status">{t(`progress.status.${r.status}`)}</span>
+              {/* notSmaller: still a success (data-status), the output is a copy of the source */}
+              <span className="progress-row-status">{t(r.notSmaller ? 'progress.status.notSmaller' : `progress.status.${r.status}`)}</span>
               {ACTIVE.includes(r.status) && (
                 <button type="button" className="btn btn-ghost btn-xs progress-row-cancel" onClick={() => cancel(r.key)}>
                   {t('progress.cancel')}
