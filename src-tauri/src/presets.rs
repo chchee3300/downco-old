@@ -41,7 +41,7 @@ fn default_settings(file_type: &str, format: &str) -> Value {
       "fpsUpscale": false, "speed": 1.0, "targetSizeMode": false, "targetSizeMB": null }),
     "image" => json!({ "format": format, "quality": 85, "scale": 100 }),
     "audio" => json!({ "format": format, "bitrate": "320k", "speed": 1.0 }),
-    _ => json!({ "optimize": "linearize" }),
+    _ => json!({ "optimize": "linearize", "level": "ebook" }),
   }
 }
 
@@ -66,7 +66,7 @@ pub fn builtins() -> Vec<Preset> {
       }
     }
   }
-  out.push(builtin("pdf-compress".into(), "preset.compressPdf", "pdf", ".pdf", json!({ "optimize": "compress" })));
+  out.push(builtin("pdf-compress".into(), "preset.compressPdf", "pdf", ".pdf", json!({ "optimize": "compress", "level": "ebook" })));
   out
 }
 
@@ -207,15 +207,19 @@ pub fn suggest_name(file_type: &str, format: &str, settings: &Value, lang: &str)
       }
       parts.extend(speed);
     }
-    "pdf" => parts.push(
-      match (settings["optimize"].as_str() == Some("compress"), zh) {
-        (true, true) => "壓縮",
-        (true, false) => "Compress",
-        (false, true) => "線性化",
-        (false, false) => "Linearize",
-      }
-      .into(),
-    ),
+    "pdf" => {
+      let compress = settings["optimize"].as_str() == Some("compress");
+      parts.push(if !compress { if zh { "線性化" } else { "Linearize" } } else if zh { "壓縮" } else { "Compress" }.into());
+      // A missing level reads as the default "ebook" (Converter PdfSettings).
+      let level = match (settings["level"].as_str(), zh) {
+        (Some("screen"), true) => Some("最小"),
+        (Some("screen"), false) => Some("Smallest"),
+        (Some("printer"), true) => Some("高品質"),
+        (Some("printer"), false) => Some("High quality"),
+        _ => None,
+      };
+      parts.extend(level.filter(|_| compress).map(String::from));
+    }
     _ => {}
   }
   parts.join(if zh { "・" } else { " · " })
@@ -266,7 +270,7 @@ mod tests {
     assert_eq!((small.settings["targetSizeMode"].clone(), small.settings["targetSizeMB"].clone()), (json!(true), json!(25)));
 
     let pdf = get("pdf-compress");
-    assert_eq!((pdf.file_type.as_str(), pdf.settings.clone()), ("pdf", json!({ "optimize": "compress" })));
+    assert_eq!((pdf.file_type.as_str(), pdf.settings.clone()), ("pdf", json!({ "optimize": "compress", "level": "ebook" })));
     assert!(all.iter().all(|p| p.name.is_none()));
   }
 
@@ -411,5 +415,9 @@ mod tests {
     assert_eq!(n("audio", ".flac", json!({ "bitrate": "192k", "speed": 0.5 }), "en"), "FLAC · 0.5×", "no bitrate on lossless");
     assert_eq!(n("pdf", ".pdf", json!({ "optimize": "compress" }), "zh-TW"), "PDF・壓縮");
     assert_eq!(n("pdf", ".pdf", json!({ "optimize": "linearize" }), "en"), "PDF · Linearize");
+    assert_eq!(n("pdf", ".pdf", json!({ "optimize": "compress", "level": "ebook" }), "en"), "PDF · Compress", "default level");
+    assert_eq!(n("pdf", ".pdf", json!({ "optimize": "compress", "level": "screen" }), "zh-TW"), "PDF・壓縮・最小");
+    assert_eq!(n("pdf", ".pdf", json!({ "optimize": "compress", "level": "printer" }), "en"), "PDF · Compress · High quality");
+    assert_eq!(n("pdf", ".pdf", json!({ "optimize": "linearize", "level": "screen" }), "en"), "PDF · Linearize", "level only applies to compress");
   }
 }

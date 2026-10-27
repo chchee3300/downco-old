@@ -4,10 +4,10 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Converter `PdfSettings` 加 `level`（`screen`／`ebook`／`printer`），serde 預設 `ebook`；JS `DEFAULT_PDF` 也帶 `level: 'ebook'`
-- [ ] 選「壓縮」才顯示等級下拉，選「線性化」時隱藏；文案繁中＋英文
-- [ ] hub 內建 `pdf-compress` 的 settings 明確寫 `level: "ebook"`；`suggest_name` 對非預設等級加上等級名稱
-- [ ] cargo test：沒有 `level` 的舊 JSON 反序列化成 `ebook`；`suggest_name` 的新案例
-- [ ] E2E：選壓縮＋最小並轉檔成功；存成右鍵預設後 `list_presets` 裡有 `level`
+- [x] Converter `PdfSettings` 加 `level`（`screen`／`ebook`／`printer`），serde 預設 `ebook`；JS `DEFAULT_PDF` 也帶 `level: 'ebook'`
+- [x] 選「壓縮」才顯示等級下拉，選「線性化」時隱藏；文案繁中＋英文
+- [x] hub 內建 `pdf-compress` 的 settings 明確寫 `level: "ebook"`；`suggest_name` 對非預設等級加上等級名稱
+- [x] cargo test：沒有 `level` 的舊 JSON 反序列化成 `ebook`；`suggest_name` 的新案例
+- [x] E2E：選壓縮＋最小並轉檔成功；存成右鍵預設後 `list_presets` 裡有 `level`

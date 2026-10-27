@@ -10,7 +10,7 @@ import { copyFileSync, existsSync, mkdtempSync, readdirSync, statSync, writeFile
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { stubDialogs } from './helpers.mjs'
+import { invoke, stubDialogs } from './helpers.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const fixtures = join(root, 'tests', 'fixtures')
@@ -218,6 +218,32 @@ export const tests = {
       assert.equal(pdfPages(out), pdfPages(doc))
       assert.ok(statSync(out).size < statSync(doc).size, `${statSync(out).size} >= ${statSync(doc).size}`)
     } finally {
+      await backToHub(page)
+    }
+  },
+
+  'converter: PDF level shows only for compress; Smallest converts and is saved in the preset': async ({ page }) => {
+    const doc = join(dir, '文件 等級.pdf')
+    copyFileSync(join(fixtures, 'test_fixture.pdf'), doc)
+    await open(page, [doc])
+    let saved
+    try {
+      await set(page, '#pdf-optimize', 'linearize')
+      assert.equal(await page.locator('#pdf-level').count(), 0)
+      await set(page, '#pdf-optimize', 'compress')
+      assert.equal(await page.locator('#pdf-level').inputValue(), 'ebook')
+      await set(page, '#pdf-level', 'screen')
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      assert.equal(pdfPages(join(dir, '文件 等級_converted.pdf')), pdfPages(doc))
+
+      await page.click('#btn-save-preset')
+      await page.waitForFunction(() => document.getElementById('preset-name')?.value === 'PDF · Compress · Smallest')
+      await page.click('#btn-save-preset-confirm')
+      await page.locator('#preset-save-message').waitFor()
+      saved = (await invoke(page, 'list_presets')).at(-1)
+      assert.deepEqual([saved.fileType, saved.settings], ['pdf', { optimize: 'compress', level: 'screen' }])
+    } finally {
+      if (saved) await page.evaluate((id) => window.SoraiPresets.remove(id), saved.id)
       await backToHub(page)
     }
   },
