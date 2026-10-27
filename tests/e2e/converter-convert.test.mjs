@@ -3,8 +3,8 @@
 // audio / image once each, a failing file doesn't stop the batch, output
 // names never overwrite, "under 5 MB" really is under 5,000,000 bytes, and
 // cancel kills ffmpeg and cleans the partial file. PDF compress runs the
-// built-in compressor (qpdf for encrypted files), image->PDF the real img2pdf
-// sidecar; outputs checked with qpdf.
+// built-in compressor (qpdf for encrypted files and ones it cannot read),
+// image->PDF the real img2pdf sidecar; outputs checked with qpdf.
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
@@ -213,13 +213,18 @@ export const tests = {
     // Owner password only: opens without one, and qpdf keeps the encryption.
     const enc = join(dir, '加密 一.pdf')
     execFileSync(QPDF, ['--encrypt', '', 'owner', '256', '--', doc, enc])
-    await open(page, [doc, enc])
+    // Truncated (no xref / trailer): the built-in can't read it, qpdf repairs it.
+    const damaged = join(dir, '損壞 一.pdf')
+    writeFileSync(damaged, readFileSync(doc).subarray(0, 1900))
+    await open(page, [doc, enc, damaged])
     const out = join(dir, '文件 一_converted.pdf')
     try {
       await set(page, '#pdf-optimize', 'compress')
-      assert.match(await run(page, 2), /^Completed 2 of 2/)
+      assert.match(await run(page, 3), /^Completed 3 of 3/)
       assert.match(await log(page), /> Executing: builtin-pdf-compress "[^"]*文件 一.pdf" /)
       assert.match(await log(page), /> Executing: qpdf --stream-data=compress "[^"]*加密 一.pdf" /)
+      assert.match(await log(page), /Built-in compressor failed: [^\n]*\n\+ (qpdf: [^\n]*--warning-exit-0|Ghostscript: )[^\n]*損壞 一.pdf/)
+      assert.match(readFileSync(join(dir, '損壞 一_converted.pdf'), 'latin1'), /^%PDF-/)
       assert.equal(pdfPages(out), pdfPages(doc))
       assert.ok(statSync(out).size < statSync(doc).size, `${statSync(out).size} >= ${statSync(doc).size}`)
       assert.equal(await page.locator('.file-not-smaller').count(), 0)

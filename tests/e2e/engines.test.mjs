@@ -1,7 +1,8 @@
 // Settings "Conversion engines" + the Ghostscript route of PDF compress,
 // with a fake gs (tests/fixtures/fake-gs.rs, built here with rustc): the
 // converter's status line links to Settings, "Use my own program…" picks
-// the fake (stored in engines.json), the smaller of built-in / gs wins, a
+// the fake (stored in engines.json), the smaller of built-in / gs wins (gs
+// output must be a readable PDF with the source's page count), a
 // failing gs keeps the built-in result, "Back to auto-detect" clears it.
 // Install / Cancel / Remove against a local server (run.mjs sets the dev
 // URL + SHA override) serving tests/fixtures/fake-ghostscript.conda.
@@ -45,6 +46,22 @@ async function run(page) {
   await page.waitForFunction((n) => document.getElementById('terminal-log').innerText.split('> Executing:').length - 1 > n, before, { timeout: 60_000 })
   await page.waitForFunction(() => /^(Completed|Cancelled)/.test(document.getElementById('progress-text').innerText), null, { timeout: 60_000 })
   return page.locator('#progress-text').innerText()
+}
+
+// A valid one-page PDF (test_fixture.pdf's count): Ghostscript output is
+// used only when lopdf reads it with the source's page count. `pad` bytes
+// of comment make it bigger.
+function onePagePdf(pad = 0) {
+  const objs = ['<</Type/Catalog/Pages 2 0 R>>', '<</Type/Pages/Kids[3 0 R]/Count 1>>', '<</Type/Page/Parent 2 0 R/MediaBox[0 0 612 792]>>']
+  let s = `%PDF-1.4\n%${'x'.repeat(pad)}\n`
+  const offsets = objs.map((o, i) => {
+    const at = s.length
+    s += `${i + 1} 0 obj\n${o}\nendobj\n`
+    return at
+  })
+  const xref = s.length
+  s += `xref\n0 ${objs.length + 1}\n0000000000 65535 f \n${offsets.map((o) => `${String(o).padStart(10, '0')} 00000 n \n`).join('')}`
+  return `${s}trailer\n<</Size ${objs.length + 1}/Root 1 0 R>>\nstartxref\n${xref}\n%%EOF\n`
 }
 
 const ghostscript = async (page) => (await invoke(page, 'plugin:sorai-converter|engine_status')).find((e) => e.id === 'ghostscript')
@@ -100,7 +117,7 @@ export const tests = {
       assert.match(await page.locator('#pdf-engine-status').innerText(), /Ghostscript is enabled/)
 
       // gs gives the smaller file: it's the output; args carry the level.
-      writeFileSync(gsOutput, '%PDF-1.6\n% fake gs\n')
+      writeFileSync(gsOutput, onePagePdf())
       await set(page, '#pdf-level', 'screen')
       assert.match(await run(page), /^Completed 1 of 1/)
       assert.ok(readFileSync(out).equals(readFileSync(gsOutput)), 'output is not the gs result')
@@ -113,11 +130,18 @@ export const tests = {
       rmSync(out)
 
       // gs gives a bigger file: the built-in result is kept.
-      writeFileSync(gsOutput, Buffer.alloc(200_000, 'x'))
+      writeFileSync(gsOutput, onePagePdf(200_000))
       assert.match(await run(page), /^Completed 1 of 1/)
       const builtin = statSync(out).size
       assert.ok(builtin < statSync(doc).size, `built-in ${builtin} not smaller`)
       assert.match(readFileSync(out, 'latin1'), /^%PDF-/)
+      rmSync(out)
+
+      // gs exits 0 with something smaller that isn't a readable PDF: logged, built-in kept.
+      writeFileSync(gsOutput, '%PDF-1.6\n% fake gs\n')
+      assert.match(await run(page), /^Completed 1 of 1/)
+      assert.match(await log(page), /Ghostscript failed, keeping the built-in result: output is not a readable PDF/)
+      assert.equal(statSync(out).size, builtin)
       rmSync(out)
 
       // gs fails: logged, the built-in result is kept, the job succeeds.
