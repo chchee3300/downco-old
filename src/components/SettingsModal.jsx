@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useTranslation } from '../hooks/useTranslation.js'
 import PresetManager from './PresetManager.jsx'
+import EngineManager from './EngineManager.jsx'
 
 const CLOSE_BEHAVIOR_OPTIONS = ['ask', 'tray', 'quit']
 
@@ -88,6 +89,12 @@ export default function SettingsModal({ open, onClose, closeBehavior, onChangeCl
           <section id="settings-presets" className="settings-section">
             <h4 className="field-label settings-section-title">{t('settings.presets.heading')}</h4>
             <PresetManager open={open} onEdit={onEditPreset} />
+          </section>
+
+          {/* The converter's PDF status line (window.SoraiSettings.open('engines')) scrolls here. */}
+          <section id="settings-engines" className="settings-section">
+            <h4 className="field-label settings-section-title">{t('settings.engines.heading')}</h4>
+            <EngineManager open={open} />
           </section>
 
           <button type="button" className="btn btn-outline about-modal-close" onClick={onClose}>

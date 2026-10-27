@@ -156,6 +156,12 @@ export default function HamburgerMenu({ theme, onToggleTheme, updater, closeBeha
     setSettingsFocus('presets')
     setSettingsOpen(true)
   }, [presetsRequest])
+  // Host API for the tools (looked up at call time, like SoraiPresets): the
+  // converter's "Engine settings" link opens #settings-engines.
+  useEffect(() => {
+    window.SoraiSettings = { open: (section) => { setSettingsFocus(section); setSettingsOpen(true) } }
+    return () => { delete window.SoraiSettings }
+  }, [])
   const [mounted, setMounted] = useState(false)
   // True once the open pop animation finished -- the animation class is
   // then REMOVED (no forwards-fill lingering) because a filled keyframe

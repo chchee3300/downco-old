@@ -653,6 +653,57 @@ body {
   align-self: flex-start;
 }
 
+/* EngineManager.jsx (#settings-engines) */
+.engine-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.engine-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.engine-name {
+  font-weight: 600;
+}
+
+.engine-state {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.engine-row[data-state='missing'] .engine-state {
+  color: var(--danger);
+}
+
+.engine-path {
+  font-family: 'JetBrains Mono', monospace;
+  word-break: break-all;
+}
+
+.engine-link {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  color: var(--accent);
+  font: inherit;
+}
+
+.engine-link:hover {
+  text-decoration: underline;
+}
+
+.engine-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
 .settings-radio-option {
   display: flex;
   align-items: center;

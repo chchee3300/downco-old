@@ -4449,6 +4449,7 @@ dependencies = [
  "percent-encoding",
  "regex",
  "serde",
+ "serde_json",
  "tauri",
  "tauri-plugin",
  "tauri-plugin-shell",
