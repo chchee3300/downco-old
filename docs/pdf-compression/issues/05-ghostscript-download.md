@@ -8,6 +8,7 @@
 
 - [ ] 套件固定為 SPEC 裡的 conda-forge 網址、SHA-256、大小（寫在程式碼裡）；SHA 不符就拒絕並刪除下載檔
 - [ ] 解開 `.conda`（zip → `pkg-*.tar.zst`），只取 `Library/bin`，放到 `%LOCALAPPDATA%\<identifier>\engines\ghostscript\`；下載到暫存位置、驗證、解壓後再 rename，中途失敗或取消不會留下半套
+- [ ] 先實際下載一次真的套件確認：只有 `Library/bin` 的 `gswin64c.exe` 能不能獨立執行 pdfwrite（Init／Font 資源是否編進 `gsdll64.dll`）；不行的話就把需要的資源資料夾一起解出來，並在 SPEC 記下
 - [ ] app 指令：`engine_install`（Channel 回報進度）、`engine_cancel`、`engine_remove`
 - [ ] NSIS 解除安裝 hook 刪除 engines 資料夾
 - [ ] dev build 可以用環境變數覆寫網址與 SHA（正式版不讀）
