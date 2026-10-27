@@ -654,6 +654,35 @@ body {
 }
 
 /* EngineManager.jsx (#settings-engines) */
+/* Converter EnginePrompt.jsx (#engine-prompt) reuses .engine-head/-progress. */
+.engine-prompt-content {
+  max-width: 480px;
+}
+
+.engine-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  margin-top: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--glass-border-hi);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.engine-card input {
+  margin-top: 0.2rem;
+  accent-color: var(--accent);
+}
+
+.engine-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  flex: 1;
+  min-width: 0;
+}
+
 .engine-row {
   display: flex;
   flex-direction: column;

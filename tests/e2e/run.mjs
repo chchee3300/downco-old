@@ -69,6 +69,9 @@ try {
   await page.evaluate(() => localStorage.setItem('sorai-lang', 'en'))
   await page.reload()
   await rendered()
+  // The app data persists between runs: tests entering the Converter must
+  // not meet its first-run engine prompt (engine-prompt.test.mjs resets it).
+  await page.evaluate(() => window.__TAURI_INTERNALS__.invoke('plugin:sorai-converter|engine_set_prompted', { prompted: true }))
 
   const files = readdirSync(here).filter((f) => f.endsWith('.test.mjs')).sort()
   for (const file of files) {

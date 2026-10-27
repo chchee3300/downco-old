@@ -4,9 +4,9 @@
 
 **Blocked by:** 05
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] 「已經問過」記在 `engines.json` 的 `prompted`；已經裝好 Ghostscript 的使用者不跳
-- [ ] 彈窗照 Trim/Crop 的 `.modal-content` 做，不套玻璃語言；文案繁中＋英文
-- [ ] 右鍵預設的背景啟動、`--sorai-open` 進來的 Converter 也只在第一次跳，背景進度視窗永遠不跳
-- [ ] E2E：第一次進 Converter 出現、略過後重新進入不再出現；安裝路徑用 05 的假套件
+- [x] 「已經問過」記在 `engines.json` 的 `prompted`；已經裝好 Ghostscript 的使用者不跳
+- [x] 彈窗照 Trim/Crop 的 `.modal-content` 做，不套玻璃語言；文案繁中＋英文
+- [x] 右鍵預設的背景啟動、`--sorai-open` 進來的 Converter 也只在第一次跳，背景進度視窗永遠不跳
+- [x] E2E：第一次進 Converter 出現、略過後重新進入不再出現；安裝路徑用 05 的假套件
