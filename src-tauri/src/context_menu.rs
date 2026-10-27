@@ -327,6 +327,16 @@ mod tests {
   }
 
   #[test]
+  fn uninstaller_deletes_downloaded_engines_but_not_on_update() {
+    // The converter's engines.rs own copy: app_local_data_dir()/engines.
+    let nsh = include_str!("../../packaging/windows/installer-hooks.nsh");
+    let post = &nsh[nsh.find("!macro NSIS_HOOK_POSTUNINSTALL").expect("no POSTUNINSTALL hook")..];
+    let post = &post[..post.find("!macroend").unwrap()];
+    let (guard, rm) = (post.find("${If} $UpdateMode <> 1"), post.find(r#"RMDir /r "$LOCALAPPDATA\${BUNDLEID}\engines""#));
+    assert!(matches!((guard, rm), (Some(g), Some(r)) if g < r), "{post}");
+  }
+
+  #[test]
   fn compress_label_formats_the_size_as_a_plain_number() {
     let mut p = builtins().into_iter().find(|p| p.id == "video-under-25mb").unwrap();
     let s = strings("en");

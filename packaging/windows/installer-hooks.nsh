@@ -6,6 +6,9 @@
 ; SystemFileAssociations location and 2.0.0's .<ext>\shell, then each shell
 ; key if that left it empty. The extension list mirrors context_menu.rs
 ; INPUT_EXTS (a cargo test checks it).
+; Post-uninstall (the app is closed by then): delete engines the app
+; downloaded (converter engines.rs: %LOCALAPPDATA%\<identifier>\engines),
+; except when an update runs this uninstaller (/UPDATE): updates keep them.
 !macro NSIS_HOOK_POSTINSTALL
   ExecWait '"$INSTDIR\${MAINBINARYNAME}.exe" --sorai-register-menu'
 !macroend
@@ -83,4 +86,11 @@
   DeleteRegKey /ifempty HKCU "Software\Classes\SystemFileAssociations\.pdf\shell"
   DeleteRegKey HKCU "Software\Classes\.pdf\shell\SORAIToolkit"
   DeleteRegKey /ifempty HKCU "Software\Classes\.pdf\shell"
+!macroend
+
+!macro NSIS_HOOK_POSTUNINSTALL
+  ${If} $UpdateMode <> 1
+    SetShellVarContext current
+    RMDir /r "$LOCALAPPDATA\${BUNDLEID}\engines"
+  ${EndIf}
 !macroend

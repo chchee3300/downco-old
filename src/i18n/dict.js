@@ -77,6 +77,10 @@ export const dict = {
     'settings.engines.pickTitle': ({ name }) => `Choose ${name} (gswin64c.exe or gs)`,
     'settings.engines.clear': 'Back to auto-detect',
     'settings.engines.recheck': 'Check again',
+    'settings.engines.install': 'Install',
+    'settings.engines.remove': 'Remove',
+    'settings.engines.cancel': 'Cancel',
+    'settings.engines.downloading': ({ percent }) => `Downloading… ${percent}%`,
     'settings.close': 'Close',
 
     'closeConfirm.title': 'Close SORAI Toolkit?',
@@ -177,6 +181,10 @@ export const dict = {
     'settings.engines.pickTitle': ({ name }) => `選擇 ${name}（gswin64c.exe 或 gs）`,
     'settings.engines.clear': '改回自動偵測',
     'settings.engines.recheck': '重新檢查',
+    'settings.engines.install': '安裝',
+    'settings.engines.remove': '移除',
+    'settings.engines.cancel': '取消',
+    'settings.engines.downloading': ({ percent }) => `下載中… ${percent}%`,
     'settings.close': '關閉',
 
     'closeConfirm.title': '要關閉 SORAI Toolkit 嗎？',

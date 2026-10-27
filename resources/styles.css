@@ -698,6 +698,17 @@ body {
   text-decoration: underline;
 }
 
+.engine-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.engine-progress progress {
+  flex: 1;
+  accent-color: var(--accent);
+}
+
 .engine-actions {
   display: flex;
   flex-wrap: wrap;

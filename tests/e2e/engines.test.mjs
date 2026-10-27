@@ -3,9 +3,12 @@
 // converter's status line links to Settings, "Use my own program…" picks
 // the fake (stored in engines.json), the smaller of built-in / gs wins, a
 // failing gs keeps the built-in result, "Back to auto-detect" clears it.
+// Install / Cancel / Remove against a local server (run.mjs sets the dev
+// URL + SHA override) serving tests/fixtures/fake-ghostscript.conda.
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -19,6 +22,10 @@ const fakeGs = join(gsDir, 'gswin64c.exe')
 const gsOutput = join(gsDir, 'gs-output.pdf')
 // Tauri's app_config_dir for the dev identifier (Windows).
 const enginesJson = join(process.env.APPDATA, `com.soraitoolkit.hub.dev${process.env.CDP_PORT || 9229}`, 'engines.json')
+
+// Tauri's app_local_data_dir: the app's own copy lives in engines/ghostscript.
+const enginesDir = join(process.env.LOCALAPPDATA, `com.soraitoolkit.hub.dev${process.env.CDP_PORT || 9229}`, 'engines')
+const listEngines = () => (existsSync(enginesDir) ? readdirSync(enginesDir) : [])
 
 const set = (page, selector, value) =>
   page.evaluate(([sel, v]) => {
@@ -133,6 +140,77 @@ export const tests = {
       while ((await page.locator('.file-item').count()) > 0) await page.locator('.file-item').first().locator('button.remove').click()
       await page.locator('[aria-label="Back to hub"]').click()
       await page.locator('.hub-card').first().waitFor()
+    }
+  },
+
+  'engines: Install downloads the package (SHA checked), Cancel and a bad SHA leave nothing, Remove deletes it': async ({ page }) => {
+    // run.mjs points the dev build at this server, SHA = the fixture's.
+    const conda = readFileSync(join(fixtures, 'fake-ghostscript.conda'))
+    let mode = 'bad'
+    const server = createServer((req, res) => {
+      if (mode === 'stall') {
+        // Half the bytes, then nothing: Cancel must not wait for more.
+        res.writeHead(200, { 'Content-Length': conda.length })
+        res.write(conda.subarray(0, conda.length / 2))
+        return
+      }
+      const body = mode === 'bad' ? Buffer.concat([conda, Buffer.from('x')]) : conda
+      res.writeHead(200, { 'Content-Length': body.length }).end(body)
+    })
+    await new Promise((r) => server.listen(Number(process.env.CDP_PORT || 9229) + 2, '127.0.0.1', r))
+    const row = page.locator('#settings-engines .engine-row[data-id="ghostscript"]')
+    try {
+      await invoke(page, 'plugin:sorai-converter|engine_remove', { engine: 'ghostscript' })
+      await invoke(page, 'plugin:sorai-converter|engine_set_path', { engine: 'ghostscript', path: null })
+      const before = await ghostscript(page)
+      assert.equal(before.installable, true)
+      assert.equal(before.installed, false)
+      await page.evaluate(() => window.SoraiSettings.open('engines'))
+      await row.locator('.engine-install').waitFor()
+      assert.equal(await row.locator('.engine-remove').count(), 0)
+
+      // Wrong SHA: refused, the download deleted, nothing installed.
+      await row.locator('.engine-install').click()
+      await page.locator('#settings-engines [role="alert"]').waitFor()
+      assert.match(await page.locator('#settings-engines [role="alert"]').innerText(), /SHA-256 mismatch/)
+      await row.locator('.engine-install').waitFor()
+      assert.deepEqual(listEngines(), [])
+
+      // Cancel mid-download: no staging or install folder left.
+      mode = 'stall'
+      await row.locator('.engine-install').click()
+      await page.waitForFunction(() => Number(document.querySelector('.engine-progress progress')?.value) > 0, null, { timeout: 30_000 })
+      assert.match(await row.locator('.engine-progress').innerText(), /Downloading… \d+%/)
+      await row.locator('.engine-cancel').click()
+      await row.locator('.engine-install').waitFor({ timeout: 5_000 })
+      assert.equal(await page.locator('#settings-engines [role="alert"]').count(), 0, 'cancel shown as an error')
+      assert.deepEqual(listEngines(), [])
+      assert.equal((await ghostscript(page)).installed, false)
+
+      // Install: "Installed", only Library/bin in the own-copy folder.
+      mode = 'good'
+      await row.locator('.engine-install').click()
+      await page.locator('#settings-engines .engine-row[data-state="installed"]').waitFor({ timeout: 30_000 })
+      assert.match(await row.locator('.engine-state').innerText(), /^Installed$/)
+      assert.deepEqual(listEngines(), ['ghostscript'])
+      assert.deepEqual(readdirSync(join(enginesDir, 'ghostscript')).sort(), ['gsdll64.dll', 'gswin64c.exe'])
+      const gs = join(enginesDir, 'ghostscript', 'gswin64c.exe')
+      assert.equal(await row.locator('.engine-path').innerText(), gs)
+      assert.equal((await ghostscript(page)).path, gs)
+      assert.equal(await row.locator('.engine-install').count(), 0)
+
+      // Remove: folder gone, back to what it was.
+      await row.locator('.engine-remove').click()
+      await page.locator(`#settings-engines .engine-row[data-state="${before.state}"]`).waitFor()
+      assert.ok(!existsSync(join(enginesDir, 'ghostscript')))
+      await row.locator('.engine-install').waitFor()
+      await page.locator('.settings-modal-content .about-modal-close').click()
+    } finally {
+      server.closeAllConnections()
+      server.close()
+      await invoke(page, 'plugin:sorai-converter|engine_cancel').catch(() => {})
+      await invoke(page, 'plugin:sorai-converter|engine_remove', { engine: 'ghostscript' }).catch(() => {})
+      if (await page.locator('.settings-modal-content .about-modal-close:visible').count()) await page.locator('.settings-modal-content .about-modal-close').click()
     }
   },
 }

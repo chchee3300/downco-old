@@ -7,6 +7,7 @@
 // A test file exports `tests = { 'name': async ({ page, browser }) => {} }`.
 // The filter (substring) matches file or test names.
 import { chromium } from 'playwright'
+import { createHash } from 'node:crypto'
 import { mkdtempSync, readdirSync, createWriteStream, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -27,6 +28,11 @@ if (await up(`${cdp}/json/version`)) {
   console.error(`CDP port ${cdpPort} is already in use -- set CDP_PORT to a free port`)
   process.exit(1)
 }
+
+// Ghostscript download (converter engines.rs; dev builds only read these):
+// engines.test.mjs serves tests/fixtures/fake-ghostscript.conda on this port.
+process.env.SORAI_GS_URL = `http://127.0.0.1:${cdpPort + 2}/ghostscript.conda`
+process.env.SORAI_GS_SHA256 = createHash('sha256').update(readFileSync(join(here, '..', 'fixtures', 'fake-ghostscript.conda'))).digest('hex')
 
 const scratch = mkdtempSync(join(tmpdir(), 'sorai-e2e-'))
 const logPath = join(scratch, 'tauri-dev.log')

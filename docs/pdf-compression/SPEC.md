@@ -61,7 +61,8 @@ Converter 的 PDF「壓縮」現在只是 `qpdf --stream-data=compress`（`plugi
 ### 引擎下載（Windows，`engines.rs`）
 - 套件固定版本並比對 SHA-256，寫在程式碼裡，不從網路取得清單：
   `https://conda.anaconda.org/conda-forge/win-64/ghostscript-10.08.0-hac47afa_0.conda`，SHA-256 `512BE9413C58B0AD3A2CD95A63EAEA73CBE32D9A6B9170C848BF825694A4ADB0`，19,295,904 bytes。
-- `.conda` 是 zip，裡面有 `pkg-*.tar.zst`。用 `zip`、`zstd`、`tar` 三個 crate 解開，只取 `Library/bin`，放到 `%LOCALAPPDATA%\<identifier>\engines\ghostscript\`。
+- `.conda` 是 zip，裡面有 `pkg-*.tar.zst`。用 `zip`（`default-features = false`，`.conda` 的項目都是 STORED）、`ruzstd`（純 Rust 的 zstd，不需要 C 編譯器）、`tar` 解開，只取 `Library/bin`，放到 `%LOCALAPPDATA%\<identifier>\engines\ghostscript\`。
+  - **只取 `Library/bin` 就夠（2026-10-27 實測）**：下載真的套件（SHA-256、大小都跟上面一致），只解出 `Library/bin`（`gs.exe`、`gsdll64.dll`、`gswin64.exe`、`gswin64c.exe`，共 25.4 MB）到空資料夾，`gswin64c -sDEVICE=pdfwrite -dPDFSETTINGS=/ebook -dNOPAUSE -dBATCH -dSAFER` 對測試 PDF、掃描 PDF、含未嵌入 Helvetica／Times-Roman 的 PDF 都 exit 0，輸出通過 `qpdf --check`。`gs -h` 的搜尋路徑是 `%rom%Resource/Init/ ; %rom%lib/`（「Initialization files are compiled into the executable」），字型從 `%rom%Resource/Font/NimbusSans-Regular` 載入；`gsdll64.dll` 裡也有 `Resource/CMap`、`Resource/CIDFSubst/DroidSansFallback`。所以不解 `Library/Init`／`Font`／`CMap` 等資源資料夾，也不用 `-I`／`-sGenericResourceDir`。CJK 文字的 PDF 沒有實際跑過（ticket 07 真機驗收時用真的中文 PDF 再確認）。
 - 安裝是先下載到暫存資料夾、驗證、解壓，再 rename 到正式位置，所以中途失敗不會留下半套。可以取消。
 - 移除就是刪掉那個資料夾。app 更新時保留；NSIS 解除安裝時一起刪掉（加到 `installer-hooks.nsh`）。
 - 授權：Ghostscript 是 AGPL-3.0，由使用者選擇下載、以獨立程式執行，不放進我們的安裝檔。彈窗和設定頁都要寫明授權並附官網連結。
