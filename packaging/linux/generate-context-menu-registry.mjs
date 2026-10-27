@@ -54,7 +54,7 @@ const OUT_DIR = path.join(__dirname, 'context-menu.generated')
 
 const VIDEO_FORMATS = ['.mp4', '.mkv', '.webm', '.avi', '.gif']
 const IMAGE_FORMATS = ['.jpg', '.png', '.webp', '.avif', '.ico', '.pdf']
-const AUDIO_FORMATS = ['.mp3', '.wav', '.aac', '.flac', '.ogg']
+const AUDIO_FORMATS = ['.mp3', '.wav', '.aac', '.m4a', '.flac', '.ogg']
 const TARGET_SIZE_PRESETS_MB = [5, 25, 50]
 
 // Same category shape as the Windows generator's INPUT_EXTENSIONS -- see
@@ -64,14 +64,14 @@ const TARGET_SIZE_PRESETS_MB = [5, 25, 50]
 const INPUT_EXTENSIONS = {
   video: ['mp4', 'mkv', 'avi', 'mov', 'webm'],
   image: ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif', 'ico'],
-  audio: ['mp3', 'wav', 'aac', 'flac', 'ogg'],
+  audio: ['mp3', 'wav', 'aac', 'm4a', 'flac', 'ogg'],
   pdf: ['pdf'],
 }
 
 const FORMAT_LABELS = {
   '.mp4': 'MP4', '.mkv': 'MKV', '.webm': 'WEBM', '.avi': 'AVI', '.gif': 'GIF',
   '.jpg': 'JPG', '.png': 'PNG', '.webp': 'WEBP', '.avif': 'AVIF', '.ico': 'ICO', '.pdf': 'PDF',
-  '.mp3': 'MP3', '.wav': 'WAV', '.aac': 'AAC', '.flac': 'FLAC', '.ogg': 'OGG',
+  '.mp3': 'MP3', '.wav': 'WAV', '.aac': 'AAC', '.m4a': 'M4A', '.flac': 'FLAC', '.ogg': 'OGG',
 }
 
 // Unverified against a real machine's MIME database -- see top-of-file
@@ -79,7 +79,7 @@ const FORMAT_LABELS = {
 const MIME_TYPES = {
   mp4: 'video/mp4', mkv: 'video/x-matroska', avi: 'video/x-msvideo', mov: 'video/quicktime', webm: 'video/webm',
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', avif: 'image/avif', gif: 'image/gif', ico: 'image/vnd.microsoft.icon',
-  mp3: 'audio/mpeg', wav: 'audio/x-wav', aac: 'audio/aac', flac: 'audio/flac', ogg: 'audio/ogg',
+  mp3: 'audio/mpeg', wav: 'audio/x-wav', aac: 'audio/aac', m4a: 'audio/mp4', flac: 'audio/flac', ogg: 'audio/ogg',
   pdf: 'application/pdf',
 }
 

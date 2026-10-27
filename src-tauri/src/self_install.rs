@@ -250,7 +250,7 @@ pub fn finder_services() -> Vec<Entry> {
 const NAUTILUS_CATEGORIES: [(&str, &[&str]); 3] = [
   ("影片", &["MP4", "MKV", "WEBM", "AVI", "GIF"]),
   ("圖片", &["JPG", "PNG", "WEBP", "AVIF", "ICO", "PDF"]),
-  ("音訊", &["MP3", "WAV", "AAC", "FLAC", "OGG"]),
+  ("音訊", &["MP3", "WAV", "AAC", "M4A", "FLAC", "OGG"]),
 ];
 
 // IFS = one literal newline (two-line single-quoted string), set -f stops glob
@@ -363,7 +363,7 @@ mod tests {
   fn nautilus_scripts_layout_and_args() {
     let e = nautilus_scripts();
     let p = paths(&e);
-    assert_eq!(p.len(), 5 + 6 + 5 + 3 + 1);
+    assert_eq!(p.len(), 5 + 6 + 6 + 3 + 1);
     assert!(e.iter().all(|e| e.executable));
     let root = ".local/share/nautilus/scripts/SORAI Toolkit";
     let body = |rel: &str| &e[p.iter().position(|x| x == &format!("{root}/{rel}")).unwrap_or_else(|| panic!("{rel}"))].contents;

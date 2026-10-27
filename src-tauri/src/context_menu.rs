@@ -16,7 +16,7 @@ use crate::presets::Preset;
 pub const INPUT_EXTS: [(&str, &[&str]); 4] = [
   ("video", &["mp4", "mkv", "avi", "mov", "webm"]),
   ("image", &["jpg", "jpeg", "png", "webp", "avif", "gif", "ico"]),
-  ("audio", &["mp3", "wav", "aac", "flac", "ogg"]),
+  ("audio", &["mp3", "wav", "aac", "m4a", "flac", "ogg"]),
   ("pdf", &["pdf"]),
 ];
 
@@ -249,7 +249,7 @@ mod tests {
   #[test]
   fn every_input_extension_gets_the_cascade_root() {
     let v = entries(&builtins(), "en", EXE);
-    for ext in ["mp4", "mkv", "avi", "mov", "webm", "jpg", "jpeg", "png", "webp", "avif", "gif", "ico", "mp3", "wav", "aac", "flac", "ogg", "pdf"] {
+    for ext in ["mp4", "mkv", "avi", "mov", "webm", "jpg", "jpeg", "png", "webp", "avif", "gif", "ico", "mp3", "wav", "aac", "m4a", "flac", "ogg", "pdf"] {
       let root = ext_key(ext);
       assert_eq!(get(&v, &root, "MUIVerb"), s("SORAI Toolkit").as_ref(), "{ext}");
       assert_eq!(get(&v, &root, "SubCommands"), s("").as_ref());
@@ -292,7 +292,7 @@ mod tests {
     assert_eq!(labels("jpeg")[0], "轉成 PNG");
     assert_eq!(labels("mov")[0], "轉成 MP4");
     assert_eq!(labels("mov")[5], "快速壓縮到 5MB 以下");
-    assert_eq!(labels("ogg"), ["轉成 MP3", "轉成 WAV", "轉成 AAC", "轉成 FLAC", "在 SORAI Toolkit 中開啟…", "設定預設…"]);
+    assert_eq!(labels("ogg"), ["轉成 MP3", "轉成 WAV", "轉成 AAC", "轉成 M4A", "轉成 FLAC", "在 SORAI Toolkit 中開啟…", "設定預設…"]);
     // Unknown language falls back to English.
     assert_eq!(items(&entries(&builtins(), "fr", EXE), "pdf")[0].0, "Compress PDF");
   }

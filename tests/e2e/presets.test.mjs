@@ -83,15 +83,15 @@ export const tests = {
       await expectRegistryMatches(page, 'en')
 
       // Up twice: past pdf-compress, then past audio-to-ogg.
-      for (const want of [19, 18]) {
+      for (const want of [20, 19]) {
         await row.locator('.preset-up').click()
         await until(page, `user-1 at ${want}`, async () => (await ids(page)).indexOf('user-1') === want)
       }
       await expectRegistryMatches(page, 'en')
-      assert.deepEqual(mp3Menu(readRegistry(regRoot)), ['Convert to WAV', 'Convert to AAC', 'Convert to FLAC', 'Renamed', 'Convert to OGG', 'Open in SORAI Toolkit…', 'Manage presets…'])
+      assert.deepEqual(mp3Menu(readRegistry(regRoot)), ['Convert to WAV', 'Convert to AAC', 'Convert to M4A', 'Convert to FLAC', 'Renamed', 'Convert to OGG', 'Open in SORAI Toolkit…', 'Manage presets…'])
       await row.locator('.preset-down').click()
-      await until(page, 'user-1 back at 19', async () => (await ids(page)).indexOf('user-1') === 19)
-      await until(page, 'the list to show it', async () => (await page.locator('.preset-row').nth(19).getAttribute('data-id')) === 'user-1')
+      await until(page, 'user-1 back at 20', async () => (await ids(page)).indexOf('user-1') === 20)
+      await until(page, 'the list to show it', async () => (await page.locator('.preset-row').nth(20).getAttribute('data-id')) === 'user-1')
       await page.keyboard.press('Escape')
 
       // The menu command converts with the saved settings (192k MP3 beside the source).
@@ -108,7 +108,7 @@ export const tests = {
       await openSettings(page)
       await row.locator('.preset-delete').click()
       await page.locator('.preset-row[data-id="audio-to-wav"] .preset-delete').click()
-      await until(page, 'the deletes', async () => (await ids(page)).length === 19)
+      await until(page, 'the deletes', async () => (await ids(page)).length === 20)
       assert.ok(!(await ids(page)).includes('user-1') && !(await ids(page)).includes('audio-to-wav'))
       assert.equal(await page.locator('.preset-row[data-id="user-1"]').count(), 0)
       await expectRegistryMatches(page, 'en')
@@ -116,9 +116,9 @@ export const tests = {
       const restore = page.locator('.preset-restore')
       await restore.click()
       assert.equal(await restore.textContent(), 'Replace all presets with the defaults?')
-      assert.equal((await ids(page)).length, 19, 'one click must not restore')
+      assert.equal((await ids(page)).length, 20, 'one click must not restore')
       await restore.click()
-      await until(page, 'the restore', async () => (await page.locator('.preset-row').count()) === 20)
+      await until(page, 'the restore', async () => (await page.locator('.preset-row').count()) === 21)
       assert.equal((await ids(page))[15], 'audio-to-wav')
       await expectRegistryMatches(page, 'en')
       await page.keyboard.press('Escape')

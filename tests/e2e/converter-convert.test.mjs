@@ -162,6 +162,36 @@ export const tests = {
     }
   },
 
+  // Cover art: the ipod muxer refuses the h264 ffmpeg would re-encode it to,
+  // so the plugin copies it as an attached picture. The M4A then goes back in.
+  'converter: audio with cover art converts to m4a (AAC) and m4a is accepted as input': async ({ page }) => {
+    const song = join(dir, 'cover 一.mp3')
+    execFileSync(FFMPEG, ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'sine=d=2', '-f', 'lavfi', '-i', 'color=red:s=300x300:d=1',
+      '-map', '0', '-map', '1', '-frames:v', '1', '-c:v', 'mjpeg', '-disposition:v', 'attached_pic', '-id3v2_version', '3', song])
+    const m4a = join(dir, 'cover 一_converted.m4a')
+    await open(page, [song])
+    try {
+      await set(page, '#audio-format', '.m4a')
+      await set(page, '#audio-bitrate', '192k')
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      const p = probe(m4a)
+      assert.match(p.streams, /Audio: aac/)
+      assert.match(p.streams, /attached pic/)
+      assert.ok(Math.abs(p.duration - 2) < 0.2, `duration ${p.duration}`)
+    } finally {
+      await backToHub(page)
+    }
+    await open(page, [m4a])
+    try {
+      assert.equal(await rows(page).count(), 1, 'm4a not accepted as input')
+      await set(page, '#audio-format', '.mp3')
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      assert.match(probe(join(dir, 'cover 一_converted_converted.mp3')).streams, /Audio: mp3/)
+    } finally {
+      await backToHub(page)
+    }
+  },
+
   'converter: image converts to webp at half scale': async ({ page }) => {
     const img = join(dir, '圖 片.png')
     copyFileSync(join(fixtures, 'test_in.png'), img)
