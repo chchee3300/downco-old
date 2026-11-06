@@ -172,6 +172,10 @@ pub fn suggest_name(file_type: &str, format: &str, settings: &Value, lang: &str)
       if settings["targetSizeMode"] == true {
         let mb = num("targetSizeMB").unwrap_or(0.0);
         parts.push(if zh { format!("{mb}MB 以下") } else { format!("Under {mb} MB") });
+      } else if settings["codec"] == "copy" && ![".gif", ".apng", ".png", ".m4a", ".mp3"].contains(&format) {
+        // Rewrap (Converter is_special_video_out excluded): quality / fps / speed don't apply.
+        parts.push((if zh { "保留原編碼" } else { "Keep original codec" }).into());
+        return parts.join(if zh { "・" } else { " · " });
       } else {
         // The codec really encoded (Converter effective_codec): container-limited
         // formats fall back to their default (WebM VP9, MOV/M4V/TS H.264,
@@ -450,7 +454,17 @@ mod tests {
     assert_eq!(n("video", ".mpg", c.clone(), "en"), "MPG");
     c["codec"] = json!("libsvtav1");
     assert_eq!(n("video", ".ts", c.clone(), "en"), "TS", "TS encodes H.264, not AV1");
-    assert_eq!(n("video", ".webm", c, "en"), "WEBM · AV1");
+    assert_eq!(n("video", ".webm", c.clone(), "en"), "WEBM · AV1");
+    // Keep original codec: quality / fps / speed don't apply (Converter hides them).
+    c["codec"] = json!("copy");
+    c["quality"] = json!(70);
+    c["fps"] = json!(30);
+    c["speed"] = json!(2.0);
+    assert_eq!(n("video", ".mov", c.clone(), "zh-TW"), "MOV・保留原編碼");
+    assert_eq!(n("video", ".webm", c.clone(), "en"), "WEBM · Keep original codec");
+    c["targetSizeMode"] = json!(true);
+    c["targetSizeMB"] = json!(5);
+    assert_eq!(n("video", ".mp4", c, "en"), "MP4 · Under 5 MB · 30fps · 2×", "target size forces H.264");
     assert_eq!(n("pdf", ".pdf", json!({ "optimize": "compress" }), "zh-TW"), "PDF・壓縮");
     assert_eq!(n("pdf", ".pdf", json!({ "optimize": "linearize" }), "en"), "PDF · Linearize");
     assert_eq!(n("pdf", ".pdf", json!({ "optimize": "compress", "level": "ebook" }), "en"), "PDF · Compress", "default level");

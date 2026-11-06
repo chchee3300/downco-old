@@ -8,9 +8,9 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] E2E：MP4（h264＋aac）→ MOV 保留原編碼：輸出影像是 h264，log 有 `-c:v copy`，畫質、fps、速度欄位隱藏
-- [ ] E2E：h264 → WebM 保留原編碼會退回 VP9，並且成功
-- [ ] 預估：保留原編碼時大約等於來源大小
-- [ ] hub cargo test：`suggest_name` 對 copy 有名稱
+- [x] E2E：MP4（h264＋aac）→ MOV 保留原編碼：輸出影像是 h264，log 有 `-c:v copy`，畫質、fps、速度欄位隱藏
+- [x] E2E：h264 → WebM 保留原編碼會退回 VP9，並且成功
+- [x] 預估：保留原編碼時大約等於來源大小
+- [x] hub cargo test：`suggest_name` 對 copy 有名稱

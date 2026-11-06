@@ -132,12 +132,12 @@ export const tests = {
       await set(page, '#video-format', '.webm')
       const webm = await est(mp4) // VP9's factor, not H.264's
       assert.equal(await page.$eval('#video-codec', (s) => s.value), 'libvpx-vp9')
-      assert.deepEqual(await codecs(), ['libvpx-vp9', 'libsvtav1'])
+      assert.deepEqual(await codecs(), ['libvpx-vp9', 'libsvtav1', 'copy'])
       await set(page, '#video-codec', 'libvpx-vp9')
       await page.waitForTimeout(500)
       assert.equal(await page.locator('#file-est-0').textContent(), webm, 'shown codec and estimate disagree')
       await set(page, '#video-format', '.mp4')
-      assert.deepEqual(await codecs(), ['libx264', 'libx265', 'libvpx-vp9', 'libsvtav1'])
+      assert.deepEqual(await codecs(), ['libx264', 'libx265', 'libvpx-vp9', 'libsvtav1', 'copy'])
     } finally {
       await backToHub(page)
     }
@@ -154,7 +154,7 @@ export const tests = {
     try {
       await set(page, '#video-codec', 'libvpx-vp9')
       await set(page, '#video-format', '.mov')
-      assert.deepEqual(await codecs(), ['libx264', 'libx265'])
+      assert.deepEqual(await codecs(), ['libx264', 'libx265', 'copy'])
       assert.equal(await page.$eval('#video-codec', (s) => s.value), 'libx264', 'VP9 falls back to the container default')
       assert.match(await run(page, 1), /^Completed 1 of 1/)
       const mov = join(dir, '容器 clip_converted.mov')
@@ -162,7 +162,7 @@ export const tests = {
       assert.match(probe(mov).streams, /Video: h264[\s\S]*Audio: aac/)
 
       await set(page, '#video-format', '.wmv')
-      assert.deepEqual(await codecs(), ['wmv2'])
+      assert.deepEqual(await codecs(), ['wmv2', 'copy'])
       assert.match(await run(page, 1), /^Completed 1 of 1/)
       const wmv = join(dir, '容器 clip_converted.wmv')
       assert.match(banner(wmv), /Input #0, asf/)
@@ -170,6 +170,40 @@ export const tests = {
       assert.ok(Math.abs(probe(wmv).duration - 2) < 0.3, `duration ${probe(wmv).duration}`)
       await backToHub(page)
       await open(page, [mov, wmv]) // new input extensions are accepted
+    } finally {
+      await backToHub(page)
+    }
+  },
+
+  // "copy" rewraps (-c:v copy, sound copied when the container takes it) and
+  // hides quality / fps / speed; a codec the container can't hold (H.264 in
+  // WebM) falls back to its default encoder, sound to libopus.
+  'converter: keep original codec rewraps MP4 to MOV; WebM falls back to VP9': async ({ page }) => {
+    const clip = join(dir, '保留 原編碼.mp4')
+    execFileSync(FFMPEG, ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=640x360:rate=30', '-f', 'lavfi', '-i', 'sine=frequency=440',
+      '-t', '3', '-c:v', 'libx264', '-b:v', '4M', '-c:a', 'aac', clip])
+    const srcMB = statSync(clip).size / 1048576
+    const visible = (sel) => page.$eval(sel, (el) => !!el.offsetParent).catch(() => false)
+    await open(page, [clip])
+    try {
+      await set(page, '#video-format', '.mov')
+      await set(page, '#video-codec', 'copy')
+      for (const sel of ['#video-quality', '#video-fps', '#video-speed']) assert.equal(await visible(sel), false, `${sel} still shown`)
+      await page.waitForFunction((mb) => { const m = /→ ~([\d.]+) MB/.exec(document.getElementById('file-est-0').textContent); return m && Math.abs(+m[1] - mb) <= 0.1 }, srcMB, { timeout: 10_000 })
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      assert.match(await log(page), /-c:v copy -c:a copy/)
+      const mov = join(dir, '保留 原編碼_converted.mov')
+      assert.match(probe(mov).streams, /Video: h264[\s\S]*Audio: aac/)
+
+      await set(page, '#video-format', '.webm')
+      assert.equal(await page.$eval('#video-codec', (s) => s.value), 'copy')
+      assert.equal(await visible('#video-quality'), false)
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      assert.match(await log(page), /-c:v libvpx-vp9/)
+      assert.match(probe(join(dir, '保留 原編碼_converted.webm')).streams, /Video: vp9[\s\S]*Audio: opus/)
+
+      await set(page, '#video-codec', 'libvpx-vp9')
+      for (const sel of ['#video-quality', '#video-fps', '#video-speed']) assert.equal(await visible(sel), true, `${sel} not back`)
     } finally {
       await backToHub(page)
     }
