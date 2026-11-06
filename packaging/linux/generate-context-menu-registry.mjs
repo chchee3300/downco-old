@@ -52,7 +52,7 @@ import { fileURLToPath } from 'node:url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const OUT_DIR = path.join(__dirname, 'context-menu.generated')
 
-const VIDEO_FORMATS = ['.mp4', '.mkv', '.webm', '.avi', '.gif']
+const VIDEO_FORMATS = ['.mp4', '.mkv', '.webm', '.avi', '.gif', '.mp3'] // .mp3 = audio only
 const IMAGE_FORMATS = ['.jpg', '.png', '.webp', '.avif', '.ico', '.pdf']
 const AUDIO_FORMATS = ['.mp3', '.wav', '.aac', '.m4a', '.flac', '.ogg']
 const TARGET_SIZE_PRESETS_MB = [5, 25, 50]

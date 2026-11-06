@@ -83,15 +83,15 @@ export const tests = {
       await expectRegistryMatches(page, 'en')
 
       // Up twice: past pdf-compress, then past audio-to-ogg.
-      for (const want of [20, 19]) {
+      for (const want of [21, 20]) {
         await row.locator('.preset-up').click()
         await until(page, `user-1 at ${want}`, async () => (await ids(page)).indexOf('user-1') === want)
       }
       await expectRegistryMatches(page, 'en')
       assert.deepEqual(mp3Menu(readRegistry(regRoot)), ['Convert to WAV', 'Convert to AAC', 'Convert to M4A', 'Convert to FLAC', 'Renamed', 'Convert to OGG', 'Open in SORAI Toolkit…', 'Manage presets…'])
       await row.locator('.preset-down').click()
-      await until(page, 'user-1 back at 20', async () => (await ids(page)).indexOf('user-1') === 20)
-      await until(page, 'the list to show it', async () => (await page.locator('.preset-row').nth(20).getAttribute('data-id')) === 'user-1')
+      await until(page, 'user-1 back at 21', async () => (await ids(page)).indexOf('user-1') === 21)
+      await until(page, 'the list to show it', async () => (await page.locator('.preset-row').nth(21).getAttribute('data-id')) === 'user-1')
       await page.keyboard.press('Escape')
 
       // The menu command converts with the saved settings (192k MP3 beside the source).
@@ -104,11 +104,23 @@ export const tests = {
       try { execFileSync(FFMPEG, ['-hide_banner', '-i', out], { stdio: 'pipe' }) } catch (e) { banner = String(e.stderr) }
       assert.match(banner, /Audio: mp3.*192 kb\/s/)
 
+      // Built-in "video -> convert to MP3": audio only.
+      const clip = join(dir, '影片 a.mp4')
+      copyFileSync(join(root, 'tests', 'fixtures', 'test_fixture_video.mp4'), clip)
+      assert.equal(await runExe(['--sorai-preset=video-to-mp3', clip]), 0)
+      const clipMp3 = clip.replace(/\.mp4$/, '_converted.mp3')
+      await until(page, 'the mp3 output', () => existsSync(clipMp3), 60_000)
+      await until(page, 'the progress window to close again', () => invoke(page, 'plugin:window|is_visible', { label: 'progress' }).then(() => false, () => true), 60_000)
+      banner = ''
+      try { execFileSync(FFMPEG, ['-hide_banner', '-i', clipMp3], { stdio: 'pipe' }) } catch (e) { banner = String(e.stderr) }
+      assert.match(banner, /Audio: mp3/)
+      assert.doesNotMatch(banner, /Video:/)
+
       // Delete it and a built-in; then restore (two clicks) brings back exactly the built-ins.
       await openSettings(page)
       await row.locator('.preset-delete').click()
       await page.locator('.preset-row[data-id="audio-to-wav"] .preset-delete').click()
-      await until(page, 'the deletes', async () => (await ids(page)).length === 20)
+      await until(page, 'the deletes', async () => (await ids(page)).length === 21)
       assert.ok(!(await ids(page)).includes('user-1') && !(await ids(page)).includes('audio-to-wav'))
       assert.equal(await page.locator('.preset-row[data-id="user-1"]').count(), 0)
       await expectRegistryMatches(page, 'en')
@@ -116,10 +128,10 @@ export const tests = {
       const restore = page.locator('.preset-restore')
       await restore.click()
       assert.equal(await restore.textContent(), 'Replace all presets with the defaults?')
-      assert.equal((await ids(page)).length, 20, 'one click must not restore')
+      assert.equal((await ids(page)).length, 21, 'one click must not restore')
       await restore.click()
-      await until(page, 'the restore', async () => (await page.locator('.preset-row').count()) === 21)
-      assert.equal((await ids(page))[15], 'audio-to-wav')
+      await until(page, 'the restore', async () => (await page.locator('.preset-row').count()) === 22)
+      assert.equal((await ids(page))[16], 'audio-to-wav')
       await expectRegistryMatches(page, 'en')
       await page.keyboard.press('Escape')
       await page.locator('.settings-modal-content').waitFor({ state: 'hidden' })

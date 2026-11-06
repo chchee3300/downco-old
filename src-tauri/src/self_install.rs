@@ -248,7 +248,7 @@ pub fn finder_services() -> Vec<Entry> {
 // file type, so leaves are per CATEGORY, unfiltered (converting to the file's
 // own format is a harmless no-op).
 const NAUTILUS_CATEGORIES: [(&str, &[&str]); 3] = [
-  ("影片", &["MP4", "MKV", "WEBM", "AVI", "GIF"]),
+  ("影片", &["MP4", "MKV", "WEBM", "AVI", "GIF", "MP3"]),
   ("圖片", &["JPG", "PNG", "WEBP", "AVIF", "ICO", "PDF"]),
   ("音訊", &["MP3", "WAV", "AAC", "M4A", "FLAC", "OGG"]),
 ];
@@ -363,7 +363,7 @@ mod tests {
   fn nautilus_scripts_layout_and_args() {
     let e = nautilus_scripts();
     let p = paths(&e);
-    assert_eq!(p.len(), 5 + 6 + 6 + 3 + 1);
+    assert_eq!(p.len(), 6 + 6 + 6 + 3 + 1);
     assert!(e.iter().all(|e| e.executable));
     let root = ".local/share/nautilus/scripts/SORAI Toolkit";
     let body = |rel: &str| &e[p.iter().position(|x| x == &format!("{root}/{rel}")).unwrap_or_else(|| panic!("{rel}"))].contents;
@@ -371,6 +371,7 @@ mod tests {
       body("影片/轉成 MP4"),
       "#!/bin/sh\nIFS='\n'\nset -f\nexec /usr/bin/sorai-toolkit --sorai-convert-to=.mp4 $NAUTILUS_SCRIPT_SELECTED_FILE_PATHS\n"
     );
+    assert!(body("影片/轉成 MP3").contains(" --sorai-convert-to=.mp3 $NAUTILUS"));
     assert!(body("圖片/轉成 PDF").contains(" --sorai-convert-to=.pdf $NAUTILUS"));
     assert!(body("音訊/轉成 OGG").contains(" --sorai-convert-to=.ogg $NAUTILUS"));
     assert!(body("影片/快速壓縮到 50MB 以下").contains(" --sorai-quick-action=compress-under:50 $NAUTILUS"));

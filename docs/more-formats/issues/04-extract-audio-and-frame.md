@@ -7,10 +7,10 @@
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] E2E：影片 → M4A：有 aac 音訊、沒有影像，來源是 aac 時 log 有 `-c:a copy`
-- [ ] E2E：影片 → MP3 成功
-- [ ] E2E：影片 → PNG 是一張圖，寬高跟來源一樣；設了 Trim 時用 `-ss <起點>`
-- [ ] hub cargo test：22 個內建且有 `video-to-mp3`、self_install 的數量正確
-- [ ] E2E `presets.test.mjs` 通過（數量與索引）；`--sorai-preset=video-to-mp3` 轉出 mp3
+- [x] E2E：影片 → M4A：有 aac 音訊、沒有影像，來源是 aac 時 log 有 `-c:a copy`
+- [x] E2E：影片 → MP3 成功
+- [x] E2E：影片 → PNG 是一張圖，寬高跟來源一樣；設了 Trim 時用 `-ss <起點>`
+- [x] hub cargo test：22 個內建且有 `video-to-mp3`、self_install 的數量正確
+- [x] E2E `presets.test.mjs` 通過（數量與索引）；`--sorai-preset=video-to-mp3` 轉出 mp3

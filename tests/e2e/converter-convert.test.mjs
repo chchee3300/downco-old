@@ -175,6 +175,55 @@ export const tests = {
     }
   },
 
+  // Audio-only outputs keep just the speed field; PNG shows no fields at all.
+  // None of them (nor GIF/APNG) is offered in target-size mode.
+  'converter: video -> M4A copies the aac track, video -> MP3 encodes it, video -> PNG grabs the middle frame': async ({ page }) => {
+    const clip = join(dir, '取音 clip.mp4') // h264 + aac, 2 s, 320x240
+    copyFileSync(join(fixtures, 'test_fixture_video.mp4'), clip)
+    const formats = () => page.$$eval('#video-format option', (os) => os.map((o) => o.value))
+    const shown = async () => {
+      const out = []
+      for (const [name, sel] of [['codec', '#video-codec-group'], ['size', '.target-size-chips'], ['quality', '#video-quality'], ['fps', '#video-fps'], ['speed', '#video-speed']]) {
+        if (await page.locator(sel).isVisible()) out.push(name)
+      }
+      return out
+    }
+    await open(page, [clip])
+    try {
+      assert.deepEqual((await formats()).slice(-5), ['.gif', '.apng', '.png', '.m4a', '.mp3'])
+
+      await set(page, '#video-format', '.m4a')
+      assert.deepEqual(await shown(), ['speed'])
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      const m4a = probe(join(dir, '取音 clip_converted.m4a'))
+      assert.match(m4a.streams, /Audio: aac/)
+      assert.doesNotMatch(m4a.streams, /Video:/)
+      assert.match(await log(page), /-c:a copy/)
+
+      await set(page, '#video-format', '.mp3')
+      assert.deepEqual(await shown(), ['speed'])
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      const mp3 = probe(join(dir, '取音 clip_converted.mp3'))
+      assert.match(mp3.streams, /Audio: mp3/)
+      assert.doesNotMatch(mp3.streams, /Video:/)
+
+      await set(page, '#video-format', '.png')
+      assert.deepEqual(await shown(), [])
+      assert.match(await page.locator('#video-frame-hint').innerText(), /Trim/)
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      assert.match(await log(page), /-ss 1 -i .* -frames:v 1/)
+      assert.match(probe(join(dir, '取音 clip_converted.png')).streams, /Video: png.*, 320x240/)
+
+      // Target-size mode drops every special output from the picker.
+      await set(page, '#video-format', '.mp4')
+      await page.locator('.target-size-chips').getByRole('button', { name: '5 MB', exact: true }).click()
+      assert.deepEqual(await formats(), ['.mp4', '.mkv', '.webm', '.avi', '.mov', '.m4v', '.ts', '.wmv', '.mpg'])
+      await page.locator('.target-size-chips').getByRole('button', { name: 'Off' }).click()
+    } finally {
+      await backToHub(page)
+    }
+  },
+
   // libopus refuses 320k per channel: the plugin caps it at 256k.
   'converter: mono mp3 converts to Opus at 320k (capped to 256k)': async ({ page }) => {
     const song = join(dir, 'opus 一.mp3')

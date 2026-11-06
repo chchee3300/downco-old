@@ -30,7 +30,8 @@ pub struct Preset {
 }
 
 // Mirrors the Converter's useSettings.js (formats + DEFAULT_* blocks) by hand.
-const VIDEO_FORMATS: [&str; 5] = [".mp4", ".mkv", ".webm", ".avi", ".gif"];
+// Video formats with a "convert to" built-in; .mp3 = audio only (video-to-mp3).
+const VIDEO_FORMATS: [&str; 6] = [".mp4", ".mkv", ".webm", ".avi", ".gif", ".mp3"];
 const IMAGE_FORMATS: [&str; 6] = [".jpg", ".png", ".webp", ".avif", ".ico", ".pdf"];
 const AUDIO_FORMATS: [&str; 6] = [".mp3", ".wav", ".aac", ".m4a", ".flac", ".ogg"];
 const TARGET_SIZE_MB: [u32; 3] = [5, 25, 50];
@@ -264,7 +265,7 @@ mod tests {
   fn builtins_match_the_old_fixed_menu() {
     let ids: Vec<String> = builtins().into_iter().map(|p| p.id).collect();
     assert_eq!(ids, [
-      "video-to-mp4", "video-to-mkv", "video-to-webm", "video-to-avi", "video-to-gif",
+      "video-to-mp4", "video-to-mkv", "video-to-webm", "video-to-avi", "video-to-gif", "video-to-mp3",
       "video-under-5mb", "video-under-25mb", "video-under-50mb",
       "image-to-jpg", "image-to-png", "image-to-webp", "image-to-avif", "image-to-ico", "image-to-pdf",
       "audio-to-mp3", "audio-to-wav", "audio-to-aac", "audio-to-m4a", "audio-to-flac", "audio-to-ogg",
@@ -289,6 +290,10 @@ mod tests {
     assert_eq!(mkv.settings["codec"], "libx264");
     assert_eq!(mkv.settings["quality"], 100);
     assert_eq!(mkv.settings["targetSizeMode"], false);
+
+    let mp3 = get("video-to-mp3");
+    assert_eq!((mp3.file_type.as_str(), mp3.format.as_str(), mp3.settings["format"].clone()), ("video", ".mp3", json!(".mp3")));
+    assert!(applies(&mp3, "a.mov") && !applies(&mp3, "a.wav"), "a video preset: audio inputs are skipped");
 
     let small = get("video-under-25mb");
     assert_eq!((small.format.as_str(), small.label_key.as_deref()), (".mp4", Some("preset.compressUnder")));
@@ -372,7 +377,7 @@ mod tests {
     let b = upsert(&mut list, input(None, Some("second"))).unwrap();
     assert_eq!((a.id.as_str(), a.name.as_deref(), a.label_key.as_deref()), ("user-1", Some("MP3・192k"), None));
     assert_eq!(b.id, "user-2");
-    assert_eq!(list.len(), 23);
+    assert_eq!(list.len(), 24);
     assert_eq!(list.last().unwrap(), &b);
     // A freed id is reused; it's always [A-Za-z0-9._-].
     list.retain(|p| p.id != "user-1");
@@ -384,9 +389,9 @@ mod tests {
     let mut list = builtins();
     let p = upsert(&mut list, input(Some("audio-to-mp3"), Some("Mine"))).unwrap();
     assert_eq!((p.id.as_str(), p.label_key.as_deref(), p.name.as_deref()), ("audio-to-mp3", Some("preset.convertTo"), Some("Mine")));
-    assert_eq!(list.len(), 21);
-    assert_eq!(list.iter().position(|q| q.id == "audio-to-mp3"), Some(14));
-    assert_eq!(list[14].settings["bitrate"], "192k");
+    assert_eq!(list.len(), 22);
+    assert_eq!(list.iter().position(|q| q.id == "audio-to-mp3"), Some(15));
+    assert_eq!(list[15].settings["bitrate"], "192k");
     // Blank name on a built-in goes back to its label.
     let p = upsert(&mut list, input(Some("audio-to-mp3"), Some(" "))).unwrap();
     assert_eq!(p.name, None);

@@ -61,6 +61,24 @@ async function run(page) {
   return page.locator('#progress-text').innerText()
 }
 
+// Seeks the Trim modal's player to `t` s and waits for it.
+const seekTrim = (page, t) =>
+  page.evaluate(
+    (t) =>
+      new Promise((resolve, reject) => {
+        const v = document.getElementById('trim-video-player')
+        const go = () => {
+          v.addEventListener('seeked', resolve, { once: true })
+          v.currentTime = t
+        }
+        if (v.error) return reject(new Error(`media error ${v.error.code}`))
+        if (v.readyState >= 1) go()
+        else v.addEventListener('loadedmetadata', go, { once: true })
+        setTimeout(() => reject(new Error(`no seek (readyState ${v.readyState}, error ${v.error?.code})`)), 10_000)
+      }),
+    t,
+  )
+
 const dims = async (page) => {
   const m = /(\d+)\s*x\s*(\d+)/.exec(await page.locator('#crop-dims-label').innerText())
   return m ? [+m[1], +m[2]] : null
@@ -155,22 +173,7 @@ export const tests = {
       await page.locator('#file-item-0 .btn-trim').click()
       await page.locator('#trim-modal:not(.hidden)').waitFor()
       // Seeking needs sorai-media's Range support, not just a load.
-      const seek = (t) =>
-        page.evaluate(
-          (t) =>
-            new Promise((resolve, reject) => {
-              const v = document.getElementById('trim-video-player')
-              const go = () => {
-                v.addEventListener('seeked', resolve, { once: true })
-                v.currentTime = t
-              }
-              if (v.error) return reject(new Error(`media error ${v.error.code}`))
-              if (v.readyState >= 1) go()
-              else v.addEventListener('loadedmetadata', go, { once: true })
-              setTimeout(() => reject(new Error(`no seek (readyState ${v.readyState}, error ${v.error?.code})`)), 10_000)
-            }),
-          t,
-        )
+      const seek = (t) => seekTrim(page, t)
       await seek(0.5)
       assert.match(await page.locator('#trim-video-player').getAttribute('src'), /^http:\/\/sorai-media\.localhost\//)
       assert.ok(await page.evaluate(() => Math.abs(document.getElementById('trim-video-player').duration - 2) < 0.2))
@@ -184,6 +187,29 @@ export const tests = {
       assert.match(await run(page), /^Completed 1 of 1/)
       const out = probe(join(dir, '剪輯 影片_converted.mp4'))
       assert.ok(Math.abs(out.duration - 1) < 0.15, `trimmed output ${out.duration} s (want ~1 s)`)
+    } finally {
+      await backToHub(page)
+    }
+  },
+
+  // Video -> PNG grabs the frame at the Trim start (no trim: the middle,
+  // see converter-convert's PNG test).
+  'converter: video -> PNG grabs the frame at the Trim start': async ({ page }) => {
+    const clip = join(dir, '截圖 影片.mp4')
+    copyFileSync(join(fixtures, 'test_fixture_video.mp4'), clip) // 2 s, 320x240
+    await open(page, [clip])
+    try {
+      await page.locator('#file-item-0 .btn-trim').click()
+      await page.locator('#trim-modal:not(.hidden)').waitFor()
+      await seekTrim(page, 0.5)
+      await page.click('#btn-set-start')
+      await page.click('#btn-save-trim')
+      await closed(page, 'trim-modal')
+      await set(page, '#video-format', '.png')
+      assert.match(await run(page), /^Completed 1 of 1/)
+      assert.match(await page.locator('#terminal-log').innerText(), /-ss 0\.5\d* -i /)
+      const out = probe(join(dir, '截圖 影片_converted.png'))
+      assert.deepEqual([out.width, out.height], [320, 240])
     } finally {
       await backToHub(page)
     }

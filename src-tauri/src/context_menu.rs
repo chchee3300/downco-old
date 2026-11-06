@@ -281,6 +281,7 @@ mod tests {
         ("Convert to WEBM".into(), cmd("--sorai-preset=video-to-webm")),
         ("Convert to AVI".into(), cmd("--sorai-preset=video-to-avi")),
         ("Convert to GIF".into(), cmd("--sorai-preset=video-to-gif")),
+        ("Convert to MP3".into(), cmd("--sorai-preset=video-to-mp3")),
         ("Compress under 5 MB".into(), cmd("--sorai-preset=video-under-5mb")),
         ("Compress under 25 MB".into(), cmd("--sorai-preset=video-under-25mb")),
         ("Compress under 50 MB".into(), cmd("--sorai-preset=video-under-50mb")),
@@ -289,7 +290,7 @@ mod tests {
       ]
     );
     // Separator above "Open…" only.
-    assert_eq!(get(&v, &format!(r"{}\shell\008", ext_key("mp4")), "CommandFlags"), Some(&RegData::Dword(0x20)));
+    assert_eq!(get(&v, &format!(r"{}\shell\009", ext_key("mp4")), "CommandFlags"), Some(&RegData::Dword(0x20)));
     assert_eq!(v.iter().filter(|r| r.key.starts_with(&ext_key("mp4")) && r.name == "CommandFlags").count(), 1);
   }
 
@@ -302,7 +303,8 @@ mod tests {
     assert_eq!(labels("gif"), ["轉成 JPG", "轉成 PNG", "轉成 WEBP", "轉成 AVIF", "轉成 ICO", "轉成 PDF", "在 SORAI Toolkit 中開啟…", "設定預設…"]);
     assert_eq!(labels("jpeg")[0], "轉成 PNG");
     assert_eq!(labels("mov")[0], "轉成 MP4");
-    assert_eq!(labels("mov")[5], "快速壓縮到 5MB 以下");
+    assert_eq!(labels("mov")[5], "轉成 MP3");
+    assert_eq!(labels("mov")[6], "快速壓縮到 5MB 以下");
     assert_eq!(labels("ogg"), ["轉成 MP3", "轉成 WAV", "轉成 AAC", "轉成 M4A", "轉成 FLAC", "在 SORAI Toolkit 中開啟…", "設定預設…"]);
     // Unknown language falls back to English.
     assert_eq!(items(&entries(&builtins(), "fr", EXE), "pdf")[0].0, "Compress PDF");
