@@ -219,6 +219,11 @@ export const tests = {
       await page.locator('.target-size-chips').getByRole('button', { name: '5 MB', exact: true }).click()
       assert.deepEqual(await formats(), ['.mp4', '.mkv', '.webm', '.avi', '.mov', '.m4v', '.ts', '.wmv', '.mpg'])
       await page.locator('.target-size-chips').getByRole('button', { name: 'Off' }).click()
+    } finally {
+      await backToHub(page)
+    }
+  },
+
   // "copy" rewraps (-c:v copy, sound copied when the container takes it) and
   // hides quality / fps / speed; a codec the container can't hold (H.264 in
   // WebM) falls back to its default encoder, sound to libopus.
