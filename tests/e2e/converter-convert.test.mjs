@@ -481,12 +481,38 @@ export const tests = {
     const qdf = (file, pw = '') => execFileSync(QPDF, [`--password=${pw}`, '--qdf', '--object-streams=disable', '--decrypt', file, '-'], { encoding: 'latin1' })
     const PW = 'pw-秘密-4217'
     await open(page, [three])
+    let out
     try {
+      // Preview: the webview's PDF viewer in an iframe, served by sorai-media://.
+      await page.click('#btn-pdf-preview-0')
+      const src = await page.locator('#pdf-preview-frame').getAttribute('src')
+      assert.match(src, /sorai-media/)
+      let viewer
+      for (let i = 0; i < 50 && !viewer; i++) {
+        viewer = page.frames().find((f) => f.url() === src)
+        if (!viewer) await page.waitForTimeout(100)
+      }
+      assert.ok(viewer, `no frame for ${src}: ${page.frames().map((f) => f.url())}`)
+      await viewer.waitForLoadState()
+      assert.equal(await viewer.evaluate(() => document.contentType), 'application/pdf')
+      await page.keyboard.press('Escape')
+      assert.equal(await page.locator('#pdf-preview-modal').count(), 0)
+
       await set(page, '#pdf-optimize', 'extract')
       assert.equal(await page.locator('#pdf-level').count(), 0)
       assert.equal(await page.locator('#pdf-password').count(), 0)
+      // Page tools don't warn "file will get bigger".
+      await page.waitForFunction(() => /→ ~/.test(document.getElementById('file-est-0').textContent))
+      assert.ok(!(await page.locator('#file-est-0').innerText()).includes('⚠'))
+      // All pages / specific pages: specific is the default and shows the range.
+      assert.equal(await page.locator('#pdf-pages-some').getAttribute('aria-checked'), 'true')
+      await page.click('#pdf-pages-all')
+      assert.equal(await page.locator('#pdf-pages').count(), 0)
+      ;[out] = await added(async () => assert.match(await run(page, 1), /^Completed 1 of 1/))
+      assert.equal(pdfPages(join(sub, out)), 3)
+      await page.click('#pdf-pages-some')
       await set(page, '#pdf-pages', '1')
-      let [out] = await added(async () => assert.match(await run(page, 1), /^Completed 1 of 1/))
+      ;[out] = await added(async () => assert.match(await run(page, 1), /^Completed 1 of 1/))
       assert.equal(pdfPages(join(sub, out)), 1)
 
       await set(page, '#pdf-optimize', 'rotate')

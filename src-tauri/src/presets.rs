@@ -243,7 +243,9 @@ pub fn suggest_name(file_type: &str, format: &str, settings: &Value, lang: &str)
       let label = if zh { tw } else { en };
       // A missing angle reads as the default 90 (Converter PdfSettings).
       parts.push(if op == "rotate" { format!("{label} {}°", settings["angle"].as_i64().unwrap_or(90)) } else { label.into() });
-      if matches!(op, "extract" | "rotate") && !pages.is_empty() {
+      if op == "extract" && settings["allPages"] == true {
+        parts.push((if zh { "全部頁面" } else { "All pages" }).into());
+      } else if matches!(op, "extract" | "rotate") && !pages.is_empty() {
         parts.push(pages);
       }
       // A missing level reads as the default "ebook" (Converter PdfSettings).
@@ -501,6 +503,8 @@ mod tests {
     let n = |s: Value, l: &str| suggest_name("pdf", ".pdf", &s, l);
     assert_eq!(n(json!({ "optimize": "extract", "pages": " 1-3, 5" }), "en"), "PDF · Extract pages · 1-3,5");
     assert_eq!(n(json!({ "optimize": "extract", "pages": "1" }), "zh-TW"), "PDF・擷取頁面・1");
+    assert_eq!(n(json!({ "optimize": "extract", "allPages": true, "pages": "1" }), "zh-TW"), "PDF・擷取頁面・全部頁面", "all pages ignores the range");
+    assert_eq!(n(json!({ "optimize": "extract", "allPages": true }), "en"), "PDF · Extract pages · All pages");
     assert_eq!(n(json!({ "optimize": "split", "pages": "1" }), "en"), "PDF · Split", "split ignores the range");
     assert_eq!(n(json!({ "optimize": "rotate", "angle": 90, "pages": "" }), "zh-TW"), "PDF・旋轉 90°", "empty range = every page");
     assert_eq!(n(json!({ "optimize": "rotate", "angle": 270, "pages": "2-z" }), "en"), "PDF · Rotate 270° · 2-z");
