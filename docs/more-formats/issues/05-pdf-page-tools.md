@@ -12,13 +12,13 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] E2E：
+- [x] E2E：
   - 擷取 `1` → 1 頁
   - 旋轉 90 → 每頁 `/Rotate` 是 90（`qpdf --json` 或 `--show-pages`）
   - 加密 → `qpdf --show-encryption` 有 AES-256，terminal log 裡找不到密碼
   - 分割 → 資料夾裡的檔案數等於頁數
   - 範圍填 `abc` → 該列 failed
-- [ ] 壓縮與線性化的既有 E2E 照常通過；等級下拉照舊只在壓縮時出現
-- [ ] hub cargo test：`suggest_name` 的 PDF 操作案例
+- [x] 壓縮與線性化的既有 E2E 照常通過；等級下拉照舊只在壓縮時出現
+- [x] hub cargo test：`suggest_name` 的 PDF 操作案例

@@ -208,8 +208,24 @@ pub fn suggest_name(file_type: &str, format: &str, settings: &Value, lang: &str)
       parts.extend(speed);
     }
     "pdf" => {
-      let compress = settings["optimize"].as_str() == Some("compress");
-      parts.push(if !compress { if zh { "線性化" } else { "Linearize" } } else if zh { "壓縮" } else { "Compress" }.into());
+      let op = settings["optimize"].as_str().unwrap_or("linearize");
+      let compress = op == "compress";
+      // Range with the spaces the Converter strips (page_range) removed.
+      let pages: String = settings["pages"].as_str().unwrap_or("").chars().filter(|c| !c.is_whitespace()).collect();
+      let (en, tw) = match op {
+        "compress" => ("Compress", "壓縮"),
+        "extract" => ("Extract pages", "擷取頁面"),
+        "split" => ("Split", "分割"),
+        "rotate" => ("Rotate", "旋轉"),
+        "encrypt" => ("Encrypt", "加密碼"),
+        _ => ("Linearize", "線性化"),
+      };
+      let label = if zh { tw } else { en };
+      // A missing angle reads as the default 90 (Converter PdfSettings).
+      parts.push(if op == "rotate" { format!("{label} {}°", settings["angle"].as_i64().unwrap_or(90)) } else { label.into() });
+      if matches!(op, "extract" | "rotate") && !pages.is_empty() {
+        parts.push(pages);
+      }
       // A missing level reads as the default "ebook" (Converter PdfSettings).
       let level = match (settings["level"].as_str(), zh) {
         (Some("screen"), true) => Some("最小"),
@@ -419,5 +435,18 @@ mod tests {
     assert_eq!(n("pdf", ".pdf", json!({ "optimize": "compress", "level": "screen" }), "zh-TW"), "PDF・壓縮・最小");
     assert_eq!(n("pdf", ".pdf", json!({ "optimize": "compress", "level": "printer" }), "en"), "PDF · Compress · High quality");
     assert_eq!(n("pdf", ".pdf", json!({ "optimize": "linearize", "level": "screen" }), "en"), "PDF · Linearize", "level only applies to compress");
+  }
+
+  #[test]
+  fn suggested_names_for_pdf_page_operations() {
+    let n = |s: Value, l: &str| suggest_name("pdf", ".pdf", &s, l);
+    assert_eq!(n(json!({ "optimize": "extract", "pages": " 1-3, 5" }), "en"), "PDF · Extract pages · 1-3,5");
+    assert_eq!(n(json!({ "optimize": "extract", "pages": "1" }), "zh-TW"), "PDF・擷取頁面・1");
+    assert_eq!(n(json!({ "optimize": "split", "pages": "1" }), "en"), "PDF · Split", "split ignores the range");
+    assert_eq!(n(json!({ "optimize": "rotate", "angle": 90, "pages": "" }), "zh-TW"), "PDF・旋轉 90°", "empty range = every page");
+    assert_eq!(n(json!({ "optimize": "rotate", "angle": 270, "pages": "2-z" }), "en"), "PDF · Rotate 270° · 2-z");
+    assert_eq!(n(json!({ "optimize": "rotate" }), "en"), "PDF · Rotate 90°", "missing angle reads as the default 90");
+    assert_eq!(n(json!({ "optimize": "encrypt", "password": "hunter2" }), "en"), "PDF · Encrypt", "never the password");
+    assert_eq!(n(json!({ "optimize": "encrypt", "password": "hunter2" }), "zh-TW"), "PDF・加密碼");
   }
 }

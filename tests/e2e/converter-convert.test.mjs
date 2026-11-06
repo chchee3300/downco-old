@@ -302,6 +302,83 @@ export const tests = {
     }
   },
 
+  'converter: PDF extract, rotate, encrypt (password not logged), split into a folder; a bad range fails only its row': async ({ page }) => {
+    const sub = mkdtempSync(join(dir, 'pdf ops '))
+    const one = join(sub, '頁面 一.pdf')
+    copyFileSync(join(fixtures, 'test_fixture.pdf'), one)
+    const three = join(sub, '頁面 三.pdf')
+    execFileSync(QPDF, ['--empty', '--pages', one, one, one, '--', three])
+    // Names of the outputs a batch adds to `sub`.
+    const added = async (fn) => {
+      const before = new Set(readdirSync(sub))
+      await fn()
+      return readdirSync(sub).filter((f) => !before.has(f))
+    }
+    // Uncompressed, unencrypted copy: page dicts readable as text.
+    const qdf = (file, pw = '') => execFileSync(QPDF, [`--password=${pw}`, '--qdf', '--object-streams=disable', '--decrypt', file, '-'], { encoding: 'latin1' })
+    const PW = 'pw-秘密-4217'
+    await open(page, [three])
+    try {
+      await set(page, '#pdf-optimize', 'extract')
+      assert.equal(await page.locator('#pdf-level').count(), 0)
+      assert.equal(await page.locator('#pdf-password').count(), 0)
+      await set(page, '#pdf-pages', '1')
+      let [out] = await added(async () => assert.match(await run(page, 1), /^Completed 1 of 1/))
+      assert.equal(pdfPages(join(sub, out)), 1)
+
+      await set(page, '#pdf-optimize', 'rotate')
+      assert.equal(await page.locator('#pdf-angle').inputValue(), '90')
+      await set(page, '#pdf-pages', '')
+      ;[out] = await added(async () => assert.match(await run(page, 1), /^Completed 1 of 1/))
+      assert.equal(pdfPages(join(sub, out)), 3)
+      assert.equal(qdf(join(sub, out)).match(/\/Rotate 90\b/g)?.length, 3, 'every page /Rotate 90')
+
+      await set(page, '#pdf-optimize', 'encrypt')
+      assert.equal(await page.locator('#pdf-password').getAttribute('type'), 'password')
+      await set(page, '#pdf-password', PW)
+      ;[out] = await added(async () => assert.match(await run(page, 1), /^Completed 1 of 1/))
+      assert.match(execFileSync(QPDF, [`--password=${PW}`, '--show-encryption', join(sub, out)], { encoding: 'utf8' }), /R = 6[\s\S]*AESv3/)
+      assert.ok(!(await log(page)).includes(PW), 'password in the log')
+      assert.match(await log(page), /> Executing: qpdf --encrypt \*\*\* \*\*\* 256 -- /)
+
+      await set(page, '#pdf-optimize', 'split')
+      ;[out] = await added(async () => assert.match(await run(page, 1), /^Completed 1 of 1/))
+      assert.equal(out, '頁面 三_pages')
+      const pages = readdirSync(join(sub, out)).sort()
+      assert.deepEqual(pages, ['頁面 三-1.pdf', '頁面 三-2.pdf', '頁面 三-3.pdf'])
+      for (const f of pages) assert.equal(pdfPages(join(sub, out, f)), 1)
+      // The row shows the folder's total size.
+      const total = pages.reduce((n, f) => n + statSync(join(sub, out, f)).size, 0)
+      assert.match(await page.locator('#file-size-0').innerText(), new RegExp(`→ ${(total / (1024 * 1024)).toFixed(2)} MB`))
+    } finally {
+      await backToHub(page)
+    }
+
+    // A bad range / no password: each file fails on its own row, the batch goes on, nothing left behind.
+    await open(page, [one, three])
+    try {
+      const badBatch = async () => {
+        const created = await added(async () => {
+          await page.click('#btn-execute')
+          await page.waitForFunction(() => /^Completed 0 of 2/.test(document.getElementById('progress-text').innerText), null, { timeout: 30_000 })
+        })
+        assert.deepEqual(created, [])
+      }
+      await set(page, '#pdf-optimize', 'extract')
+      await set(page, '#pdf-pages', 'abc')
+      await badBatch()
+      for (const i of [0, 1]) assert.match(await page.locator(`#file-size-${i} .file-failed`).getAttribute('title'), /invalid page range/)
+      await page.waitForFunction(() => !/Cancel/.test(document.getElementById('btn-execute')?.textContent ?? ''))
+      await page.waitForTimeout(5500) // progress text resets 5 s after a batch
+      await set(page, '#pdf-optimize', 'encrypt')
+      await set(page, '#pdf-password', '')
+      await badBatch()
+      for (const i of [0, 1]) assert.equal(await page.locator(`#file-size-${i} .file-failed`).getAttribute('title'), 'no password')
+    } finally {
+      await backToHub(page)
+    }
+  },
+
   'converter: image -> PDF runs img2pdf, one valid PDF page per image (as before)': async ({ page }) => {
     const imgs = ['圖 一.png', '圖 二.png'].map((n) => join(dir, n))
     for (const i of imgs) copyFileSync(join(fixtures, 'test_in.png'), i)
