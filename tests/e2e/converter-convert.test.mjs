@@ -428,12 +428,27 @@ export const tests = {
     }
   },
 
-  'converter: PDF level shows only for compress; Smallest converts and is saved in the preset': async ({ page }) => {
+  'converter: PDF level shows only for compress; Smallest converts and is saved in the preset; a preset never keeps the password': async ({ page }) => {
     const doc = join(dir, '文件 等級.pdf')
     copyFileSync(join(fixtures, 'test_fixture.pdf'), doc)
     await open(page, [doc])
+    const savedIds = []
     let saved
+    const savePreset = async (name) => {
+      await page.click('#btn-save-preset')
+      await page.waitForFunction((n) => document.getElementById('preset-name')?.value === n, name)
+      await page.click('#btn-save-preset-confirm')
+      await page.waitForFunction((n) => document.getElementById('preset-save-message')?.textContent.includes(n), name)
+      saved = (await invoke(page, 'list_presets')).at(-1)
+      savedIds.push(saved.id)
+      return saved
+    }
     try {
+      // Typed for encrypt, then left in settings for every other operation.
+      await set(page, '#pdf-optimize', 'encrypt')
+      await set(page, '#pdf-password', 'pw-秘密')
+      saved = await savePreset('PDF · Encrypt')
+      assert.deepEqual(saved.settings, { optimize: 'encrypt', level: 'ebook' }, 'password saved in the encrypt preset')
       await set(page, '#pdf-optimize', 'linearize')
       assert.equal(await page.locator('#pdf-level').count(), 0)
       await set(page, '#pdf-optimize', 'compress')
@@ -442,14 +457,10 @@ export const tests = {
       assert.match(await run(page, 1), /^Completed 1 of 1/)
       assert.equal(pdfPages(join(dir, '文件 等級_converted.pdf')), pdfPages(doc))
 
-      await page.click('#btn-save-preset')
-      await page.waitForFunction(() => document.getElementById('preset-name')?.value === 'PDF · Compress · Smallest')
-      await page.click('#btn-save-preset-confirm')
-      await page.locator('#preset-save-message').waitFor()
-      saved = (await invoke(page, 'list_presets')).at(-1)
-      assert.deepEqual([saved.fileType, saved.settings], ['pdf', { optimize: 'compress', level: 'screen' }])
+      saved = await savePreset('PDF · Compress · Smallest')
+      assert.deepEqual([saved.fileType, saved.settings], ['pdf', { optimize: 'compress', level: 'screen' }], 'no password in another operation either')
     } finally {
-      if (saved) await page.evaluate((id) => window.SoraiPresets.remove(id), saved.id)
+      for (const id of savedIds) await page.evaluate((i) => window.SoraiPresets.remove(i), id)
       await backToHub(page)
     }
   },
@@ -608,8 +619,9 @@ export const tests = {
       assert.match(await run(page, 1), /^Completed 1 of 1/)
       const d = probe(join(sub, '歌 一_merged.mp3')).duration
       assert.ok(Math.abs(d - 2 * each) < 0.3, `duration ${d} (2 x ${each})`)
-    } finally {
+    } catch (e) {
       await backToHub(page)
+      throw e
     }
 
     const one = join(sub, '文 一.pdf')
@@ -618,8 +630,14 @@ export const tests = {
     execFileSync(QPDF, ['--empty', '--pages', one, one, one, '--', '--rotate=+90', three])
     // QDF marks each page with "%% Page N": page 1's own objects.
     const page1 = (file) => execFileSync(QPDF, ['--qdf', '--object-streams=disable', file, '-'], { encoding: 'latin1' }).split('%% Page 2')[0].split('%% Page 1')[1]
-    await open(page, [one, three])
+    // Same Converter session: empty the queue, add PDFs; merge starts unchecked again.
     try {
+      await page.waitForFunction(() => !/Cancel/.test(document.getElementById('btn-execute')?.textContent ?? ''), null, { timeout: 30_000 })
+      while ((await rows(page).count()) > 0) await rows(page).first().locator('button.remove').click()
+      await stubDialogs(page, { openFiles: [one, three] })
+      await page.locator('.drop-zone-message').click()
+      await page.waitForFunction(() => document.querySelectorAll('.file-item').length === 2, null, { timeout: 30_000 })
+      assert.equal(await page.locator('#merge-files').isChecked(), false, 'merge still checked after the queue emptied')
       assert.equal(await page.locator('#btn-move-up-0').count(), 0)
       assert.equal(await page.locator('#btn-move-down-1').count(), 0)
       await page.check('#merge-files')

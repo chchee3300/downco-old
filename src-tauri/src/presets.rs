@@ -169,6 +169,12 @@ pub fn suggest_name(file_type: &str, format: &str, settings: &Value, lang: &str)
   let quality = |q: f64| if zh { format!("畫質 {q}") } else { format!("Quality {q}") };
   let speed = num("speed").filter(|s| *s != 1.0).map(|s| format!("{s}×"));
   match file_type {
+    // A frame / the sound only (Converter is_special_video_out): only speed applies, to the sound.
+    "video" if matches!(format, ".png" | ".m4a" | ".mp3") => {
+      if format != ".png" {
+        parts.extend(speed);
+      }
+    }
     "video" => {
       if settings["targetSizeMode"] == true {
         let mb = num("targetSizeMB").unwrap_or(0.0);
@@ -470,6 +476,18 @@ mod tests {
     c["targetSizeMode"] = json!(true);
     c["targetSizeMB"] = json!(5);
     assert_eq!(n("video", ".mp4", c, "en"), "MP4 · Under 5 MB · 30fps · 2×", "target size forces H.264");
+    // A frame / the sound only: quality, fps and codec don't apply; speed does for the sound.
+    let mut x = default_settings("video", ".mp4");
+    x["codec"] = json!("libx265");
+    x["quality"] = json!(70);
+    x["fps"] = json!(30);
+    x["speed"] = json!(2.0);
+    assert_eq!(n("video", ".png", x.clone(), "en"), "PNG");
+    assert_eq!(n("video", ".m4a", x.clone(), "zh-TW"), "M4A・2×");
+    x["codec"] = json!("copy");
+    assert_eq!(n("video", ".mp3", x.clone(), "en"), "MP3 · 2×");
+    x["speed"] = json!(1.0);
+    assert_eq!(n("video", ".m4a", x, "en"), "M4A");
     assert_eq!(n("pdf", ".pdf", json!({ "optimize": "compress" }), "zh-TW"), "PDF・壓縮");
     assert_eq!(n("pdf", ".pdf", json!({ "optimize": "linearize" }), "en"), "PDF · Linearize");
     assert_eq!(n("pdf", ".pdf", json!({ "optimize": "compress", "level": "ebook" }), "en"), "PDF · Compress", "default level");
