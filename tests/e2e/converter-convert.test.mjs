@@ -545,6 +545,120 @@ export const tests = {
     }
   },
 
+  // "Merge into one file": one start_merge job, `<first>_merged.<ext>`.
+  'converter: merge clips (different size, one silent) into MP4; alike clips + keep codec use the concat demuxer; no checkbox for 1 file or GIF': async ({ page }) => {
+    const sub = mkdtempSync(join(dir, 'merge video '))
+    const gen = (name, size, secs, sound) => {
+      const f = join(sub, name)
+      execFileSync(FFMPEG, ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', `testsrc2=size=${size}:rate=30`,
+        ...(sound ? ['-f', 'lavfi', '-i', 'sine=frequency=440'] : []), '-t', String(secs), '-c:v', 'libx264', ...(sound ? ['-c:a', 'aac'] : []), f])
+      return f
+    }
+    const a = gen('合併 一.mp4', '320x240', 2, true)
+    const b = gen('合併 二.mp4', '640x360', 3, false)
+    const a2 = join(sub, '合併 三.mp4')
+    copyFileSync(a, a2)
+    const box = () => page.locator('#merge-files').count()
+
+    await open(page, [a])
+    try {
+      assert.equal(await box(), 0, 'checkbox with 1 file')
+    } finally {
+      await backToHub(page)
+    }
+
+    await open(page, [a, b])
+    try {
+      await set(page, '#video-format', '.gif')
+      assert.equal(await box(), 0, 'checkbox with GIF output')
+      await set(page, '#video-format', '.mp4')
+      await page.check('#merge-files')
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      const out = join(sub, '合併 一_merged.mp4')
+      const p = probe(out)
+      assert.ok(Math.abs(p.duration - 5) < 0.3, `duration ${p.duration} (2 s + 3 s)`)
+      assert.match(p.streams, /Video: h264.*, 320x240/)
+      assert.match(p.streams, /Audio: aac/)
+      assert.match(await page.locator('#status-text').innerText(), /合併 一_merged\.mp4/)
+      assert.match(await log(page), /合併 一_merged\.mp4/)
+    } finally {
+      await backToHub(page)
+    }
+
+    await open(page, [a, a2])
+    try {
+      await set(page, '#video-codec', 'copy')
+      await page.check('#merge-files')
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      assert.match(await log(page), /> Executing: ffmpeg -y -f concat /)
+      assert.ok(Math.abs(probe(join(sub, '合併 一_merged_merged.mp4')).duration - 4) < 0.3)
+    } finally {
+      await backToHub(page)
+    }
+  },
+
+  'converter: merge two mp3s; merge PDFs in the order set with move up / down': async ({ page }) => {
+    const sub = mkdtempSync(join(dir, 'merge more '))
+    const songs = ['歌 一.mp3', '歌 二.mp3'].map((n) => join(sub, n))
+    for (const s of songs) copyFileSync(join(fixtures, 'test_fixture_audio.mp3'), s)
+    const each = probe(songs[0]).duration
+    await open(page, songs)
+    try {
+      await page.check('#merge-files')
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      const d = probe(join(sub, '歌 一_merged.mp3')).duration
+      assert.ok(Math.abs(d - 2 * each) < 0.3, `duration ${d} (2 x ${each})`)
+    } finally {
+      await backToHub(page)
+    }
+
+    const one = join(sub, '文 一.pdf')
+    copyFileSync(join(fixtures, 'test_fixture.pdf'), one)
+    const three = join(sub, '文 三.pdf') // 3 pages, all /Rotate 90
+    execFileSync(QPDF, ['--empty', '--pages', one, one, one, '--', '--rotate=+90', three])
+    // QDF marks each page with "%% Page N": page 1's own objects.
+    const page1 = (file) => execFileSync(QPDF, ['--qdf', '--object-streams=disable', file, '-'], { encoding: 'latin1' }).split('%% Page 2')[0].split('%% Page 1')[1]
+    await open(page, [one, three])
+    try {
+      assert.equal(await page.locator('#btn-move-up-0').count(), 0)
+      assert.equal(await page.locator('#btn-move-down-1').count(), 0)
+      await page.check('#merge-files')
+      assert.equal(await page.locator('#pdf-settings').isVisible(), false, 'operation dropdown shown while merging')
+      await page.click('#btn-move-down-0')
+      assert.match(await rows(page).first().innerText(), /文 三\.pdf/)
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      const out = join(sub, '文 三_merged.pdf')
+      assert.equal(pdfPages(out), 4)
+      assert.match(page1(out), /\/Rotate 90\b/, 'page 1 comes from the file moved up')
+      await page.uncheck('#merge-files')
+      assert.equal(await page.locator('#pdf-settings').isVisible(), true)
+    } finally {
+      await backToHub(page)
+    }
+  },
+
+  'converter: cancelling a merge leaves no _merged file': async ({ page }) => {
+    const sub = mkdtempSync(join(dir, 'merge cancel '))
+    const clips = ['一', '二'].map((x) => join(sub, `取消合併 ${x}.mp4`))
+    execFileSync(FFMPEG, ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'testsrc2=size=640x360:rate=30', '-f', 'lavfi', '-i', 'sine=frequency=440',
+      '-t', '20', '-c:v', 'libx264', '-preset', 'ultrafast', '-c:a', 'aac', clips[0]])
+    copyFileSync(clips[0], clips[1])
+    await open(page, clips)
+    try {
+      await set(page, '#video-codec', 'libsvtav1') // slow: a window to cancel in
+      await page.check('#merge-files')
+      await page.click('#btn-execute')
+      await page.waitForFunction(() => document.getElementById('terminal-log').innerText.includes('> Executing:'), null, { timeout: 20_000 })
+      await page.waitForTimeout(500)
+      await page.click('#btn-execute') // Cancel
+      await page.waitForFunction(() => /^Cancelled/.test(document.getElementById('progress-text').innerText), null, { timeout: 10_000 })
+      await page.locator('#btn-execute:has-text("Start Processing"):not([disabled])').waitFor({ timeout: 5_000 })
+      assert.deepEqual(readdirSync(sub).filter((f) => f.includes('_merged')), [], 'partial merge left behind')
+    } finally {
+      await backToHub(page)
+    }
+  },
+
   'converter: cancel kills ffmpeg, stops the batch and removes the partial file': async ({ page }) => {
     const sub = mkdtempSync(join(dir, 'cancel '))
     const clips = ['a', 'b', 'c'].map((x) => join(sub, `取消 ${x}.mp4`))
