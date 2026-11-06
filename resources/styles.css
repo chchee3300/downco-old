@@ -2827,3 +2827,59 @@ html.progress-window body {
   align-self: flex-end;
   margin-top: auto;
 }
+
+/* Converter PdfViewer.jsx (PDF preview). The pages area is flat and
+   information-type (border + surface steps, no shadow); the navbar floats
+   over it as a glass element (design-system/UI_STYLE_REFERENCE.md: glass
+   only on interactive chrome, --glass-* tokens, shadow allowed there).
+   Buttons mirror TrimModal's .trim-actions: .btn-icon + SVG, a divider,
+   one .btn-xs text button; numbers in the mono face. */
+.pdf-viewer { position: relative; }
+.pdf-viewer-navbar {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  white-space: nowrap;
+  border: 1px solid var(--glass-border-hi);
+  border-radius: var(--glass-radius);
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: 0 6px 20px -8px rgba(0, 0, 0, 0.45), inset 0 1px 0 var(--glass-border-hi);
+}
+.pdf-viewer-navbar .btn-icon svg { width: 16px; height: 16px; }
+.pdf-viewer-navbar .btn-icon:disabled { opacity: 0.35; cursor: default; }
+.pdf-viewer-divider { width: 1px; height: 18px; background: var(--glass-border-hi); margin: 0 4px; }
+.pdf-viewer-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+.pdf-viewer-page-input {
+  width: 3.2em;
+  padding: 2px 4px;
+  text-align: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem;
+}
+.pdf-viewer-zoom { display: inline-flex; align-items: center; gap: 2px; }
+/* Top padding: room for the navbar over page 1 (PdfViewer.jsx goTo reads it).
+   Side padding = PdfViewer.jsx PAD_X. */
+.pdf-viewer-scroll {
+  height: 68vh;
+  overflow: auto;
+  padding: 58px 12px 12px;
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  background: var(--surface-0);
+  outline: none;
+}
+.pdf-page { margin: 0 auto 12px; }
+.pdf-page canvas { display: block; background: #fff; border: 1px solid var(--glass-border); border-radius: 4px; }
+.pdf-page-label { height: 20px; line-height: 20px; text-align: center; }

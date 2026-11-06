@@ -24,7 +24,7 @@ export default defineConfig({
   resolve: {
     alias: local.map((s) => ({ find: new RegExp(`^${s.pkg}$`), replacement: join(s.dir, 'src', 'index.js') })),
     // Sibling sources must share the hub's copies, not resolve their own.
-    dedupe: ['react', 'react-dom', '@tauri-apps/api'],
+    dedupe: ['react', 'react-dom', '@tauri-apps/api', 'pdfjs-dist'],
   },
   build: {
     outDir: 'web-dist',

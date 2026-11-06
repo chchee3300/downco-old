@@ -20,6 +20,7 @@
     "@tauri-apps/plugin-process": "^2.4.0",
     "@tauri-apps/plugin-updater": "^2.14.0",
     "liquid-glass-react": "^1.1.1",
+    "pdfjs-dist": "6.4.299",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
     "sorai-toolkit-converter": "github:chchee3300/sorai-toolkit-converter",

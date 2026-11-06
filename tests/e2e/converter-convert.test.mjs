@@ -7,7 +7,7 @@
 // image->PDF the real img2pdf sidecar; outputs checked with qpdf.
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
-import { copyFileSync, existsSync, mkdtempSync, readFileSync, readdirSync, statSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -47,6 +47,9 @@ async function open(page, files) {
 }
 
 async function backToHub(page) {
+  // A preview left open by a failed assertion would block the clicks below
+  // (and this `finally` error would hide the real one).
+  if (await page.locator('#pdf-preview-modal').count()) await page.click('#btn-pdf-preview-close')
   await page.waitForFunction(() => !/Cancel/.test(document.getElementById('btn-execute')?.textContent ?? ''), null, { timeout: 30_000 })
   while ((await rows(page).count()) > 0) await rows(page).first().locator('button.remove').click()
   await page.locator('[aria-label="Back to hub"]').click()
@@ -468,7 +471,22 @@ export const tests = {
   'converter: PDF extract, rotate, encrypt (password not logged), split into a folder; a bad range fails only its row': async ({ page }) => {
     const sub = mkdtempSync(join(dir, 'pdf ops '))
     const one = join(sub, '頁面 一.pdf')
-    copyFileSync(join(fixtures, 'test_fixture.pdf'), one)
+    // One 200pt page with a black square (the fixture PDF's page is blank,
+    // and the preview check looks for drawn pixels). No xref: qpdf rebuilds it.
+    const drawn = join(sub, 'drawn.tmp')
+    const content = '0 0 0 rg 40 40 120 120 re f'
+    writeFileSync(drawn, `%PDF-1.4
+1 0 obj <</Type/Catalog/Pages 2 0 R>> endobj
+2 0 obj <</Type/Pages/Kids[3 0 R]/Count 1>> endobj
+3 0 obj <</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]/Resources<<>>/Contents 4 0 R>> endobj
+4 0 obj <</Length ${content.length}>> stream
+${content}
+endstream endobj
+trailer <</Size 5/Root 1 0 R>>
+%%EOF
+`)
+    execFileSync(QPDF, ['--warning-exit-0', drawn, one])
+    rmSync(drawn)
     const three = join(sub, '頁面 三.pdf')
     execFileSync(QPDF, ['--empty', '--pages', one, one, one, '--', three])
     // Names of the outputs a batch adds to `sub`.
@@ -483,18 +501,70 @@ export const tests = {
     await open(page, [three])
     let out
     try {
-      // Preview: the webview's PDF viewer in an iframe, served by sorai-media://.
+      // Preview: pdf.js viewer (own toolbar: page number + zoom only), served by sorai-media://.
       await page.click('#btn-pdf-preview-0')
-      const src = await page.locator('#pdf-preview-frame').getAttribute('src')
-      assert.match(src, /sorai-media/)
-      let viewer
-      for (let i = 0; i < 50 && !viewer; i++) {
-        viewer = page.frames().find((f) => f.url() === src)
-        if (!viewer) await page.waitForTimeout(100)
-      }
-      assert.ok(viewer, `no frame for ${src}: ${page.frames().map((f) => f.url())}`)
-      await viewer.waitForLoadState()
-      assert.equal(await viewer.evaluate(() => document.contentType), 'application/pdf')
+      await page.waitForFunction(() => document.getElementById('pdf-page-count')?.textContent === '/ 3', null, { timeout: 15_000 })
+      assert.equal(await page.locator('#pdf-preview-modal canvas').count(), 3)
+      assert.equal(await page.locator('#pdf-preview-modal iframe').count(), 0)
+      // Page 1 is drawn (not just a blank sized canvas).
+      await page.waitForFunction(() => {
+        const c = document.querySelector('#pdf-page-1 canvas')
+        if (!c?.width) return false
+        const d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data
+        for (let i = 0; i < d.length; i += 4) if (d[i + 3] && (d[i] < 250 || d[i + 1] < 250 || d[i + 2] < 250)) return true
+        return false
+      }, null, { timeout: 15_000 })
+      assert.match(await page.locator('#pdf-page-2').innerText(), /Page 2/)
+      // Floating navbar over the pages.
+      assert.equal(await page.locator('.pdf-viewer-navbar').evaluate((n) => getComputedStyle(n).position), 'absolute')
+      const zoomLabel = () => page.locator('#pdf-zoom-input').inputValue()
+      const fit = await zoomLabel()
+      await page.click('#pdf-zoom-in')
+      assert.notEqual(await zoomLabel(), fit)
+      await page.click('#pdf-zoom-fit')
+      assert.equal(await zoomLabel(), fit)
+      // Ctrl+wheel zooms (at the cursor); Ctrl+0 back to fit width; Ctrl+= / Ctrl+- step.
+      const box = await page.locator('#pdf-viewer-scroll').boundingBox()
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+      await page.keyboard.down('Control')
+      await page.mouse.wheel(0, -100)
+      await page.keyboard.up('Control')
+      await page.waitForFunction((f) => document.getElementById('pdf-zoom-input').value !== f, fit)
+      assert.ok(parseInt(await zoomLabel()) > parseInt(fit), `${await zoomLabel()} > ${fit}`)
+      await page.keyboard.press('Control+0')
+      assert.equal(await zoomLabel(), fit)
+      await page.keyboard.press('Control+-')
+      assert.ok(parseInt(await zoomLabel()) < parseInt(fit))
+      await page.keyboard.press('Control+0')
+      // Typed zoom: Enter applies (clamped to 25–500), Escape / blur drop the typing.
+      await page.fill('#pdf-zoom-input', '200')
+      await page.press('#pdf-zoom-input', 'Enter')
+      assert.equal(await zoomLabel(), '200')
+      await page.fill('#pdf-zoom-input', '9000')
+      await page.press('#pdf-zoom-input', 'Enter')
+      assert.equal(await zoomLabel(), '500')
+      await page.fill('#pdf-zoom-input', '37')
+      await page.press('#pdf-zoom-input', 'Escape')
+      assert.equal(await zoomLabel(), '500')
+      assert.equal(await page.locator('#pdf-preview-modal').count(), 1, 'Escape in the zoom box keeps the preview open')
+      await page.keyboard.press('Control+0')
+      // Page keys: End / Home / → / ←, and typing a page number.
+      const pageNo = () => page.locator('#pdf-page-input').inputValue()
+      await page.keyboard.press('End')
+      assert.equal(await pageNo(), '3')
+      await page.keyboard.press('Home')
+      assert.equal(await pageNo(), '1')
+      await page.keyboard.press('ArrowRight')
+      assert.equal(await pageNo(), '2')
+      await page.keyboard.press('ArrowLeft')
+      assert.equal(await pageNo(), '1')
+      await page.fill('#pdf-page-input', '3')
+      await page.press('#pdf-page-input', 'Enter')
+      assert.equal(await pageNo(), '3')
+      await page.click('#btn-pdf-preview-close')
+      assert.equal(await page.locator('#pdf-preview-modal').count(), 0)
+      await page.click('#btn-pdf-preview-0')
+      await page.locator('#pdf-page-count').waitFor()
       await page.keyboard.press('Escape')
       assert.equal(await page.locator('#pdf-preview-modal').count(), 0)
 
