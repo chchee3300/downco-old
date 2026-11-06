@@ -14,15 +14,15 @@
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `cargo test` 全綠（既有測試只因為 `unique_out_path` 多了 suffix 參數而調整）
-- [ ] 每個新分支都有字串比對的測試：
+- [x] `cargo test` 全綠（既有測試只因為 `unique_out_path` 多了 suffix 參數而調整）
+- [x] 每個新分支都有字串比對的測試：
   - 編碼器下拉選「保留原編碼」：容器裝得下、裝不下但會退回、只有聲音要重新編碼
   - APNG／PNG（有沒有 Trim）／M4A（複製或 AAC、變速）／MP3
   - Opus 320k→256k、ALAC、AIFF、WMA、AC3
   - 擷取、旋轉（有沒有範圍、不合法的角度）、加密（沒有密碼就錯誤）、分割
-- [ ] `merge_args`：PDF、音訊（含變速）、影片複製路線（清單含 `inpoint`／`outpoint` 與 `'` 跳脫）、影片濾鏡路線（不同解析度、沒有聲音的段落補 anullsrc、target size）、少於 2 個檔案就錯誤、特殊輸出就錯誤
-- [ ] `page_range`、`display_command` 的密碼遮蔽、`taken_dir`、`parse_media_info` 解析出 `audioCodec`
-- [ ] 舊的 settings JSON（沒有 `alac`／`pages`／`angle`／`password`）可以反序列化
-- [ ] 執行器（runner）支援輸出是資料夾：成功時回報總大小，失敗、取消或 app 結束時刪掉整個資料夾；`start_convert` 為分割預留資料夾
+- [x] `merge_args`：PDF、音訊（含變速）、影片複製路線（清單含 `inpoint`／`outpoint` 與 `'` 跳脫）、影片濾鏡路線（不同解析度、沒有聲音的段落補 anullsrc、target size）、少於 2 個檔案就錯誤、特殊輸出就錯誤
+- [x] `page_range`、`display_command` 的密碼遮蔽、`taken_dir`、`parse_media_info` 解析出 `audioCodec`
+- [x] 舊的 settings JSON（沒有 `alac`／`pages`／`angle`／`password`）可以反序列化
+- [x] 執行器（runner）支援輸出是資料夾：成功時回報總大小，失敗、取消或 app 結束時刪掉整個資料夾；`start_convert` 為分割預留資料夾
