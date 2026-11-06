@@ -119,6 +119,56 @@ struct ProgressBatch {
   files: Vec<String>,
 }
 
+/// Dev/E2E only (`SORAI_QUIET_WINDOWS=1`, ignored by release builds): windows
+/// never come to the front or take focus, so tests and dev runs don't get in
+/// the way of whoever is using the PC.
+fn quiet_windows() -> bool {
+  cfg!(debug_assertions) && std::env::var_os("SORAI_QUIET_WINDOWS").is_some_and(|v| v == "1")
+}
+
+/// In quiet mode, shows `w` (restoring it if minimized) behind every other
+/// window without activating it and returns true; otherwise does nothing and
+/// returns false, so the caller shows / focuses it the normal way.
+fn show_quietly<R: tauri::Runtime>(w: &tauri::WebviewWindow<R>) -> bool {
+  if !quiet_windows() {
+    return false;
+  }
+  #[cfg(windows)]
+  if let Ok(hwnd) = w.hwnd() {
+    use windows_sys::Win32::UI::WindowsAndMessaging::*;
+    let h = hwnd.0 as _;
+    unsafe {
+      ShowWindow(h, SW_SHOWNOACTIVATE);
+      SetWindowPos(h, HWND_BOTTOM, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE);
+    }
+    return true;
+  }
+  let _ = w.show();
+  true
+}
+
+/// JS revealMainWindow asks first: true = shown quietly, skip show/focus.
+#[tauri::command]
+fn show_main_quietly(app: tauri::AppHandle) -> bool {
+  app.get_webview_window("main").is_some_and(|w| show_quietly(&w))
+}
+
+/// tao only skips focus when a window is first shown, so show_quietly goes
+/// around it -- and tao, not knowing the window is visible, then ignores
+/// hide(). In quiet mode JS hideMainWindow hides through here as well.
+#[tauri::command]
+fn hide_main_quietly(app: tauri::AppHandle) -> bool {
+  if !quiet_windows() {
+    return false;
+  }
+  #[cfg(windows)]
+  if let Some(Ok(hwnd)) = app.get_webview_window("main").map(|w| w.hwnd()) {
+    unsafe { windows_sys::Win32::UI::WindowsAndMessaging::ShowWindow(hwnd.0 as _, windows_sys::Win32::UI::WindowsAndMessaging::SW_HIDE) };
+    return true;
+  }
+  false
+}
+
 /// Batches waiting for the progress window to drain (take_progress_jobs), so
 /// none are lost while it's still loading -- same idea as LaunchQueue.
 #[derive(Default)]
@@ -146,14 +196,17 @@ async fn queue_background(app: tauri::AppHandle, preset_id: String, files: Vec<S
     .decorations(false)
     .transparent(true)
     .shadow(false)
-    .always_on_top(true)
+    .always_on_top(!quiet_windows())
+    .focused(!quiet_windows())
     .visible(false)
     .build()
     .map_err(|e| e.to_string())?;
   if let Some(pos) = bottom_right(&app, &w) {
     let _ = w.set_position(pos);
   }
-  let _ = w.show();
+  if !show_quietly(&w) {
+    let _ = w.show();
+  }
   Ok(())
 }
 
@@ -330,7 +383,7 @@ pub fn run() {
       if background {
         return;
       }
-      if let Some(w) = app.get_webview_window("main") {
+      if let Some(w) = app.get_webview_window("main").filter(|w| !show_quietly(w)) {
         let _ = w.unminimize();
         let _ = w.show();
         let _ = w.set_focus();
@@ -344,7 +397,7 @@ pub fn run() {
     .plugin(tauri_plugin_notification::init())
     .plugin(tauri_plugin_sorai_converter::init())
     .plugin(tauri_plugin_sorai_downloader::init())
-    .invoke_handler(tauri::generate_handler![take_launch_args, taskbar_is_light, launch_is_background, list_presets, register_context_menu, context_menu_entries, queue_background, take_progress_jobs, notify_done, save_preset, delete_preset, reorder_presets, restore_presets, preset_name])
+    .invoke_handler(tauri::generate_handler![show_main_quietly, hide_main_quietly, take_launch_args, taskbar_is_light, launch_is_background, list_presets, register_context_menu, context_menu_entries, queue_background, take_progress_jobs, notify_done, save_preset, delete_preset, reorder_presets, restore_presets, preset_name])
     // Closing the progress window ends the app when nothing else is showing
     // (see idle; a pending toast ends it on release instead).
     .on_window_event(|w, e| {

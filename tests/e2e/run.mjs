@@ -29,6 +29,10 @@ if (await up(`${cdp}/json/version`)) {
   process.exit(1)
 }
 
+// Windows never jump to the front or take focus while tests run (Rust
+// show_quietly); SORAI_QUIET_WINDOWS=0 to watch them.
+process.env.SORAI_QUIET_WINDOWS ??= '1'
+
 // Ghostscript download (converter engines.rs; dev builds only read these):
 // engines.test.mjs serves tests/fixtures/fake-ghostscript.conda on this port.
 process.env.SORAI_GS_URL = `http://127.0.0.1:${cdpPort + 2}/ghostscript.conda`

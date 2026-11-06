@@ -38,6 +38,9 @@ tauri-plugin-single-instance = "2"
 [target.'cfg(windows)'.dependencies]
 # Taskbar light/dark (tray icon colour): HKCU ...\Themes\Personalize.
 winreg = "0.55"
+# Dev/E2E quiet windows (show_quietly): show behind everything, no focus.
+# Same version tao already pulls in.
+windows-sys = { version = "0.60", features = ["Win32_Foundation", "Win32_UI_WindowsAndMessaging"] }
 # Progress-window success toast with a click callback (tauri-plugin-notification
 # drops the handle); same version that plugin already pulls in.
 notify-rust = "4.18"

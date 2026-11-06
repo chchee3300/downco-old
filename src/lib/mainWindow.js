@@ -11,12 +11,20 @@ export const isBackgroundLaunch = () => (background ??= invoke('launch_is_backgr
 // The window is created hidden (tauri.conf.json "visible": false) so a
 // secondary instance never flashes one. The primary reveals it here; the
 // tray "Open" item reuses the same call.
+// Dev/E2E quiet mode (SORAI_QUIET_WINDOWS=1, Rust show_main_quietly): shown
+// behind other windows, never focused.
 export async function revealMainWindow({ center = false } = {}) {
   const w = getCurrentWindow()
   if (center) await w.center()
+  if (await invoke('show_main_quietly')) return
   await w.show()
   await w.unminimize()
   await w.setFocus()
+}
+
+// Quiet mode shows the window around tao, so it must hide it the same way.
+export async function hideMainWindow() {
+  if (!(await invoke('hide_main_quietly'))) await getCurrentWindow().hide()
 }
 
 // Bundled PNG (Vite asset URL) -> Tauri Image, decoded once per URL.

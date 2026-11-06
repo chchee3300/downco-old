@@ -15,7 +15,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from 'playwright'
 import { appCount, invoke } from './helpers.mjs'
-import { killTree, ports } from '../../scripts/tauri-dev.mjs'
+import { killTree, ports, webview2Args } from '../../scripts/tauri-dev.mjs'
 
 const hub = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const exe = join(hub, 'src-tauri', 'target', 'debug', 'sorai-toolkit.exe')
@@ -64,7 +64,7 @@ export const tests = {
     copyFileSync(join(hub, 'tests', 'fixtures', 'test_in.png'), picture)
     const env = {
       ...process.env,
-      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${cdp}`,
+      WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: webview2Args(cdp),
       WEBVIEW2_USER_DATA_FOLDER: mkdtempSync(join(tmpdir(), 'sorai-e2e-cold-')),
     }
     // One launch per file, at once, like a multi-select right-click: one

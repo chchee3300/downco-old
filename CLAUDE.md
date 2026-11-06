@@ -15,6 +15,13 @@
 - 每個 CDP port 用自己的 `WEBVIEW2_USER_DATA_FOLDER`（`src-tauri/target/webview2-<port>`）：WebView2 同一個 user-data 資料夾共用一個 browser process，第二個視窗的除錯埠參數會被忽略，多個 checkout 同時跑會互撞。
 - dev 版用 `--config` 把 identifier 覆寫成 `com.soraitoolkit.hub.dev<CDP_PORT>`：single-instance plugin 以 identifier 當 mutex／視窗類別名稱，不覆寫的話 dev 視窗會把啟動轉發給已安裝的 app 或別的 checkout 的視窗然後自己結束。副作用：dev 的 app data 目錄跟正式版分開（預期中）。
 - `tauri dev` 本身只 watch `src-tauri/`，所以 `tauri-dev.mjs` 對每個 sibling 加 `--additional-watch-folders <sibling>/plugin/src`（只 watch `src`：`build.rs` 每次都會重寫 `plugin/permissions/`，watch 它會讓 app 在 E2E 中途重建重啟）。改 sibling `plugin/src/*.rs` 約 12 秒後重建重啟；改 sibling `src/*.jsx` 走 Vite HMR。
+- **安靜視窗（`SORAI_QUIET_WINDOWS=1`，只有 debug build 讀，E2E 的 `run.mjs` 預設開，`=0` 可關；`npm run tauri:dev` 預設不開）**：視窗不跳到最上層、不搶焦點，跑測試或開發時不干擾正在用電腦的人。
+  - **為什麼要繞過 tao**：tao 只有在視窗建立時第一次顯示會照「不要 focus」（`MARKER_DONT_FOCUS` → `SW_SHOWNOACTIVATE`），之後每次 `show()` 都是 `SW_SHOW`，會 activate。
+  - **顯示**：Rust `show_quietly` 直接 `ShowWindow(SW_SHOWNOACTIVATE)` 再 `SetWindowPos(HWND_BOTTOM, SWP_NOACTIVATE)`，視窗放到所有視窗後面。用在 JS `revealMainWindow` 先問的 `show_main_quietly`、single-instance 轉發、進度視窗。
+  - **隱藏也要繞過**：tao 不知道視窗已經顯示，`hide()` 會變 no-op。所以 `useCloseBehavior` 走 `mainWindow.js` 的 `hideMainWindow`，安靜模式下改由 `hide_main_quietly` 呼叫 `SW_HIDE`。
+  - **建立時不 focus**：進度視窗不設 `always_on_top`、`focused(false)`。`tauri-dev.mjs` 用 `--config` 把主視窗的 `focus` 設成 false（陣列 merge 是整個取代，所以從 `tauri.conf.json` 複製整份 windows 清單）。
+  - **WebView2 參數**：`webview2Args()` 加 `--disable-features=CalculateNativeWinOcclusion`，不然被蓋住的視窗會被 Chromium 當成隱藏，rAF 與計時器被節流。`zzz-preset-cold` 也用同一個函式。
+  - **測試裡直接叫 `plugin:window|show` 會搶焦點**：要先試 `show_main_quietly`，`window.test.mjs` 是範例。
 - **同一個 checkout 一次只能跑一個 tauri dev/E2E**（cargo 無法覆寫執行中的 `sorai-toolkit.exe`，os error 5）；不同 checkout 各自 target 目錄、各自 port，可以同時跑。
 - 新 checkout／worktree：`npm ci`、`npm run setup`（或從別的 checkout 複製 `binaries/`，gitignore），第一次 Rust 建置約 2-3 分鐘。merge 後 `package.json` 有變就重跑 `npm ci`（不然前端 import 新 plugin 失敗、React 不掛載）。改了 `tauri.*.conf.json` 的 externalBin/resources 而 `build.rs` 沒重跑時，`touch src-tauri/build.rs`（不然新 sidecar 不會出現在 `target/debug`）。
 

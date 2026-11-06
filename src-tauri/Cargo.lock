@@ -3932,6 +3932,7 @@ dependencies = [
  "tauri-plugin-sorai-converter",
  "tauri-plugin-sorai-downloader",
  "tauri-plugin-updater",
+ "windows-sys 0.60.2",
  "winreg 0.55.0",
 ]
 

@@ -66,7 +66,8 @@ export const tests = {
       assert.equal(await invoke(page, 'taskbar_is_light'), /0x1\b/.test(reg))
     }
     assert.equal(appRunning(), true)
-    await win(page, 'show') // tray "Open" needs a real mouse; restore directly
+    // tray "Open" needs a real mouse; restore directly (quietly under E2E)
+    if (!(await invoke(page, 'show_main_quietly'))) await win(page, 'show')
     assert.equal(await win(page, 'is_visible'), true)
   },
 }
