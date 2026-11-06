@@ -5,6 +5,7 @@
 // Rust edits (hub or sibling plugin/) rebuild + restart the app; JS edits
 // (hub src/ or sibling src/) hot-reload through Vite.
 import { spawn, spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { linkPlugins, root, siblings } from './siblings.mjs'
@@ -13,6 +14,13 @@ export const ports = () => ({
   vitePort: Number(process.env.VITE_PORT) || 5173,
   cdpPort: Number(process.env.CDP_PORT) || 9229,
 })
+
+// SORAI_QUIET_WINDOWS=1 (E2E sets it by default): the app shows its windows
+// behind everything without focus (Rust show_quietly). A window that's fully
+// covered would otherwise be treated as hidden by Chromium (rAF / timers
+// throttled), so occlusion tracking is off then.
+export const webview2Args = (cdpPort) =>
+  `--remote-debugging-port=${cdpPort}` + (process.env.SORAI_QUIET_WINDOWS === '1' ? ' --disable-features=CalculateNativeWinOcclusion' : '')
 
 export function tauriDev({ vitePort, cdpPort, userDataDir, stdio = 'inherit' }) {
   for (const line of linkPlugins()) console.log(`plugin ${line}`)
@@ -28,9 +36,16 @@ export function tauriDev({ vitePort, cdpPort, userDataDir, stdio = 'inherit' }) 
   // Dev/E2E only: E2E presses "X" via plugin:window|close. Production builds
   // use just the capabilities/ files, which don't grant it.
   const capabilities = ['default', { identifier: 'dev-e2e', windows: ['main', 'progress'], permissions: ['core:window:allow-close'] }]
+  const app = { security: { capabilities } }
+  // Quiet: the main window isn't focused on creation either (arrays replace
+  // on merge, so the whole list goes in with focus off).
+  if (process.env.SORAI_QUIET_WINDOWS === '1') {
+    const conf = JSON.parse(readFileSync(join(root, 'src-tauri', 'tauri.conf.json'), 'utf8'))
+    app.windows = conf.app.windows.map((w) => ({ ...w, focus: false }))
+  }
   return spawn(
     process.execPath,
-    [join(root, 'node_modules', '@tauri-apps', 'cli', 'tauri.js'), 'dev', '--config', JSON.stringify({ identifier: `com.soraitoolkit.hub.dev${cdpPort}`, build: { devUrl }, app: { security: { capabilities } } }), ...watch],
+    [join(root, 'node_modules', '@tauri-apps', 'cli', 'tauri.js'), 'dev', '--config', JSON.stringify({ identifier: `com.soraitoolkit.hub.dev${cdpPort}`, build: { devUrl }, app }), ...watch],
     {
       cwd: root,
       stdio,
@@ -39,7 +54,7 @@ export function tauriDev({ vitePort, cdpPort, userDataDir, stdio = 'inherit' }) 
       env: {
         ...process.env,
         VITE_PORT: String(vitePort),
-        WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: `--remote-debugging-port=${cdpPort}`,
+        WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS: webview2Args(cdpPort),
         // WebView2 shares one browser process per user-data folder and ignores
         // the debug-port flag when joining an existing one -- so each port
         // gets its own folder, or two worktrees' windows would collide.

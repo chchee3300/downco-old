@@ -5,7 +5,7 @@ import { Menu } from '@tauri-apps/api/menu'
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification'
 import { tNow } from '../i18n/dict.js'
 import { invoke } from '@tauri-apps/api/core'
-import { imageFromUrl, revealMainWindow } from '../lib/mainWindow.js'
+import { hideMainWindow, imageFromUrl, revealMainWindow } from '../lib/mainWindow.js'
 import trayIconDark from '../../resources/icons/trayIcon-dark.png'
 import trayIconLight from '../../resources/icons/trayIcon-light.png'
 
@@ -71,7 +71,7 @@ export function useCloseBehavior() {
       // ThemeChanged event: re-check whenever we go to the tray.
       trayRef.current.setIcon(await trayIcon()).catch(console.error)
     }
-    await getCurrentWindow().hide()
+    await hideMainWindow()
     if (!hasNotifiedThisSessionRef.current) {
       hasNotifiedThisSessionRef.current = true
       try {
