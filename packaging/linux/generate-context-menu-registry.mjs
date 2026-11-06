@@ -62,9 +62,10 @@ const TARGET_SIZE_PRESETS_MB = [5, 25, 50]
 // lists above (.mov/.jpeg valid inputs only, .gif is an IMAGE input
 // despite being a VIDEO output format).
 const INPUT_EXTENSIONS = {
-  video: ['mp4', 'mkv', 'avi', 'mov', 'webm'],
+  // No 'ts': that's TypeScript too (Windows INPUT_EXTS skips it the same way).
+  video: ['mp4', 'mkv', 'avi', 'mov', 'webm', 'm4v', 'flv', 'm2ts', 'mts', '3gp', 'wmv', 'mpg', 'mpeg', 'ogv'],
   image: ['jpg', 'jpeg', 'png', 'webp', 'avif', 'gif', 'ico'],
-  audio: ['mp3', 'wav', 'aac', 'm4a', 'flac', 'ogg'],
+  audio: ['mp3', 'wav', 'aac', 'm4a', 'flac', 'ogg', 'opus', 'aiff', 'aif', 'wma', 'ac3', 'ape', 'dsf', 'dff', 'dts'],
   pdf: ['pdf'],
 }
 
@@ -78,8 +79,10 @@ const FORMAT_LABELS = {
 // comment.
 const MIME_TYPES = {
   mp4: 'video/mp4', mkv: 'video/x-matroska', avi: 'video/x-msvideo', mov: 'video/quicktime', webm: 'video/webm',
+  m4v: 'video/x-m4v', flv: 'video/x-flv', m2ts: 'video/mp2t', mts: 'video/mp2t', '3gp': 'video/3gpp', wmv: 'video/x-ms-wmv', mpg: 'video/mpeg', mpeg: 'video/mpeg', ogv: 'video/ogg',
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp', avif: 'image/avif', gif: 'image/gif', ico: 'image/vnd.microsoft.icon',
   mp3: 'audio/mpeg', wav: 'audio/x-wav', aac: 'audio/aac', m4a: 'audio/mp4', flac: 'audio/flac', ogg: 'audio/ogg',
+  opus: 'audio/x-opus+ogg', aiff: 'audio/x-aiff', aif: 'audio/x-aiff', wma: 'audio/x-ms-wma', ac3: 'audio/ac3', ape: 'audio/x-ape', dsf: 'audio/x-dsf', dff: 'audio/x-dff', dts: 'audio/vnd.dts',
   pdf: 'application/pdf',
 }
 

@@ -12,11 +12,12 @@ use serde::Serialize;
 use crate::presets::Preset;
 
 /// Input extension -> type. Mirrors the Converter's useFileManager.js
-/// (VIDEO_EXTS/IMAGE_EXTS/AUDIO_EXTS/PDF_EXTS) by hand.
+/// (VIDEO_EXTS/IMAGE_EXTS/AUDIO_EXTS/PDF_EXTS) by hand, minus `ts`: that is
+/// TypeScript too, so .ts files stay drag/browse only.
 pub const INPUT_EXTS: [(&str, &[&str]); 4] = [
-  ("video", &["mp4", "mkv", "avi", "mov", "webm"]),
+  ("video", &["mp4", "mkv", "avi", "mov", "webm", "m4v", "flv", "m2ts", "mts", "3gp", "wmv", "mpg", "mpeg", "ogv"]),
   ("image", &["jpg", "jpeg", "png", "webp", "avif", "gif", "ico"]),
-  ("audio", &["mp3", "wav", "aac", "m4a", "flac", "ogg"]),
+  ("audio", &["mp3", "wav", "aac", "m4a", "flac", "ogg", "opus", "aiff", "aif", "wma", "ac3", "ape", "dsf", "dff", "dts"]),
   ("pdf", &["pdf"]),
 ];
 
@@ -257,6 +258,16 @@ mod tests {
     }
     assert!(!v.iter().any(|r| r.key.contains(".txt")));
     assert!(v.iter().all(|r| r.key.starts_with(r"SystemFileAssociations\.")));
+  }
+
+  #[test]
+  fn input_extensions_follow_the_converter_except_ts() {
+    let of = |t: &str| INPUT_EXTS.iter().find(|(k, _)| *k == t).unwrap().1;
+    assert_eq!(of("video"), ["mp4", "mkv", "avi", "mov", "webm", "m4v", "flv", "m2ts", "mts", "3gp", "wmv", "mpg", "mpeg", "ogv"]);
+    assert_eq!(of("audio"), ["mp3", "wav", "aac", "m4a", "flac", "ogg", "opus", "aiff", "aif", "wma", "ac3", "ape", "dsf", "dff", "dts"]);
+    // .ts is a Converter input (drag/browse) but also TypeScript: no menu there.
+    assert_eq!(INPUT_EXTS.iter().map(|(_, e)| e.len()).sum::<usize>(), 37);
+    assert!(!INPUT_EXTS.iter().any(|(_, e)| e.contains(&"ts")));
   }
 
   #[test]

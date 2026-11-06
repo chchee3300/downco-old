@@ -11,9 +11,9 @@
 
 **Blocked by:** 01
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] E2E：MP4 → MOV、MP4 → WMV 成功（用 ffprobe 檢查容器）；單聲道 mp3 → Opus 320k 成功；mp3 → M4A＋ALAC 的音訊編碼是 alac
-- [ ] E2E：WebM 編碼器的限制仍然通過；MOV 只列 H.264／H.265
-- [ ] hub cargo test：`INPUT_EXTS` 數量正確、沒有 `ts`、nsh 一致；`suggest_name` 對 ALAC 有名稱
-- [ ] `presets.test.mjs`／`context-menu` E2E 仍然通過
+- [x] E2E：MP4 → MOV、MP4 → WMV 成功（用 ffprobe 檢查容器）；單聲道 mp3 → Opus 320k 成功；mp3 → M4A＋ALAC 的音訊編碼是 alac
+- [x] E2E：WebM 編碼器的限制仍然通過；MOV 只列 H.264／H.265
+- [x] hub cargo test：`INPUT_EXTS` 數量正確、沒有 `ts`、nsh 一致；`suggest_name` 對 ALAC 有名稱
+- [x] `presets.test.mjs`／`context-menu` E2E 仍然通過

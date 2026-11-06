@@ -143,6 +143,75 @@ export const tests = {
     }
   },
 
+  // Container check via the `ffmpeg -i` banner: MOV writes the `qt  `
+  // brand, WMV is an asf container.
+  'converter: MP4 converts to MOV (H.264/H.265 only) and WMV, both accepted back as input': async ({ page }) => {
+    const clip = join(dir, '容器 clip.mp4')
+    copyFileSync(join(fixtures, 'test_fixture_video.mp4'), clip)
+    const banner = (file) => { try { execFileSync(FFMPEG, ['-hide_banner', '-i', file], { stdio: 'pipe' }) } catch (e) { return String(e.stderr) } }
+    const codecs = () => page.$$eval('#video-codec option', (os) => os.map((o) => o.value))
+    await open(page, [clip])
+    try {
+      await set(page, '#video-codec', 'libvpx-vp9')
+      await set(page, '#video-format', '.mov')
+      assert.deepEqual(await codecs(), ['libx264', 'libx265'])
+      assert.equal(await page.$eval('#video-codec', (s) => s.value), 'libx264', 'VP9 falls back to the container default')
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      const mov = join(dir, '容器 clip_converted.mov')
+      assert.match(banner(mov), /major_brand\s*: qt/)
+      assert.match(probe(mov).streams, /Video: h264[\s\S]*Audio: aac/)
+
+      await set(page, '#video-format', '.wmv')
+      assert.deepEqual(await codecs(), ['wmv2'])
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      const wmv = join(dir, '容器 clip_converted.wmv')
+      assert.match(banner(wmv), /Input #0, asf/)
+      assert.match(probe(wmv).streams, /Video: wmv2[\s\S]*Audio: wmav2/)
+      assert.ok(Math.abs(probe(wmv).duration - 2) < 0.3, `duration ${probe(wmv).duration}`)
+      await backToHub(page)
+      await open(page, [mov, wmv]) // new input extensions are accepted
+    } finally {
+      await backToHub(page)
+    }
+  },
+
+  // libopus refuses 320k per channel: the plugin caps it at 256k.
+  'converter: mono mp3 converts to Opus at 320k (capped to 256k)': async ({ page }) => {
+    const song = join(dir, 'opus 一.mp3')
+    copyFileSync(join(fixtures, 'test_fixture_audio.mp3'), song)
+    await open(page, [song])
+    try {
+      await set(page, '#audio-format', '.opus')
+      await set(page, '#audio-bitrate', '320k')
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      assert.match(probe(join(dir, 'opus 一_converted.opus')).streams, /Audio: opus/)
+      assert.match(await log(page), /-c:a libopus -b:a 256k/)
+    } finally {
+      await backToHub(page)
+    }
+  },
+
+  'converter: mp3 converts to lossless M4A (ALAC); AIFF also disables bitrate': async ({ page }) => {
+    const song = join(dir, 'alac 一.mp3')
+    copyFileSync(join(fixtures, 'test_fixture_audio.mp3'), song)
+    await open(page, [song])
+    const bitrateOff = () => page.$eval('#audio-bitrate', (s) => s.disabled)
+    try {
+      await set(page, '#audio-format', '.aiff')
+      assert.equal(await page.locator('#audio-alac').count(), 0, 'ALAC only for M4A')
+      assert.equal(await bitrateOff(), true)
+      await set(page, '#audio-format', '.m4a')
+      assert.equal(await bitrateOff(), false)
+      await page.locator('#audio-alac').check()
+      assert.equal(await bitrateOff(), true)
+      assert.match(await run(page, 1), /^Completed 1 of 1/)
+      assert.match(probe(join(dir, 'alac 一_converted.m4a')).streams, /Audio: alac/)
+      await page.locator('#audio-alac').uncheck() // settings outlive the queue: later M4A tests expect AAC
+    } finally {
+      await backToHub(page)
+    }
+  },
+
   // 320k on the mono fixture: libvorbis ABR used to reject it ("encoder
   // setup failed"); the plugin now maps the bitrate onto VBR -q:a.
   'converter: audio converts to ogg (libvorbis VBR quality from the bitrate)': async ({ page }) => {
@@ -166,8 +235,8 @@ export const tests = {
   // so the plugin copies it as an attached picture. The M4A then goes back in.
   'converter: audio with cover art converts to m4a (AAC) and m4a is accepted as input': async ({ page }) => {
     const song = join(dir, 'cover 一.mp3')
-    execFileSync(FFMPEG, ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'sine=d=2', '-f', 'lavfi', '-i', 'color=red:s=300x300:d=1',
-      '-map', '0', '-map', '1', '-frames:v', '1', '-c:v', 'mjpeg', '-disposition:v', 'attached_pic', '-id3v2_version', '3', song])
+    execFileSync(FFMPEG, ['-hide_banner', '-loglevel', 'error', '-y', '-f', 'lavfi', '-i', 'sine=d=2', '-f', 'lavfi', '-i', 'color=red:s=300x300:r=1:d=1',
+      '-map', '0', '-map', '1', '-c:v', 'mjpeg', '-disposition:v', 'attached_pic', '-id3v2_version', '3', song])
     const m4a = join(dir, 'cover 一_converted.m4a')
     await open(page, [song])
     try {

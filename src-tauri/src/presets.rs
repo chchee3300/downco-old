@@ -173,12 +173,17 @@ pub fn suggest_name(file_type: &str, format: &str, settings: &Value, lang: &str)
         let mb = num("targetSizeMB").unwrap_or(0.0);
         parts.push(if zh { format!("{mb}MB 以下") } else { format!("Under {mb} MB") });
       } else {
-        // WebM encodes VP9 unless AV1 was picked (Converter effective_codec).
-        let codec = match settings["codec"].as_str() {
-          Some("libsvtav1") => Some("AV1"),
-          _ if format == ".webm" => None,
-          Some("libx265") => Some("H.265"),
-          Some("libvpx-vp9") => Some("VP9"),
+        // The codec really encoded (Converter effective_codec): container-limited
+        // formats fall back to their default (WebM VP9, MOV/M4V/TS H.264,
+        // WMV/MPG their own), which goes unnamed.
+        let codec = match (format, settings["codec"].as_str()) {
+          (".webm", Some("libsvtav1")) => Some("AV1"),
+          (".webm" | ".wmv" | ".mpg", _) => None,
+          (".mov" | ".m4v" | ".ts", Some("libx265")) => Some("H.265"),
+          (".mov" | ".m4v" | ".ts", _) => None,
+          (_, Some("libsvtav1")) => Some("AV1"),
+          (_, Some("libx265")) => Some("H.265"),
+          (_, Some("libvpx-vp9")) => Some("VP9"),
           _ => None,
         };
         if let Some(c) = codec.filter(|_| format != ".gif") {
@@ -202,7 +207,11 @@ pub fn suggest_name(file_type: &str, format: &str, settings: &Value, lang: &str)
       }
     }
     "audio" => {
-      if let Some(b) = settings["bitrate"].as_str().filter(|b| *b != "320k" && ![".flac", ".wav"].contains(&format)) {
+      let alac = format == ".m4a" && settings["alac"] == true;
+      if alac {
+        parts.push("ALAC".into());
+      }
+      if let Some(b) = settings["bitrate"].as_str().filter(|b| *b != "320k" && !alac && ![".flac", ".wav", ".aiff"].contains(&format)) {
         parts.push(b.into());
       }
       parts.extend(speed);
@@ -413,6 +422,19 @@ mod tests {
     assert_eq!(n("image", ".pdf", json!({ "quality": 70, "scale": 50 }), "en"), "PDF", "img2pdf ignores both");
     assert_eq!(n("audio", ".mp3", json!({ "bitrate": "192k", "speed": 1.0 }), "en"), "MP3 · 192k");
     assert_eq!(n("audio", ".flac", json!({ "bitrate": "192k", "speed": 0.5 }), "en"), "FLAC · 0.5×", "no bitrate on lossless");
+    assert_eq!(n("audio", ".m4a", json!({ "bitrate": "192k", "speed": 1.0, "alac": true }), "en"), "M4A · ALAC", "ALAC is lossless");
+    assert_eq!(n("audio", ".m4a", json!({ "bitrate": "192k", "speed": 1.0, "alac": false }), "en"), "M4A · 192k");
+    assert_eq!(n("audio", ".aiff", json!({ "bitrate": "192k", "speed": 1.0 }), "en"), "AIFF");
+    assert_eq!(n("audio", ".opus", json!({ "bitrate": "128k", "speed": 1.0 }), "en"), "OPUS · 128k");
+    // Container-limited formats name the codec they really encode (Converter effective_codec).
+    let mut c = default_settings("video", ".mp4");
+    c["codec"] = json!("libx265");
+    assert_eq!(n("video", ".mov", c.clone(), "en"), "MOV · H.265");
+    assert_eq!(n("video", ".wmv", c.clone(), "en"), "WMV");
+    assert_eq!(n("video", ".mpg", c.clone(), "en"), "MPG");
+    c["codec"] = json!("libsvtav1");
+    assert_eq!(n("video", ".ts", c.clone(), "en"), "TS", "TS encodes H.264, not AV1");
+    assert_eq!(n("video", ".webm", c, "en"), "WEBM · AV1");
     assert_eq!(n("pdf", ".pdf", json!({ "optimize": "compress" }), "zh-TW"), "PDF・壓縮");
     assert_eq!(n("pdf", ".pdf", json!({ "optimize": "linearize" }), "en"), "PDF · Linearize");
     assert_eq!(n("pdf", ".pdf", json!({ "optimize": "compress", "level": "ebook" }), "en"), "PDF · Compress", "default level");
