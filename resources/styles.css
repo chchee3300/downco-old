@@ -843,25 +843,46 @@ body {
 .engine-item-main {
   flex: 1;
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
 }
 
-/* Fixed line heights: a row without a version is as tall as one with. */
-.engine-item-main > .engine-head {
+.engine-item-main {
   height: 1.25rem;
   line-height: 1.25rem;
 }
 
-.engine-item-desc {
-  height: 1rem;
-  line-height: 1rem;
+.engine-state.engine-item-update {
+  color: var(--accent);
+}
+
+.engine-state.engine-item-error {
+  color: var(--danger);
+}
+
+.engine-section-head {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.engine-check-all[data-checking] svg {
+  animation: spin 0.75s linear infinite;
+}
+
+.engine-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.engine-group + .engine-group {
+  margin-top: 0.6rem;
+}
+
+.engine-group-title {
+  margin: 0;
   font-size: 0.7rem;
+  font-weight: 500;
   color: var(--text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .engine-detail {
@@ -951,7 +972,6 @@ body {
   color: var(--text-muted);
 }
 
-.engine-item[data-state='missing'] .engine-state,
 .engine-detail[data-state='missing'] .engine-state {
   color: var(--danger);
 }

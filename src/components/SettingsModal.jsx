@@ -93,7 +93,7 @@ export default function SettingsModal({ open, onClose, closeBehavior, onChangeCl
 
           {/* The converter's PDF status line (window.SoraiSettings.open('engines')) scrolls here. */}
           <section id="settings-engines" className="settings-section">
-            <h4 className="field-label settings-section-title">{t('settings.engines.heading')}</h4>
+            {/* EngineManager draws its heading (with the check-all icon). */}
             <EngineManager open={open} focusItem={focusSection === 'engines' ? focusItem : null} />
           </section>
 

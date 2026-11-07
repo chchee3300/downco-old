@@ -22,7 +22,8 @@ const Chevron = ({ back }) => (
 )
 
 // SettingsModal's "Third-party software" section (#settings-engines), laid
-// out like a store: a list of packages (.engine-item), click one for its
+// out like a store: its heading with a check-all icon, a list of packages
+// (.engine-item; missing ones under a "Not installed" group), click one for its
 // page (.engine-detail) with what it is, its license, where it is, and
 // the actions. The programs and commands live in the converter plugin
 // (engines.rs: Ghostscript, optional; tools.rs: the bundled ffmpeg /
@@ -81,27 +82,66 @@ export default function EngineManager({ open, focusItem }) {
   const shownError = error || install.error
   const alert = shownError && <p className="settings-hint preset-error" role="alert">{shownError}</p>
 
+  const tools = list.filter((x) => x.kind === 'tool')
+  const checkingAll = tools.some((x) => latest[x.id] === 'checking')
   const e = selected && list.find((x) => x.id === selected)
+  // The heading, with "Check all for updates" (an icon) on the list.
+  const head = (
+    <div className="engine-section-head">
+      <h4 className="field-label settings-section-title">{t('settings.engines.heading')}</h4>
+      {!e && tools.length > 0 && (
+        <button type="button" className="btn-icon engine-check-all" id="engines-check-all" disabled={checkingAll} data-checking={checkingAll || undefined}
+          title={t('settings.engines.checkAll')} aria-label={t('settings.engines.checkAll')} onClick={() => tools.forEach((x) => check(x.id))}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M21 12a9 9 0 1 1-2.64-6.36" /><path d="M21 3v6h-6" />
+          </svg>
+        </button>
+      )}
+    </div>
+  )
+
   if (!e) {
+    // Right side of a row: progress, then a check's result, then the state.
+    const side = (x) => {
+      const p = percentOf(x)
+      if (p !== null) return <span className="engine-state">{t('settings.engines.downloading', { percent: Math.round(p) })}</span>
+      const l = latest[x.id]
+      if (l === 'checking') return <span className="engine-state">{t('settings.engines.checking')}</span>
+      if (l?.error) return <span className="engine-state engine-item-error" title={l.error}>{t('settings.engines.checkFailed')}</span>
+      if (l && x.state !== 'missing' && newer(l.version, x.version)) return <span className="engine-state engine-item-update">{t('settings.engines.updateAvailable', { version: l.version })}</span>
+      if (x.state === 'missing') return x.downloadSize ? <span className="engine-state">{t('settings.engines.size', { mb: mb(x.downloadSize) })}</span> : null
+      return <span className="engine-state">{stateText(x)}</span>
+    }
+    const rows = (xs) => (
+      <div className="engine-list">
+        {xs.map((x) => (
+          <button key={x.id} type="button" className="engine-item" data-id={x.id} data-state={x.state} onClick={() => setSelected(x.id)}>
+            <span className="engine-item-main engine-head">
+              <span className="engine-name">{x.name}</span>
+              {x.version && <span className="engine-version">{x.version}</span>}
+            </span>
+            {side(x)}
+            <Chevron />
+          </button>
+        ))}
+      </div>
+    )
+    const missing = list.filter((x) => x.state === 'missing')
+    const present = list.filter((x) => x.state !== 'missing')
     return (
-      <fieldset className="preset-fieldset" disabled={busy}>
-        <div className="engine-list">
-          {list.map((x) => (
-            <button key={x.id} type="button" className="engine-item" data-id={x.id} data-state={x.state} onClick={() => setSelected(x.id)}>
-              <span className="engine-item-main">
-                <span className="engine-head">
-                  <span className="engine-name">{x.name}</span>
-                  {x.version && <span className="engine-version">{x.version}</span>}
-                </span>
-                <span className="engine-item-desc">{t(`settings.engines.desc.${x.id}`)}</span>
-              </span>
-              <span className="engine-state">{percentOf(x) !== null ? t('settings.engines.downloading', { percent: Math.round(percentOf(x)) }) : stateText(x)}</span>
-              <Chevron />
-            </button>
-          ))}
-        </div>
-        {alert}
-      </fieldset>
+      <>
+        {head}
+        <fieldset className="preset-fieldset" disabled={busy}>
+          {present.length > 0 && <div className="engine-group" data-group="installed">{rows(present)}</div>}
+          {missing.length > 0 && (
+            <div className="engine-group" data-group="missing">
+              <h5 className="engine-group-title">{t('settings.engines.state.missing')}</h5>
+              {rows(missing)}
+            </div>
+          )}
+          {alert}
+        </fieldset>
+      </>
     )
   }
 
@@ -110,6 +150,8 @@ export default function EngineManager({ open, focusItem }) {
   const checked = l && l !== 'checking' && !l.error
   const offer = checked && e.installable && (e.state === 'missing' || newer(l.version, e.version))
   return (
+    <>
+    {head}
     <fieldset className="preset-fieldset" disabled={busy}>
       <div className="engine-detail" data-id={e.id} data-kind={e.kind} data-state={e.state}>
         <button type="button" className="btn btn-ghost btn-xs engine-back" onClick={() => setSelected(null)}>
@@ -183,5 +225,6 @@ export default function EngineManager({ open, focusItem }) {
       </div>
       {alert}
     </fieldset>
+    </>
   )
 }

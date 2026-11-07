@@ -260,30 +260,40 @@ export const tests = {
     const row = page.locator('#settings-engines .engine-detail[data-id="yt-dlp"]')
     try {
       await invoke(page, 'plugin:sorai-converter|engine_remove', { engine: 'yt-dlp' })
-      // The list: Ghostscript first, rows the same height, a click opens the page.
+      // The list: names and versions only, missing packages under "Not installed".
       await page.evaluate(() => window.SoraiSettings.open('engines'))
       assert.equal(await page.locator('#settings-engines h4').textContent(), 'Third-party software')
       const items = page.locator('#settings-engines .engine-item')
+      const item = (id) => page.locator(`#settings-engines .engine-item[data-id="${id}"]`)
       await page.locator('#settings-engines .engine-item[data-id="yt-dlp"][data-state="bundled"]').waitFor()
-      assert.deepEqual(await items.evaluateAll((els) => els.map((el) => el.dataset.id)), ['ghostscript', 'ffmpeg', 'yt-dlp', 'qpdf', 'img2pdf'])
+      const status = await invoke(page, 'plugin:sorai-converter|engine_status')
+      const ids = (group) => page.locator(`#settings-engines .engine-group[data-group="${group}"] .engine-item`).evaluateAll((els) => els.map((el) => el.dataset.id))
+      assert.deepEqual(await ids('installed'), status.filter((x) => x.state !== 'missing').map((x) => x.id))
+      assert.deepEqual(await ids('missing'), status.filter((x) => x.state === 'missing').map((x) => x.id))
+      if (status.some((x) => x.state === 'missing')) assert.equal(await page.locator('.engine-group[data-group="missing"] .engine-group-title').innerText(), 'Not installed')
+      assert.equal(await page.locator('#settings-engines .engine-item-desc').count(), 0, 'descriptions belong on the package page')
       // Content height (the first row has no top border).
       const hs = await items.evaluateAll((els) => els.map((el) => el.querySelector('.engine-item-main').getBoundingClientRect().height))
       assert.equal(new Set(hs).size, 1, `rows differ in height: ${hs}`)
-      const bundled = await page.locator('#settings-engines .engine-item[data-id="yt-dlp"] .engine-version').innerText()
+      const bundled = await item('yt-dlp').locator('.engine-version').innerText()
       assert.match(bundled, /^\d{4}\.\d{2}\.\d{2}$/)
 
       // One tool's "Check for updates", on its own page.
-      await page.locator('#settings-engines .engine-item[data-id="qpdf"]').click()
+      await item('qpdf').click()
       await page.locator('#settings-engines .engine-detail[data-id="qpdf"] .engine-check').click()
       await page.locator('#settings-engines .engine-detail[data-id="qpdf"] .engine-latest[data-latest="error"]').waitFor({ timeout: 30_000 })
+      assert.equal(await page.locator('#engines-check-all').count(), 0, 'check-all only on the list')
       await page.locator('#settings-engines .engine-back').click()
-      await page.locator('#settings-engines .engine-item[data-id="yt-dlp"]').click()
+
+      // The heading's icon checks every tool; rows show the results.
+      await page.locator('#engines-check-all').click()
+      await item('yt-dlp').locator('.engine-item-update').waitFor({ timeout: 30_000 })
+      assert.equal(await item('yt-dlp').locator('.engine-item-update').innerText(), 'Update available: 2099.01.01')
+      await item('ffmpeg').locator('.engine-item-error').waitFor({ timeout: 30_000 })
+      await item('yt-dlp').click()
       assert.equal(await row.locator('.engine-version').innerText(), bundled)
       assert.equal(await row.locator('.engine-pick').count(), 0, 'tools have no "Choose a program"')
       assert.equal(await row.locator('.engine-remove').count(), 0)
-      assert.equal(await row.locator('.engine-latest').count(), 0, 'checked before the click')
-      await row.locator('.engine-check').click()
-      await row.locator('.engine-latest[data-latest="newer"]').waitFor({ timeout: 30_000 })
       assert.match(await row.locator('.engine-latest').innerText(), /New version 2099\.01\.01 available \(about 1 MB\)/)
       assert.equal(await row.locator('.engine-update').innerText(), 'Update to 2099.01.01')
 
