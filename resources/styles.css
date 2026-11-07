@@ -585,6 +585,15 @@ body {
    since neither one is "about" content. */
 .settings-modal-content {
   max-width: 420px;
+  /* A fixed size: the body scrolls inside it, so picking another file type
+     in the menu preview (a longer / shorter submenu) never resizes the window. */
+  height: min(760px, calc(100% - 48px));
+}
+/* Room for the presets' menu preview column (PresetManager / MenuPreview).jsx;
+   other platforms have no preview and keep the narrow modal. MenuPreview
+   renders its (empty) column at once, so the width doesn't jump on load. */
+.settings-modal-content:has(.menu-preview) {
+  max-width: 860px;
 }
 
 .settings-modal-body {
@@ -592,6 +601,9 @@ body {
   flex-direction: column;
   gap: 0.75rem;
   padding: 20px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .settings-section {
@@ -652,6 +664,105 @@ body {
 .preset-restore {
   align-self: flex-start;
 }
+
+/* MenuPreview.jsx: a details pane beside the preset list (like Explorer's),
+   showing the submenu the presets produce for the picked extension. Flat
+   information panel: border + surface steps, no shadow, 4–8px corners
+   (design-system/UI_STYLE_REFERENCE.md). The menus imitate the classic
+   Windows menu but in the app's own colors. */
+.preset-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+.preset-layout:has(.menu-preview) {
+  grid-template-columns: minmax(0, 1fr) 340px;
+}
+@media (max-width: 760px) {
+  .preset-layout:has(.menu-preview) { grid-template-columns: minmax(0, 1fr); }
+}
+.menu-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: var(--surface-1);
+}
+.menu-preview-title { margin: 0; }
+.menu-preview-types { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.menu-preview-exts { display: flex; flex-wrap: wrap; gap: 0.2rem; }
+.menu-preview-ext {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+.menu-preview-ext:hover { color: var(--text-primary); background: var(--surface-2); }
+.menu-preview-ext.is-active { color: var(--text-primary); border-color: var(--glass-border-hi); background: var(--surface-3); }
+.menu-preview-stage {
+  padding: 0.6rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  background: var(--surface-0);
+}
+.menu-preview-file {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.menu-preview-file svg { width: 18px; height: 18px; flex: none; color: var(--text-muted); }
+.menu-preview-menus { display: flex; align-items: flex-start; }
+.menu-preview-menu {
+  list-style: none;
+  margin: 0;
+  padding: 4px;
+  border: 1px solid var(--glass-border-hi);
+  border-radius: 6px;
+  background: var(--surface-2);
+  font-family: 'Segoe UI', 'Inter', 'Noto Sans TC', sans-serif;
+  font-size: 0.75rem;
+}
+.menu-preview-menu > li {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 26px;
+  padding: 0 0.5rem;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-primary);
+}
+.menu-preview-menu:first-child { flex: 0 0 128px; }
+.menu-preview-skel span { display: block; width: 70%; height: 6px; border-radius: 4px; background: var(--surface-3); }
+.menu-preview-skel:nth-child(even) span { width: 50%; }
+/* "SORAI Toolkit" as if hovered. */
+.menu-preview-root { background: var(--surface-3); }
+.menu-preview-icon { width: 14px; height: 14px; flex: none; }
+[data-theme="light"] .menu-preview-icon.on-dark,
+:root:not([data-theme="light"]) .menu-preview-icon.on-light { display: none; }
+.menu-preview-arrow { margin-left: auto; color: var(--text-muted); }
+/* The submenu opens beside the hovered row (third row: 2 × 26px down). */
+.menu-preview-sub {
+  flex: 1;
+  min-width: 0;
+  margin: 52px 0 0 -6px;
+  position: relative;
+}
+.menu-preview-sub > li { display: block; line-height: 26px; }
+/* CommandFlags = ECF_SEPARATORBEFORE */
+.menu-preview-sub > li.menu-preview-sep { height: 1px; margin: 4px; padding: 0; background: var(--glass-border-hi); }
 
 /* EngineManager.jsx (#settings-engines) */
 /* Converter EnginePrompt.jsx (#engine-prompt) reuses .engine-head/-progress. */

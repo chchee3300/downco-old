@@ -89,6 +89,24 @@ export const tests = {
       }
       await expectRegistryMatches(page, 'en')
       assert.deepEqual(mp3Menu(readRegistry(regRoot)), ['Convert to WAV', 'Convert to AAC', 'Convert to M4A', 'Convert to FLAC', 'Renamed', 'Convert to OGG', 'Open in SORAI Toolkit…', 'Manage presets…'])
+      // The menu preview beside the list draws the same submenu (separator
+      // above "Open in…"); a built-in "convert to X" isn't on an X file.
+      const preview = page.locator('#menu-preview')
+      const menuItems = () => page.locator('#menu-preview-items > li:not(.menu-preview-sep)').allInnerTexts()
+      const [listBox, previewBox] = [await page.locator('#settings-presets .preset-fieldset').boundingBox(), await preview.boundingBox()]
+      assert.ok(previewBox.x >= listBox.x + listBox.width, 'the preview is right of the list')
+      // The settings window keeps its size (its body scrolls) whatever the preview shows.
+      const modalBox = await page.locator('.settings-modal-content').boundingBox()
+      await preview.locator('.chip[data-type="audio"]').click()
+      assert.equal(await page.locator('#menu-preview-file').innerText(), 'example.mp3')
+      assert.deepEqual(await page.locator('.settings-modal-content').boundingBox(), modalBox)
+      await until(page, 'the preview to match the menu', async () => JSON.stringify(await menuItems()) === JSON.stringify(mp3Menu(readRegistry(regRoot))))
+      assert.equal(await page.locator('#menu-preview-items > li').nth(6).getAttribute('class'), 'menu-preview-sep')
+      await preview.locator('.menu-preview-ext[data-ext="wav"]').click()
+      assert.ok(!(await menuItems()).includes('Convert to WAV') && (await menuItems()).includes('Convert to MP3'))
+      await preview.locator('.chip[data-type="video"]').click()
+      assert.equal(await page.locator('#menu-preview-file').innerText(), 'example.mp4')
+      assert.ok(!(await menuItems()).includes('Renamed'), 'an audio preset is not on a video file')
       await row.locator('.preset-down').click()
       await until(page, 'user-1 back at 21', async () => (await ids(page)).indexOf('user-1') === 21)
       await until(page, 'the list to show it', async () => (await page.locator('.preset-row').nth(21).getAttribute('data-id')) === 'user-1')

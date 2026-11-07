@@ -43,11 +43,14 @@ async fn register_context_menu(app: tauri::AppHandle, lang: String) -> Result<()
   context_menu::register(&presets_path(&app)?, &app.config().identifier, &lang)
 }
 
-/// What register_context_menu writes, and where (E2E compares it with the registry).
+/// What register_context_menu writes, and where (E2E compares it with the
+/// registry; PresetManager's MenuPreview draws it).
 #[derive(Serialize)]
 struct MenuPreview {
   root: String,
   values: Vec<context_menu::RegValue>,
+  /// [type, [extensions]] (settings' menu preview picks a file type from these).
+  inputs: &'static [(&'static str, &'static [&'static str])],
 }
 
 #[tauri::command]
@@ -56,6 +59,7 @@ fn context_menu_entries(app: tauri::AppHandle, lang: String) -> Result<MenuPrevi
   Ok(MenuPreview {
     root: context_menu::classes_root(&app.config().identifier),
     values: context_menu::entries(&presets, &lang, &context_menu::exe_path()?),
+    inputs: &context_menu::INPUT_EXTS,
   })
 }
 

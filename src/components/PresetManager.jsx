@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from '../hooks/useTranslation.js'
+import MenuPreview from './MenuPreview.jsx'
 
 // SettingsModal's "Right-click presets" section (#settings-presets): every
 // preset in menu order, renamed in place (commit on blur/Enter), moved,
@@ -8,6 +9,7 @@ import { useTranslation } from '../hooks/useTranslation.js'
 // Reloads whenever the modal opens, so a preset saved from the Converter shows up.
 // "Edit" hands the preset (+ its shown label) to onEdit: App.jsx opens the
 // Converter's edit-preset mode and brings Settings back when it closes.
+// MenuPreview (right column) draws the Explorer submenu the list produces.
 export default function PresetManager({ open, onEdit }) {
   const { t } = useTranslation()
   const [list, setList] = useState([])
@@ -44,6 +46,7 @@ export default function PresetManager({ open, onEdit }) {
   }
 
   return (
+    <div className="preset-layout">
     <fieldset className="preset-fieldset" disabled={busy}>
       <ul className="preset-list">
         {list.map((p, i) => (
@@ -75,5 +78,7 @@ export default function PresetManager({ open, onEdit }) {
         {t(confirmRestore ? 'settings.presets.restoreConfirm' : 'settings.presets.restore')}
       </button>
     </fieldset>
+    <MenuPreview list={list} />
+    </div>
   )
 }
