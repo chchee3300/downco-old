@@ -66,6 +66,7 @@ export const tests = {
       // From the hub screen: Edit -> change quality -> Cancel. Nothing saved;
       // back on the hub with Settings reopened at the presets.
       await openSettings(page)
+      await page.locator('#menu-preview .chip[data-type="image"]').click() // the list shows the picked type only
       await page.locator('.preset-row[data-id="image-to-jpg"] .preset-edit').click()
       await page.locator('#preset-editor[data-id="image-to-jpg"]').waitFor()
       assert.equal(await page.locator('#preset-editor-title').textContent(), 'Editing preset: Convert to JPG')
@@ -85,6 +86,7 @@ export const tests = {
       await page.locator('.file-item').first().waitFor({ timeout: 30_000 })
       await setValue(page, '#audio-bitrate', '192k')
       await openSettings(page)
+      await page.locator('#menu-preview .chip[data-type="image"]').click() // the list shows the picked type only
       await page.locator('.preset-row[data-id="image-to-jpg"] .preset-edit').click()
       await page.locator('#preset-editor').waitFor()
       assert.equal(await page.inputValue('#image-quality'), '85', 'the editor starts from the preset')

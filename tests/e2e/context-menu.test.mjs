@@ -73,7 +73,7 @@ export const tests = {
     assert.equal(await run(['--sorai-presets']), 0)
     const section = page.locator('#settings-presets')
     await section.waitFor({ state: 'visible', timeout: 30_000 })
-    assert.equal(await section.locator('h4').textContent(), 'Right-click presets')
+    assert.equal(await section.locator('h4').first().textContent(), 'Right-click presets')
     await page.keyboard.press('Escape')
     await page.locator('.settings-modal-content').waitFor({ state: 'hidden' })
   },

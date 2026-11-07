@@ -678,6 +678,14 @@ body {
 .preset-layout:has(.menu-preview) {
   grid-template-columns: minmax(0, 1fr) 340px;
 }
+/* Both columns: section title, then content (same gap as .settings-section). */
+.preset-col,
+.menu-preview-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
 @media (max-width: 760px) {
   .preset-layout:has(.menu-preview) { grid-template-columns: minmax(0, 1fr); }
 }
@@ -690,7 +698,6 @@ body {
   border-radius: 8px;
   background: var(--surface-1);
 }
-.menu-preview-title { margin: 0; }
 .menu-preview-types { display: flex; flex-wrap: wrap; gap: 0.3rem; }
 .menu-preview-exts { display: flex; flex-wrap: wrap; gap: 0.2rem; }
 .menu-preview-ext {

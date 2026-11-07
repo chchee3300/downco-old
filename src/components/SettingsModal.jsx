@@ -87,7 +87,7 @@ export default function SettingsModal({ open, onClose, closeBehavior, onChangeCl
 
           {/* --sorai-presets ("Manage presets…" in the Explorer menu) scrolls here. */}
           <section id="settings-presets" className="settings-section">
-            <h4 className="field-label settings-section-title">{t('settings.presets.heading')}</h4>
+            {/* Its title is inside PresetManager, level with the menu preview's. */}
             <PresetManager open={open} onEdit={onEditPreset} />
           </section>
 

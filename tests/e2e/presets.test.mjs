@@ -72,34 +72,47 @@ export const tests = {
       await page.locator('[aria-label="Back to hub"]').click()
       await page.locator('.hub-card').first().waitFor()
 
-      // Settings: it's listed last; rename it.
+      // Settings: the type picked in the menu preview (right of the list)
+      // filters the list to that type's presets.
       await openSettings(page)
+      const preview = page.locator('#menu-preview')
+      const menuItems = () => page.locator('#menu-preview-items > li:not(.menu-preview-sep)').allInnerTexts()
+      const shownIds = () => page.locator('#settings-presets .preset-row').evaluateAll((rows) => rows.map((r) => r.dataset.id))
+      const typeIds = async (type) => (await invoke(page, 'list_presets')).filter((p) => p.fileType === type).map((p) => p.id)
+      const [listBox, previewBox] = [await page.locator('#settings-presets .preset-fieldset').boundingBox(), await preview.boundingBox()]
+      assert.ok(previewBox.x >= listBox.x + listBox.width, 'the preview is right of the list')
+      // Both titles on one line, outside the preview's box.
+      const titles = page.locator('#settings-presets h4.settings-section-title')
+      const [listTitle, previewTitle] = [await titles.nth(0).boundingBox(), await titles.nth(1).boundingBox()]
+      assert.equal(listTitle.y, previewTitle.y)
+      assert.ok((await preview.locator('.menu-preview').boundingBox()).y >= previewTitle.y + previewTitle.height)
+      await preview.locator('.chip[data-type="video"]').click()
+      await until(page, 'only video presets', async () => JSON.stringify(await shownIds()) === JSON.stringify(await typeIds('video')))
+      // The settings window keeps its size (its body scrolls) whatever the preview shows.
+      const modalBox = await page.locator('.settings-modal-content').boundingBox()
+      await preview.locator('.chip[data-type="audio"]').click()
+      assert.equal(await page.locator('#menu-preview-file').innerText(), 'example.mp3')
+      assert.deepEqual(await page.locator('.settings-modal-content').boundingBox(), modalBox)
+      await until(page, 'only audio presets', async () => JSON.stringify(await shownIds()) === JSON.stringify(await typeIds('audio')))
+
+      // The new preset is the last audio one; rename it.
       const row = page.locator('.preset-row[data-id="user-1"]')
-      assert.equal(await page.locator('.preset-row').last().getAttribute('data-id'), 'user-1')
+      assert.equal((await shownIds()).at(-1), 'user-1')
       assert.equal(await row.locator('.preset-name').inputValue(), 'My MP3 & co')
       await row.locator('.preset-name').fill('Renamed')
       await row.locator('.preset-name').press('Enter')
       await until(page, 'the rename', async () => (await invoke(page, 'list_presets')).at(-1).name === 'Renamed')
       await expectRegistryMatches(page, 'en')
 
-      // Up twice: past pdf-compress, then past audio-to-ogg.
-      for (const want of [21, 20]) {
-        await row.locator('.preset-up').click()
-        await until(page, `user-1 at ${want}`, async () => (await ids(page)).indexOf('user-1') === want)
-      }
+      // Up once swaps it with the audio preset above it (audio-to-ogg), past
+      // the hidden pdf-compress.
+      await row.locator('.preset-up').click()
+      await until(page, 'user-1 at 20', async () => { const l = await ids(page); return l.indexOf('user-1') === 20 && l[22] === 'audio-to-ogg' })
+      await until(page, 'the list to follow', async () => (await shownIds()).at(-2) === 'user-1')
       await expectRegistryMatches(page, 'en')
       assert.deepEqual(mp3Menu(readRegistry(regRoot)), ['Convert to WAV', 'Convert to AAC', 'Convert to M4A', 'Convert to FLAC', 'Renamed', 'Convert to OGG', 'Open in SORAI Toolkit…', 'Manage presets…'])
-      // The menu preview beside the list draws the same submenu (separator
-      // above "Open in…"); a built-in "convert to X" isn't on an X file.
-      const preview = page.locator('#menu-preview')
-      const menuItems = () => page.locator('#menu-preview-items > li:not(.menu-preview-sep)').allInnerTexts()
-      const [listBox, previewBox] = [await page.locator('#settings-presets .preset-fieldset').boundingBox(), await preview.boundingBox()]
-      assert.ok(previewBox.x >= listBox.x + listBox.width, 'the preview is right of the list')
-      // The settings window keeps its size (its body scrolls) whatever the preview shows.
-      const modalBox = await page.locator('.settings-modal-content').boundingBox()
-      await preview.locator('.chip[data-type="audio"]').click()
-      assert.equal(await page.locator('#menu-preview-file').innerText(), 'example.mp3')
-      assert.deepEqual(await page.locator('.settings-modal-content').boundingBox(), modalBox)
+      // The preview draws the same submenu (separator above "Open in…"); a
+      // built-in "convert to X" isn't on an X file.
       await until(page, 'the preview to match the menu', async () => JSON.stringify(await menuItems()) === JSON.stringify(mp3Menu(readRegistry(regRoot))))
       assert.equal(await page.locator('#menu-preview-items > li').nth(6).getAttribute('class'), 'menu-preview-sep')
       await preview.locator('.menu-preview-ext[data-ext="wav"]').click()
@@ -107,9 +120,11 @@ export const tests = {
       await preview.locator('.chip[data-type="video"]').click()
       assert.equal(await page.locator('#menu-preview-file').innerText(), 'example.mp4')
       assert.ok(!(await menuItems()).includes('Renamed'), 'an audio preset is not on a video file')
+      assert.ok(!(await shownIds()).includes('user-1'))
+      await preview.locator('.chip[data-type="audio"]').click()
       await row.locator('.preset-down').click()
-      await until(page, 'user-1 back at 21', async () => (await ids(page)).indexOf('user-1') === 21)
-      await until(page, 'the list to show it', async () => (await page.locator('.preset-row').nth(21).getAttribute('data-id')) === 'user-1')
+      await until(page, 'user-1 back at 22', async () => (await ids(page)).indexOf('user-1') === 22)
+      await until(page, 'the list to show it last', async () => (await shownIds()).at(-1) === 'user-1')
       await page.keyboard.press('Escape')
 
       // The menu command converts with the saved settings (192k MP3 beside the source).
@@ -136,6 +151,7 @@ export const tests = {
 
       // Delete it and a built-in; then restore (two clicks) brings back exactly the built-ins.
       await openSettings(page)
+      await preview.locator('.chip[data-type="audio"]').click()
       await row.locator('.preset-delete').click()
       await page.locator('.preset-row[data-id="audio-to-wav"] .preset-delete').click()
       await until(page, 'the deletes', async () => (await ids(page)).length === 21)
@@ -148,7 +164,8 @@ export const tests = {
       assert.equal(await restore.textContent(), 'Replace all presets with the defaults?')
       assert.equal((await ids(page)).length, 21, 'one click must not restore')
       await restore.click()
-      await until(page, 'the restore', async () => (await page.locator('.preset-row').count()) === 22)
+      await until(page, 'the restore', async () => (await ids(page)).length === 22)
+      await until(page, 'the list to follow', async () => JSON.stringify(await shownIds()) === JSON.stringify(await typeIds('audio')))
       assert.equal((await ids(page))[16], 'audio-to-wav')
       await expectRegistryMatches(page, 'en')
       await page.keyboard.press('Escape')
