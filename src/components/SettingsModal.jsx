@@ -10,7 +10,7 @@ const CLOSE_BEHAVIOR_OPTIONS = ['ask', 'tray', 'quit']
 // guide, point 7). v1 has exactly one section (close behavior); more
 // sections are meant to be appended as additional .settings-section blocks
 // without restructuring this component.
-export default function SettingsModal({ open, onClose, closeBehavior, onChangeCloseBehavior, focusSection, onEditPreset }) {
+export default function SettingsModal({ open, onClose, closeBehavior, onChangeCloseBehavior, focusSection, focusItem, onEditPreset }) {
   const { t } = useTranslation()
   const modalContentRef = useRef(null)
   const onCloseRef = useRef(onClose)
@@ -94,7 +94,7 @@ export default function SettingsModal({ open, onClose, closeBehavior, onChangeCl
           {/* The converter's PDF status line (window.SoraiSettings.open('engines')) scrolls here. */}
           <section id="settings-engines" className="settings-section">
             <h4 className="field-label settings-section-title">{t('settings.engines.heading')}</h4>
-            <EngineManager open={open} />
+            <EngineManager open={open} focusItem={focusSection === 'engines' ? focusItem : null} />
           </section>
 
           <button type="button" className="btn btn-outline about-modal-close" onClick={onClose}>

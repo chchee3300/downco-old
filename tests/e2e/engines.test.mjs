@@ -85,7 +85,7 @@ export const tests = {
     await stubDialogs(page, { openFiles: [doc] })
     await page.locator('.drop-zone-message').click()
     await page.locator('.file-item').first().waitFor()
-    const row = page.locator('#settings-engines .engine-row[data-id="ghostscript"]')
+    const row = page.locator('#settings-engines .engine-detail[data-id="ghostscript"]')
     try {
       await set(page, '#pdf-optimize', 'compress')
       // No Ghostscript on this machine: the line says so; built-in only.
@@ -99,21 +99,22 @@ export const tests = {
       }
       rmSync(out, { force: true })
 
-      // The line's link opens Settings at the engines section.
+      // The line's link opens Settings on Ghostscript's page.
       await page.click('#pdf-engine-settings')
       await row.waitFor({ state: 'visible' })
       assert.match(await row.innerText(), /AGPL-3\.0/)
       if (before.state === 'missing') assert.match(await row.locator('.engine-state').innerText(), /Not installed/)
 
+      // "Choose a program…" sits under Advanced.
+      assert.equal(await row.locator('.engine-pick').isVisible(), false)
+      await row.locator('.engine-advanced summary').click()
       await stubDialogs(page, { openFiles: [fakeGs] })
       await row.locator('.engine-pick').click()
-      await page.locator('#settings-engines .engine-row[data-id="ghostscript"][data-state="user"]').waitFor()
+      await page.locator('#settings-engines .engine-detail[data-id="ghostscript"][data-state="user"]').waitFor()
       assert.match(await row.locator('.engine-state').innerText(), /Using the program on this computer/)
       assert.equal(await row.locator('.engine-path').innerText(), fakeGs)
       assert.equal(JSON.parse(readFileSync(enginesJson, 'utf8')).ghostscriptPath, fakeGs)
       assert.equal((await ghostscript(page)).path, fakeGs)
-      await row.locator('.engine-recheck').click()
-      await page.locator('#settings-engines .engine-row[data-id="ghostscript"][data-state="user"]').waitFor()
       await page.locator('.settings-modal-content .about-modal-close').click()
       // The converter's line re-checked on its own.
       await page.locator('#pdf-engine-status[data-state="user"]').waitFor()
@@ -155,9 +156,9 @@ export const tests = {
       rmSync(out)
 
       // "Back to auto-detect" clears it from engines.json.
-      await page.evaluate(() => window.SoraiSettings.open('engines'))
+      await page.evaluate(() => window.SoraiSettings.open('engines', 'ghostscript'))
       await row.locator('.engine-clear').click()
-      await page.locator(`#settings-engines .engine-row[data-id="ghostscript"][data-state="${before.state}"]`).waitFor()
+      await page.locator(`#settings-engines .engine-detail[data-id="ghostscript"][data-state="${before.state}"]`).waitFor()
       assert.equal(JSON.parse(readFileSync(enginesJson, 'utf8')).ghostscriptPath, undefined)
       await page.locator('.settings-modal-content .about-modal-close').click()
     } finally {
@@ -185,14 +186,14 @@ export const tests = {
       res.writeHead(200, { 'Content-Length': body.length }).end(body)
     })
     await new Promise((r) => server.listen(Number(process.env.CDP_PORT || 9229) + 2, '127.0.0.1', r))
-    const row = page.locator('#settings-engines .engine-row[data-id="ghostscript"]')
+    const row = page.locator('#settings-engines .engine-detail[data-id="ghostscript"]')
     try {
       await invoke(page, 'plugin:sorai-converter|engine_remove', { engine: 'ghostscript' })
       await invoke(page, 'plugin:sorai-converter|engine_set_path', { engine: 'ghostscript', path: null })
       const before = await ghostscript(page)
       assert.equal(before.installable, true)
       assert.equal(before.installed, false)
-      await page.evaluate(() => window.SoraiSettings.open('engines'))
+      await page.evaluate(() => window.SoraiSettings.open('engines', 'ghostscript'))
       await row.locator('.engine-install').waitFor()
       assert.equal(await row.locator('.engine-remove').count(), 0)
 
@@ -217,7 +218,7 @@ export const tests = {
       // Install: "Installed", only Library/bin in the own-copy folder.
       mode = 'good'
       await row.locator('.engine-install').click()
-      await page.locator('#settings-engines .engine-row[data-id="ghostscript"][data-state="installed"]').waitFor({ timeout: 30_000 })
+      await page.locator('#settings-engines .engine-detail[data-id="ghostscript"][data-state="installed"]').waitFor({ timeout: 30_000 })
       assert.match(await row.locator('.engine-state').innerText(), /^Installed$/)
       assert.deepEqual(listEngines(), ['ghostscript'])
       assert.deepEqual(readdirSync(join(enginesDir, 'ghostscript')).sort(), ['gsdll64.dll', 'gswin64c.exe'])
@@ -228,7 +229,7 @@ export const tests = {
 
       // Remove: folder gone, back to what it was.
       await row.locator('.engine-remove').click()
-      await page.locator(`#settings-engines .engine-row[data-id="ghostscript"][data-state="${before.state}"]`).waitFor()
+      await page.locator(`#settings-engines .engine-detail[data-id="ghostscript"][data-state="${before.state}"]`).waitFor()
       assert.ok(!existsSync(join(enginesDir, 'ghostscript')))
       await row.locator('.engine-install').waitFor()
       await page.locator('.settings-modal-content .about-modal-close').click()
@@ -256,23 +257,35 @@ export const tests = {
     })
     await new Promise((r) => server.listen(port, '127.0.0.1', r))
     const ytDir = join(enginesDir, 'yt-dlp')
-    const row = page.locator('#settings-engines .engine-row[data-id="yt-dlp"]')
+    const row = page.locator('#settings-engines .engine-detail[data-id="yt-dlp"]')
     try {
       await invoke(page, 'plugin:sorai-converter|engine_remove', { engine: 'yt-dlp' })
+      // The list: Ghostscript first, rows the same height, a click opens the page.
       await page.evaluate(() => window.SoraiSettings.open('engines'))
       assert.equal(await page.locator('#settings-engines h4').textContent(), 'Third-party software')
-      await page.locator('#settings-engines .engine-row[data-id="yt-dlp"][data-state="bundled"]').waitFor()
-      const bundled = await row.locator('.engine-version').innerText()
+      const items = page.locator('#settings-engines .engine-item')
+      await page.locator('#settings-engines .engine-item[data-id="yt-dlp"][data-state="bundled"]').waitFor()
+      assert.deepEqual(await items.evaluateAll((els) => els.map((el) => el.dataset.id)), ['ghostscript', 'ffmpeg', 'yt-dlp', 'qpdf', 'img2pdf'])
+      // Content height (the first row has no top border).
+      const hs = await items.evaluateAll((els) => els.map((el) => el.querySelector('.engine-item-main').getBoundingClientRect().height))
+      assert.equal(new Set(hs).size, 1, `rows differ in height: ${hs}`)
+      const bundled = await page.locator('#settings-engines .engine-item[data-id="yt-dlp"] .engine-version').innerText()
       assert.match(bundled, /^\d{4}\.\d{2}\.\d{2}$/)
-      assert.equal(await row.locator('.engine-pick').count(), 0, 'tools have no "Use my own program"')
-      assert.equal(await row.locator('.engine-remove').count(), 0)
-      // Ghostscript stays first and keeps its own buttons.
-      assert.equal(await page.locator('#settings-engines .engine-row').first().getAttribute('data-id'), 'ghostscript')
 
-      await page.locator('#engines-check-updates').click()
+      // One tool's "Check for updates", on its own page.
+      await page.locator('#settings-engines .engine-item[data-id="qpdf"]').click()
+      await page.locator('#settings-engines .engine-detail[data-id="qpdf"] .engine-check').click()
+      await page.locator('#settings-engines .engine-detail[data-id="qpdf"] .engine-latest[data-latest="error"]').waitFor({ timeout: 30_000 })
+      await page.locator('#settings-engines .engine-back').click()
+      await page.locator('#settings-engines .engine-item[data-id="yt-dlp"]').click()
+      assert.equal(await row.locator('.engine-version').innerText(), bundled)
+      assert.equal(await row.locator('.engine-pick').count(), 0, 'tools have no "Choose a program"')
+      assert.equal(await row.locator('.engine-remove').count(), 0)
+      assert.equal(await row.locator('.engine-latest').count(), 0, 'checked before the click')
+      await row.locator('.engine-check').click()
       await row.locator('.engine-latest[data-latest="newer"]').waitFor({ timeout: 30_000 })
-      assert.match(await row.locator('.engine-latest').innerText(), /Latest: 2099\.01\.01 \(about 1 MB\)/)
-      await page.locator('#settings-engines .engine-row[data-id="qpdf"] .engine-latest[data-latest="error"]').waitFor()
+      assert.match(await row.locator('.engine-latest').innerText(), /New version 2099\.01\.01 available \(about 1 MB\)/)
+      assert.equal(await row.locator('.engine-update').innerText(), 'Update to 2099.01.01')
 
       // Wrong digest: refused, nothing installed.
       await row.locator('.engine-update').click()
@@ -283,19 +296,19 @@ export const tests = {
 
       // Right digest: updated, the new copy is what runs.
       digest = 'sha256:' + createHash('sha256').update(body).digest('hex')
-      await page.locator('#engines-check-updates').click()
       await row.locator('.engine-update').click()
-      await page.locator('#settings-engines .engine-row[data-id="yt-dlp"][data-state="updated"]').waitFor({ timeout: 30_000 })
+      await page.locator('#settings-engines .engine-detail[data-id="yt-dlp"][data-state="updated"]').waitFor({ timeout: 30_000 })
       assert.equal(await row.locator('.engine-version').innerText(), '2099.01.01')
       assert.equal(await row.locator('.engine-path').innerText(), join(ytDir, 'yt-dlp.exe'))
       assert.deepEqual(readdirSync(ytDir).sort(), ['version.txt', 'yt-dlp.exe'])
       await row.locator('.engine-latest[data-latest="current"]').waitFor()
       assert.equal(await row.locator('.engine-update').count(), 0)
+      await row.locator('.engine-check').waitFor()
       assert.equal(await page.locator('#settings-engines [role="alert"]').count(), 0)
 
       // Back to the bundled version: folder gone.
       await row.locator('.engine-remove').click()
-      await page.locator('#settings-engines .engine-row[data-id="yt-dlp"][data-state="bundled"]').waitFor()
+      await page.locator('#settings-engines .engine-detail[data-id="yt-dlp"][data-state="bundled"]').waitFor()
       assert.equal(await row.locator('.engine-version').innerText(), bundled)
       assert.ok(!existsSync(ytDir))
       await page.locator('.settings-modal-content .about-modal-close').click()

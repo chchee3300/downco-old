@@ -800,10 +800,139 @@ body {
   min-width: 0;
 }
 
-.engine-row {
+/* Settings "Third-party software" (EngineManager.jsx): a package list,
+   click one for its page. */
+.engine-list {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  background: var(--surface-1);
+  overflow: hidden;
+}
+
+.engine-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: none;
+  border-top: 1px solid var(--glass-border);
+  background: none;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.engine-item:first-child {
+  border-top: none;
+}
+
+.engine-item:hover,
+.engine-item:focus-visible {
+  background: var(--surface-2);
+  outline: none;
+}
+
+.engine-item > svg {
+  flex: none;
+  color: var(--text-muted);
+}
+
+.engine-item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+/* Fixed line heights: a row without a version is as tall as one with. */
+.engine-item-main > .engine-head {
+  height: 1.25rem;
+  line-height: 1.25rem;
+}
+
+.engine-item-desc {
+  height: 1rem;
+  line-height: 1rem;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.engine-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.engine-back {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.engine-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  background: var(--surface-1);
+}
+
+.engine-detail-title {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
+  min-width: 0;
+}
+
+.engine-detail-name {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.engine-detail-desc {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.engine-facts {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 0.3rem 0.75rem;
+  font-size: 0.75rem;
+}
+
+.engine-facts dt {
+  color: var(--text-muted);
+}
+
+.engine-facts dd {
+  margin: 0;
+  color: var(--text-secondary);
+  min-width: 0;
+}
+
+.engine-advanced summary {
+  cursor: pointer;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.engine-advanced[open] {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .engine-head {
@@ -822,7 +951,8 @@ body {
   color: var(--text-muted);
 }
 
-.engine-row[data-state='missing'] .engine-state {
+.engine-item[data-state='missing'] .engine-state,
+.engine-detail[data-state='missing'] .engine-state {
   color: var(--danger);
 }
 
@@ -830,11 +960,6 @@ body {
   font-family: 'JetBrains Mono', monospace;
   font-size: 0.7rem;
   color: var(--text-secondary);
-}
-
-.engines-toolbar {
-  display: flex;
-  justify-content: flex-end;
 }
 
 .engine-latest[data-latest='newer'] {

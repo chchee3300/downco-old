@@ -151,15 +151,17 @@ export default function HamburgerMenu({ theme, onToggleTheme, updater, closeBeha
   const [settingsOpen, setSettingsOpen] = useState(false)
   // Explorer's "Manage presets…" (--sorai-presets): settings, presets section.
   const [settingsFocus, setSettingsFocus] = useState(null)
+  const [settingsItem, setSettingsItem] = useState(null)
   useEffect(() => {
     if (!presetsRequest) return
     setSettingsFocus('presets')
     setSettingsOpen(true)
   }, [presetsRequest])
   // Host API for the tools (looked up at call time, like SoraiPresets): the
-  // converter's "Engine settings" link opens #settings-engines.
+  // converter's "Engine settings" link opens #settings-engines on
+  // Ghostscript's page (`item`: a package id there).
   useEffect(() => {
-    window.SoraiSettings = { open: (section) => { setSettingsFocus(section); setSettingsOpen(true) } }
+    window.SoraiSettings = { open: (section, item = null) => { setSettingsFocus(section); setSettingsItem(item); setSettingsOpen(true) } }
     return () => { delete window.SoraiSettings }
   }, [])
   const [mounted, setMounted] = useState(false)
@@ -379,11 +381,12 @@ export default function HamburgerMenu({ theme, onToggleTheme, updater, closeBeha
       {createPortal(
         <SettingsModal
           open={settingsOpen}
-          onClose={() => { setSettingsOpen(false); setSettingsFocus(null) }}
+          onClose={() => { setSettingsOpen(false); setSettingsFocus(null); setSettingsItem(null) }}
           focusSection={settingsFocus}
+          focusItem={settingsItem}
           closeBehavior={closeBehavior?.behavior}
           onChangeCloseBehavior={closeBehavior?.setBehavior}
-          onEditPreset={(p) => { setSettingsOpen(false); setSettingsFocus(null); onEditPreset(p) }}
+          onEditPreset={(p) => { setSettingsOpen(false); setSettingsFocus(null); setSettingsItem(null); onEditPreset(p) }}
         />,
         document.body,
       )}

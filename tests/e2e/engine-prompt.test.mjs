@@ -94,8 +94,8 @@ export const tests = {
       // Close: the download carries on; Settings shows the same progress.
       await page.locator('#btn-engine-prompt-close').click()
       await page.locator(prompt).waitFor({ state: 'hidden' })
-      await page.evaluate(() => window.SoraiSettings.open('engines'))
-      const row = page.locator('#settings-engines .engine-row[data-id="ghostscript"]')
+      await page.evaluate(() => window.SoraiSettings.open('engines', 'ghostscript'))
+      const row = page.locator('#settings-engines .engine-detail[data-id="ghostscript"]')
       await row.locator('.engine-progress').waitFor()
       assert.equal(await row.locator('.engine-install').count(), 0)
       await page.locator('.settings-modal-content .about-modal-close').click()
@@ -107,8 +107,8 @@ export const tests = {
       assert.match(`${title} ${body}`, /Ghostscript/)
       assert.match(body, /installed/i)
       assert.equal((await invoke(page, 'plugin:sorai-converter|engine_status'))[0].installed, true)
-      await page.evaluate(() => window.SoraiSettings.open('engines'))
-      await page.locator('#settings-engines .engine-row[data-state="installed"]').waitFor()
+      await page.evaluate(() => window.SoraiSettings.open('engines', 'ghostscript'))
+      await page.locator('#settings-engines .engine-detail[data-id="ghostscript"][data-state="installed"]').waitFor()
       await page.locator('.settings-modal-content .about-modal-close').click()
     } finally {
       release()
