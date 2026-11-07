@@ -1,3 +1,32 @@
+# [2.2.0](https://github.com/chchee3300/sorai-toolkit/compare/v2.1.0...v2.2.0) (2026-11-07)
+
+
+### Bug Fixes
+
+* **converter:** e2e for the PDF compress review fixes ([d597aeb](https://github.com/chchee3300/sorai-toolkit/commit/d597aebf0286d74f258242d920f2d821365cd4e8))
+* preset names for PNG / sound-only video outputs; E2E for preset passwords and merge reset ([75d7f7f](https://github.com/chchee3300/sorai-toolkit/commit/75d7f7f0c748098f2e5505f90a2729871326dc88))
+
+
+### Features
+
+* **converter:** auto-hiding PDF preview toolbar ([31b93f2](https://github.com/chchee3300/sorai-toolkit/commit/31b93f2c3024f18867cf08b5af6ba67834578776))
+* **converter:** built-in PDF compressor with a "can't be made smaller" result ([69b1fd6](https://github.com/chchee3300/sorai-toolkit/commit/69b1fd641ad6d5427d3f8d63af05b157b62184b6))
+* **converter:** first-run optional-engine prompt ([fb18f70](https://github.com/chchee3300/sorai-toolkit/commit/fb18f7087c7153d2d619244b642b0a1552e97757))
+* **converter:** keep original codec preset name and E2E ([54e201b](https://github.com/chchee3300/sorai-toolkit/commit/54e201b7867b3186e2a9366037ef843c5715133f))
+* **converter:** M4A in the right-click menu and built-in presets ([2f716f9](https://github.com/chchee3300/sorai-toolkit/commit/2f716f91bd4211ced45628283c5ba64af0e48d2f))
+* **converter:** PDF compression level in presets and suggested names ([26a637b](https://github.com/chchee3300/sorai-toolkit/commit/26a637b55d8c335210d42ce8e22f0e29c9860927))
+* **converter:** PDF page tools preset names and E2E ([02b8c99](https://github.com/chchee3300/sorai-toolkit/commit/02b8c996790a20dd1b6186f9c48f1a94c3e1ec55))
+* **converter:** pdf.js preview with floating navbar and shortcuts ([0ff0727](https://github.com/chchee3300/sorai-toolkit/commit/0ff0727243819e65035d51c65dc9b702eb46a9bf))
+* **converter:** right-click menu for the new video/audio inputs (not .ts), ALAC preset names ([9dc6084](https://github.com/chchee3300/sorai-toolkit/commit/9dc608435fa1ebfd7c6f4e9610b447d7ea6eedb6))
+* **converter:** video-to-mp3 built-in preset (22 built-ins), extract audio/frame E2E ([ee0fdbb](https://github.com/chchee3300/sorai-toolkit/commit/ee0fdbbdcbafe01ff7b6dc4184d2a2a52f3532ec))
+* **dev:** quiet windows for dev/E2E (never on top, never focused) ([bf5a9c4](https://github.com/chchee3300/sorai-toolkit/commit/bf5a9c429ab950039d17432b5394e1a15f2457e6))
+* PDF preview and "all pages" for extract (E2E + preset names) ([7a8d4e6](https://github.com/chchee3300/sorai-toolkit/commit/7a8d4e6835a193ac05ef44e04e931e7fcdeceaa1))
+* **settings:** conversion engines section with Ghostscript status ([2b4e8cf](https://github.com/chchee3300/sorai-toolkit/commit/2b4e8cfbe4f27aeadda1203b4c680131baa150d9)), closes [#settings-engines](https://github.com/chchee3300/sorai-toolkit/issues/settings-engines)
+* **settings:** install and remove Ghostscript from the engines section ([293751a](https://github.com/chchee3300/sorai-toolkit/commit/293751afe002e01ba643608ea99e3fe209443160))
+* **settings:** menu preview's file type filters the preset list ([b13a772](https://github.com/chchee3300/sorai-toolkit/commit/b13a7728c2b545aa4daa4bd1606b491422c8517f))
+* **settings:** right-click menu preview beside the preset list ([7dcf3c7](https://github.com/chchee3300/sorai-toolkit/commit/7dcf3c75cf35732244b66a0f5cd97ecef82adefb))
+* **settings:** Third-party software section with updates for bundled tools ([06e4d2e](https://github.com/chchee3300/sorai-toolkit/commit/06e4d2ec7a240708cab2456434a00e78dfa90bd3))
+
 # [2.1.0](https://github.com/chchee3300/sorai-toolkit/compare/v2.0.0...v2.1.0) (2026-10-23)
 
 
