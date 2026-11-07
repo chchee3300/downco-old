@@ -616,7 +616,8 @@ body {
   margin: 0;
 }
 
-/* PresetManager.jsx (#settings-presets). Scrolls on its own: 20 built-ins. */
+/* PresetManager.jsx (#settings-presets). The list shows in full: the
+   settings body (.settings-modal-body) is what scrolls. */
 .preset-fieldset {
   border: 0;
   margin: 0;
@@ -631,8 +632,6 @@ body {
   list-style: none;
   margin: 0;
   padding: 0;
-  max-height: 240px;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
