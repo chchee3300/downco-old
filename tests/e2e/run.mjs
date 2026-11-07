@@ -38,6 +38,10 @@ process.env.SORAI_QUIET_WINDOWS ??= '1'
 process.env.SORAI_GS_URL = `http://127.0.0.1:${cdpPort + 2}/ghostscript.conda`
 process.env.SORAI_GS_SHA256 = createHash('sha256').update(readFileSync(join(here, '..', 'fixtures', 'fake-ghostscript.conda'))).digest('hex')
 
+// Bundled-tool updates (converter tools.rs; dev builds only): engines.test.mjs
+// serves fake GitHub / Gitea release APIs here.
+process.env.SORAI_TOOLS_API = `http://127.0.0.1:${cdpPort + 3}`
+
 const scratch = mkdtempSync(join(tmpdir(), 'sorai-e2e-'))
 const logPath = join(scratch, 'tauri-dev.log')
 const log = createWriteStream(logPath)

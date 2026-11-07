@@ -1,4 +1,4 @@
-// Settings "Conversion engines" + the Ghostscript route of PDF compress,
+// Settings "Third-party software" + the Ghostscript route of PDF compress,
 // with a fake gs (tests/fixtures/fake-gs.rs, built here with rustc): the
 // converter's status line links to Settings, "Use my own program…" picks
 // the fake (stored in engines.json), the smaller of built-in / gs wins (gs
@@ -6,9 +6,12 @@
 // failing gs keeps the built-in result, "Back to auto-detect" clears it.
 // Install / Cancel / Remove against a local server (run.mjs sets the dev
 // URL + SHA override) serving tests/fixtures/fake-ghostscript.conda.
+// Bundled tools: "Check for updates" against a fake release API (run.mjs's
+// SORAI_TOOLS_API) offering a fake yt-dlp (tests/fixtures/fake-yt-dlp.rs).
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
@@ -104,13 +107,13 @@ export const tests = {
 
       await stubDialogs(page, { openFiles: [fakeGs] })
       await row.locator('.engine-pick').click()
-      await page.locator('#settings-engines .engine-row[data-state="user"]').waitFor()
+      await page.locator('#settings-engines .engine-row[data-id="ghostscript"][data-state="user"]').waitFor()
       assert.match(await row.locator('.engine-state').innerText(), /Using the program on this computer/)
       assert.equal(await row.locator('.engine-path').innerText(), fakeGs)
       assert.equal(JSON.parse(readFileSync(enginesJson, 'utf8')).ghostscriptPath, fakeGs)
       assert.equal((await ghostscript(page)).path, fakeGs)
       await row.locator('.engine-recheck').click()
-      await page.locator('#settings-engines .engine-row[data-state="user"]').waitFor()
+      await page.locator('#settings-engines .engine-row[data-id="ghostscript"][data-state="user"]').waitFor()
       await page.locator('.settings-modal-content .about-modal-close').click()
       // The converter's line re-checked on its own.
       await page.locator('#pdf-engine-status[data-state="user"]').waitFor()
@@ -154,7 +157,7 @@ export const tests = {
       // "Back to auto-detect" clears it from engines.json.
       await page.evaluate(() => window.SoraiSettings.open('engines'))
       await row.locator('.engine-clear').click()
-      await page.locator(`#settings-engines .engine-row[data-state="${before.state}"]`).waitFor()
+      await page.locator(`#settings-engines .engine-row[data-id="ghostscript"][data-state="${before.state}"]`).waitFor()
       assert.equal(JSON.parse(readFileSync(enginesJson, 'utf8')).ghostscriptPath, undefined)
       await page.locator('.settings-modal-content .about-modal-close').click()
     } finally {
@@ -214,7 +217,7 @@ export const tests = {
       // Install: "Installed", only Library/bin in the own-copy folder.
       mode = 'good'
       await row.locator('.engine-install').click()
-      await page.locator('#settings-engines .engine-row[data-state="installed"]').waitFor({ timeout: 30_000 })
+      await page.locator('#settings-engines .engine-row[data-id="ghostscript"][data-state="installed"]').waitFor({ timeout: 30_000 })
       assert.match(await row.locator('.engine-state').innerText(), /^Installed$/)
       assert.deepEqual(listEngines(), ['ghostscript'])
       assert.deepEqual(readdirSync(join(enginesDir, 'ghostscript')).sort(), ['gsdll64.dll', 'gswin64c.exe'])
@@ -225,7 +228,7 @@ export const tests = {
 
       // Remove: folder gone, back to what it was.
       await row.locator('.engine-remove').click()
-      await page.locator(`#settings-engines .engine-row[data-state="${before.state}"]`).waitFor()
+      await page.locator(`#settings-engines .engine-row[data-id="ghostscript"][data-state="${before.state}"]`).waitFor()
       assert.ok(!existsSync(join(enginesDir, 'ghostscript')))
       await row.locator('.engine-install').waitFor()
       await page.locator('.settings-modal-content .about-modal-close').click()
@@ -234,6 +237,73 @@ export const tests = {
       server.close()
       await invoke(page, 'plugin:sorai-converter|engine_cancel').catch(() => {})
       await invoke(page, 'plugin:sorai-converter|engine_remove', { engine: 'ghostscript' }).catch(() => {})
+      if (await page.locator('.settings-modal-content .about-modal-close:visible').count()) await page.locator('.settings-modal-content .about-modal-close').click()
+    }
+  },
+  'engines: "Check for updates" offers a newer yt-dlp; a bad digest installs nothing; update, then back to bundled': async ({ page }) => {
+    const exe = join(dir, 'yt-dlp.exe')
+    execFileSync('rustc', ['-O', '-o', exe, join(fixtures, 'fake-yt-dlp.rs')], { stdio: 'pipe' })
+    const body = readFileSync(exe)
+    const port = Number(process.env.CDP_PORT || 9229) + 3
+    let digest = 'sha256:' + '0'.repeat(64)
+    // Only yt-dlp's release exists; the other tools' lookups get 404.
+    const server = createServer((req, res) => {
+      if (req.url === '/repos/yt-dlp/yt-dlp/releases/latest') {
+        const asset = { name: 'yt-dlp.exe', browser_download_url: `http://127.0.0.1:${port}/yt-dlp.exe`, size: body.length, digest }
+        res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ tag_name: '2099.01.01', assets: [asset] }))
+      } else if (req.url === '/yt-dlp.exe') res.writeHead(200, { 'Content-Length': body.length }).end(body)
+      else res.writeHead(404).end()
+    })
+    await new Promise((r) => server.listen(port, '127.0.0.1', r))
+    const ytDir = join(enginesDir, 'yt-dlp')
+    const row = page.locator('#settings-engines .engine-row[data-id="yt-dlp"]')
+    try {
+      await invoke(page, 'plugin:sorai-converter|engine_remove', { engine: 'yt-dlp' })
+      await page.evaluate(() => window.SoraiSettings.open('engines'))
+      assert.equal(await page.locator('#settings-engines h4').textContent(), 'Third-party software')
+      await page.locator('#settings-engines .engine-row[data-id="yt-dlp"][data-state="bundled"]').waitFor()
+      const bundled = await row.locator('.engine-version').innerText()
+      assert.match(bundled, /^\d{4}\.\d{2}\.\d{2}$/)
+      assert.equal(await row.locator('.engine-pick').count(), 0, 'tools have no "Use my own program"')
+      assert.equal(await row.locator('.engine-remove').count(), 0)
+      // Ghostscript stays first and keeps its own buttons.
+      assert.equal(await page.locator('#settings-engines .engine-row').first().getAttribute('data-id'), 'ghostscript')
+
+      await page.locator('#engines-check-updates').click()
+      await row.locator('.engine-latest[data-latest="newer"]').waitFor({ timeout: 30_000 })
+      assert.match(await row.locator('.engine-latest').innerText(), /Latest: 2099\.01\.01 \(about 1 MB\)/)
+      await page.locator('#settings-engines .engine-row[data-id="qpdf"] .engine-latest[data-latest="error"]').waitFor()
+
+      // Wrong digest: refused, nothing installed.
+      await row.locator('.engine-update').click()
+      await page.locator('#settings-engines [role="alert"]').waitFor({ timeout: 30_000 })
+      assert.match(await page.locator('#settings-engines [role="alert"]').innerText(), /SHA-256 mismatch/)
+      assert.ok(!existsSync(ytDir))
+      assert.deepEqual(listEngines().filter((n) => n.includes('yt-dlp')), [])
+
+      // Right digest: updated, the new copy is what runs.
+      digest = 'sha256:' + createHash('sha256').update(body).digest('hex')
+      await page.locator('#engines-check-updates').click()
+      await row.locator('.engine-update').click()
+      await page.locator('#settings-engines .engine-row[data-id="yt-dlp"][data-state="updated"]').waitFor({ timeout: 30_000 })
+      assert.equal(await row.locator('.engine-version').innerText(), '2099.01.01')
+      assert.equal(await row.locator('.engine-path').innerText(), join(ytDir, 'yt-dlp.exe'))
+      assert.deepEqual(readdirSync(ytDir).sort(), ['version.txt', 'yt-dlp.exe'])
+      await row.locator('.engine-latest[data-latest="current"]').waitFor()
+      assert.equal(await row.locator('.engine-update').count(), 0)
+      assert.equal(await page.locator('#settings-engines [role="alert"]').count(), 0)
+
+      // Back to the bundled version: folder gone.
+      await row.locator('.engine-remove').click()
+      await page.locator('#settings-engines .engine-row[data-id="yt-dlp"][data-state="bundled"]').waitFor()
+      assert.equal(await row.locator('.engine-version').innerText(), bundled)
+      assert.ok(!existsSync(ytDir))
+      await page.locator('.settings-modal-content .about-modal-close').click()
+    } finally {
+      server.closeAllConnections()
+      server.close()
+      await invoke(page, 'plugin:sorai-converter|engine_cancel').catch(() => {})
+      await invoke(page, 'plugin:sorai-converter|engine_remove', { engine: 'yt-dlp' }).catch(() => {})
       if (await page.locator('.settings-modal-content .about-modal-close:visible').count()) await page.locator('.settings-modal-content .about-modal-close').click()
     }
   },

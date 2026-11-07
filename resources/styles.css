@@ -826,6 +826,21 @@ body {
   color: var(--danger);
 }
 
+.engine-version {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+
+.engines-toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.engine-latest[data-latest='newer'] {
+  color: var(--accent);
+}
+
 .engine-path {
   font-family: 'JetBrains Mono', monospace;
   word-break: break-all;

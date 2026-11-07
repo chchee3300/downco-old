@@ -4477,6 +4477,7 @@ dependencies = [
 name = "tauri-plugin-sorai-converter"
 version = "0.1.0"
 dependencies = [
+ "flate2",
  "image",
  "lopdf",
  "percent-encoding",
@@ -6111,6 +6112,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec2e3161de27091f18a831d9494e9c53378a34833af5c1dda35ad85849da18d6"
 dependencies = [
  "crc32fast",
+ "flate2",
  "getrandom 0.4.3",
  "indexmap 2.14.2",
  "memchr",
