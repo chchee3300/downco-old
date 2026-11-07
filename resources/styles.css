@@ -2852,7 +2852,36 @@ html.progress-window body {
   backdrop-filter: blur(14px) saturate(1.4);
   -webkit-backdrop-filter: blur(14px) saturate(1.4);
   box-shadow: 0 6px 20px -8px rgba(0, 0, 0, 0.45), inset 0 1px 0 var(--glass-border-hi);
+  transition: opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1), transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
+/* Idle / hidden by its button (PdfViewer.jsx showBar): fades and slides up.
+   Still laid out (and `inert`), so it slides back from the same place. */
+.pdf-viewer-navbar.is-hidden {
+  opacity: 0;
+  transform: translate(-50%, -8px);
+  pointer-events: none;
+}
+/* "Click to show the toolbar", where the navbar was; never takes clicks. */
+.pdf-viewer-hint {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translate(-50%, -4px);
+  z-index: 2;
+  padding: 6px 12px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  color: var(--text-muted);
+  border: 1px solid var(--glass-border-hi);
+  border-radius: var(--glass-radius);
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s cubic-bezier(0.22, 1, 0.36, 1), transform 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.pdf-viewer-hint.is-visible { opacity: 1; transform: translate(-50%, 0); }
 .pdf-viewer-navbar .btn-icon svg { width: 16px; height: 16px; }
 .pdf-viewer-navbar .btn-icon:disabled { opacity: 0.35; cursor: default; }
 .pdf-viewer-divider { width: 1px; height: 18px; background: var(--glass-border-hi); margin: 0 4px; }

@@ -517,8 +517,17 @@ trailer <</Size 5/Root 1 0 R>>
       assert.match(await page.locator('#pdf-page-2').innerText(), /Page 2/)
       // Floating navbar over the pages.
       assert.equal(await page.locator('.pdf-viewer-navbar').evaluate((n) => getComputedStyle(n).position), 'absolute')
+      // The navbar hides when the mouse is idle: bar() moves the mouse to bring
+      // it back before typing into it (a click moves the mouse by itself).
+      const scrollBox = await page.locator('#pdf-viewer-scroll').boundingBox()
+      let wiggle = 0
+      const bar = async () => {
+        await page.mouse.move(scrollBox.x + 40 + (wiggle++ % 2) * 4, scrollBox.y + scrollBox.height / 2)
+        await page.locator('.pdf-viewer-navbar[data-bar="shown"]').waitFor()
+      }
       const zoomLabel = () => page.locator('#pdf-zoom-input').inputValue()
       const fit = await zoomLabel()
+      await bar()
       await page.click('#pdf-zoom-in')
       assert.notEqual(await zoomLabel(), fit)
       await page.click('#pdf-zoom-fit')
@@ -537,12 +546,15 @@ trailer <</Size 5/Root 1 0 R>>
       assert.ok(parseInt(await zoomLabel()) < parseInt(fit))
       await page.keyboard.press('Control+0')
       // Typed zoom: Enter applies (clamped to 25–500), Escape / blur drop the typing.
+      await bar()
       await page.fill('#pdf-zoom-input', '200')
       await page.press('#pdf-zoom-input', 'Enter')
       assert.equal(await zoomLabel(), '200')
+      await bar()
       await page.fill('#pdf-zoom-input', '9000')
       await page.press('#pdf-zoom-input', 'Enter')
       assert.equal(await zoomLabel(), '500')
+      await bar()
       await page.fill('#pdf-zoom-input', '37')
       await page.press('#pdf-zoom-input', 'Escape')
       assert.equal(await zoomLabel(), '500')
@@ -558,9 +570,30 @@ trailer <</Size 5/Root 1 0 R>>
       assert.equal(await pageNo(), '2')
       await page.keyboard.press('ArrowLeft')
       assert.equal(await pageNo(), '1')
+      await bar()
       await page.fill('#pdf-page-input', '3')
       await page.press('#pdf-page-input', 'Enter')
       assert.equal(await pageNo(), '3')
+      // Idle: fades out; moving the mouse brings it back.
+      const nav = page.locator('.pdf-viewer-navbar')
+      await page.locator('.pdf-viewer-navbar[data-bar="idle"]').waitFor({ timeout: 6000 })
+      await page.waitForFunction(() => getComputedStyle(document.querySelector('.pdf-viewer-navbar')).opacity === '0')
+      await bar()
+      // The hide button: moving the mouse no longer brings it back, a left or
+      // right click does; a hint says so while it's hidden.
+      const mx = scrollBox.x + 80
+      const my = scrollBox.y + scrollBox.height / 2
+      for (const button of ['left', 'right']) {
+        await page.click('#pdf-toolbar-hide')
+        await page.locator('.pdf-viewer-navbar[data-bar="manual"]').waitFor()
+        assert.match(await page.locator('#pdf-toolbar-hint').innerText(), /left or right mouse button/)
+        await page.mouse.move(mx, my)
+        await page.mouse.move(mx + 20, my + 20)
+        assert.equal(await nav.getAttribute('data-bar'), 'manual', 'mouse movement does not bring back a hidden toolbar')
+        await page.mouse.click(mx, my, { button })
+        await page.locator('.pdf-viewer-navbar[data-bar="shown"]').waitFor()
+        assert.equal(await page.locator('#pdf-toolbar-hint').innerText(), '')
+      }
       await page.click('#btn-pdf-preview-close')
       assert.equal(await page.locator('#pdf-preview-modal').count(), 0)
       await page.click('#btn-pdf-preview-0')
