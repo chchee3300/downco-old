@@ -181,8 +181,11 @@ export default function EngineManager({ open, focusItem }) {
               </>
             ) : (
               <>
-                {e.installed && <button type="button" className="btn btn-outline btn-sm engine-remove" onClick={() => run(engineRemove(e.id))}>{t('settings.engines.revert')}</button>}
-                {offer ? (
+                {/* Optional tools (Deno, oxipng, WordCraft): uninstall; bundled ones: back to the shipped copy. */}
+                {e.installed && <button type="button" className="btn btn-outline btn-sm engine-remove" onClick={() => run(engineRemove(e.id))}>{t(e.optional ? 'settings.engines.remove' : 'settings.engines.revert')}</button>}
+                {e.state === 'missing' && e.installable ? (
+                  <button type="button" className="btn btn-primary btn-sm engine-install" disabled={installing} onClick={() => startDownload(e)}>{t('settings.engines.install')}</button>
+                ) : offer ? (
                   <button type="button" className="btn btn-primary btn-sm engine-update" disabled={installing} onClick={() => startDownload(e)}>
                     {e.state === 'missing' ? t('settings.engines.install') : t('settings.engines.update', { version: l.version })}
                   </button>

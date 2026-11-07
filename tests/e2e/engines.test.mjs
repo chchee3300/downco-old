@@ -330,4 +330,42 @@ export const tests = {
       if (await page.locator('.settings-modal-content .about-modal-close:visible').count()) await page.locator('.settings-modal-content .about-modal-close').click()
     }
   },
+
+  'engines: a Word document needs WordCraft: status links to its page (Install, optional), running says how to get it': async ({ page }) => {
+    const wc = (await invoke(page, 'plugin:sorai-converter|engine_status')).find((e) => e.id === 'wordcraft-cli')
+    assert.equal(wc.optional, true)
+    if (wc.state !== 'missing') return console.log(`  (WordCraft already here: ${wc.state}; skipped)`)
+    const doc = join(dir, '報告 一.docx')
+    writeFileSync(doc, 'not really a docx')
+    await page.locator('.hub-card:has-text("Converter")').click()
+    await page.locator('.drop-zone-message').waitFor()
+    await stubDialogs(page, { openFiles: [doc] })
+    try {
+      await page.locator('.drop-zone-message').click()
+      await page.locator('.file-item').first().waitFor()
+      await page.locator('#document-settings:not(.hidden)').waitFor()
+      assert.equal(await page.locator('#document-format').inputValue(), '.pdf')
+      assert.equal(await page.locator('#btn-save-preset').count(), 0)
+      await page.locator('#document-engine-status[data-state="missing"]').waitFor()
+
+      // wordcraft-cli doesn't start (no "> Executing:" header): the row fails with the hint.
+      await page.click('#btn-execute')
+      await page.waitForFunction(() => /WordCraft isn't installed: install it in Settings > Third-party software/.test(document.getElementById('terminal-log').innerText), null, { timeout: 30_000 })
+
+      // The status's button opens WordCraft's page: Install straight away, no check first.
+      await page.locator('#document-engine-settings').click()
+      const detail = page.locator('#settings-engines .engine-detail[data-id="wordcraft-cli"][data-state="missing"]')
+      await detail.waitFor()
+      await detail.locator('.engine-install').waitFor()
+      assert.equal(await detail.locator('.engine-check, .engine-remove').count(), 0)
+      assert.match(await detail.locator('.engine-detail-desc').innerText(), /alpha/i)
+      await page.locator('.settings-modal-content .about-modal-close').click()
+    } finally {
+      await page.waitForFunction(() => !/Cancel/.test(document.getElementById('btn-execute')?.textContent ?? ''), null, { timeout: 30_000 })
+      if (await page.locator('.settings-modal-content .about-modal-close:visible').count()) await page.locator('.settings-modal-content .about-modal-close').click()
+      while ((await page.locator('.file-item').count()) > 0) await page.locator('.file-item').first().locator('button.remove').click()
+      await page.locator('[aria-label="Back to hub"]').click()
+      await page.locator('.hub-card').first().waitFor()
+    }
+  },
 }
