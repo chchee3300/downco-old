@@ -1,144 +1,134 @@
 # downco
 
-Download and convert media on your own machine, no uploads. A desktop app, built with [Tauri v2](https://tauri.app/) and React. This is the **hub repo**: the installable app itself — window shell, main-menu hub, tray, single instance, theme, in-app updates, packaging — composing individual tools that each live in their own repo.
+downco is a desktop app for downloading videos and converting media files. Everything runs on your computer, and no file is uploaded anywhere. It runs on Windows, macOS and Linux, and is built with [Tauri v2](https://tauri.app/) and React.
 
-## Tools
+Until version 2.2.0 it was called SORAI Toolkit.
 
-- **Converter** ([`downco-co`](https://github.com/chchee3300/downco-co)) — convert video, image, audio, and PDF files locally.
-- **Downloader** ([`downco-down`](https://github.com/chchee3300/downco-down)) — download a video from a URL, pick a format, and save it locally (via `yt-dlp`).
+## What it does
 
-Each tool repo is a Tauri plugin: a Rust crate (`plugin/`, the command building, output parsing and process running) plus a React UI package. Both halves come from one npm git dependency (`package.json`'s `dependencies`, built by the tool's own `prepare` script on `npm install`); `src-tauri/Cargo.toml` points at the crate inside it through a link that `scripts/siblings.mjs` generates.
+**Converter** ([`downco-co`](https://github.com/chchee3300/downco-co))
 
-## Installation
+- Video to MP4, MKV, WebM, AVI, MOV, M4V, TS, WMV, MPG, GIF or APNG. You can also save one frame as a PNG, or keep only the sound as M4A or MP3.
+- Audio to MP3, WAV, AAC, M4A (AAC or lossless ALAC), FLAC, OGG, Opus, AIFF, WMA or AC3.
+- Images to JPG, PNG, WebP, AVIF, ICO or PDF.
+- PDF: compress, linearize, extract pages, split into one file per page, rotate, add a password, and preview before converting.
+- Word documents (`.docx`, `.doc`, `.odt`, `.rtf`) to PDF, DOCX, ODT, RTF, HTML, Markdown or plain text, once the optional WordCraft converter is installed.
+- Trim and crop video, change speed, pick the codec and quality, or set a target file size such as "under 25 MB".
+- Merge several videos, audio files or PDFs into one file.
 
-Pick one:
+**Downloader** ([`downco-down`](https://github.com/chchee3300/downco-down))
 
-- **Download a pre-built package** — grab the file for your OS from the [latest release](https://github.com/chchee3300/downco/releases/latest):
-  - **Windows** — `downco_*_x64-setup.exe`. Per-user install into `%LOCALAPPDATA%\downco\`, no admin prompt; adds the Explorer right-click menu: **downco** → your presets for that file type, *Open in downco…*, *Manage presets…*. The menu follows the app's language and is rewritten on every start. Windows hides static right-click items when more than 15 files are selected; for bigger batches, drag the files into the app instead.
-  - **macOS** — `downco_*_mac_x64.dmg` (Intel) or `*_mac_arm64.dmg` (Apple Silicon). Open it and drag the app into Applications. These builds aren't code-signed, so the first launch needs right-click → Open (or System Settings → Privacy & Security → "Open Anyway") to get past Gatekeeper.
-  - **Linux** — `downco_*_amd64.deb` (`sudo apt install ./downco_*_amd64.deb`) or `downco-*.x86_64.rpm` (`sudo dnf install ./downco-*.x86_64.rpm`). Both pull in `qpdf`, `img2pdf`, webkit2gtk and gtk3, and install the KDE Dolphin right-click menu. They ship their own `ffmpeg` and `yt-dlp` in `/usr/lib/downco/` (not on `PATH`), so a distro `ffmpeg`/`yt-dlp` package is left alone.
-- **Build it yourself from source** — see [Setup](#setup) below.
+- Paste a link, then choose the video and audio quality. YouTube, Twitch and X are recognized, and any other site [yt-dlp](https://github.com/yt-dlp/yt-dlp) supports also works.
+- Download several videos in a queue, or clip a video to a start and end time before downloading.
 
-### Upgrading from SORAI Toolkit (2.2.0 and earlier)
+**Right-click menu**
 
-downco was called SORAI Toolkit. Updating from it works like any other update (in-app or by running the new installer):
+Save conversion settings as a preset, then run it from the file manager without opening the main window. A small progress window shows the conversion.
 
-- **Windows**: the installer moves your presets, settings and downloaded engines to downco's folders, then removes SORAI Toolkit (its Start-menu entry, right-click menu and install folder).
-- **Linux**: the `downco` package replaces `sorai-toolkit`.
-- **macOS**: drag downco into Applications and delete SORAI Toolkit; downco picks up its settings on first launch.
+- On Windows the presets appear under **downco** in the Explorer menu.
+- On macOS they appear as Finder Quick Actions.
+- On Linux they appear in Dolphin (KDE) and in Nautilus's Scripts menu (GNOME).
 
-### Upgrading from 1.x (the Neutralino builds)
+Windows hides right-click items when more than 15 files are selected. Drag larger batches into the app instead.
 
-The first Tauri release can't be installed by a 1.x app's built-in updater; install it by hand once. After that, updates install themselves.
+## Install
 
-- **Windows: uninstall the old version first** (Settings → Apps → SORAI Toolkit → Uninstall), *then* run the new installer. The old version lives in `%LOCALAPPDATA%\Programs\SORAI Toolkit\`, the new one in `%LOCALAPPDATA%\SORAI Toolkit\`, but both write the same right-click menu registry keys — uninstalling the old one *after* installing the new one deletes the new version's right-click menu (reinstall the new version to get it back).
-- **macOS**: drag the new app into Applications and replace the old one.
-- **Linux**: install the new `.deb`/`.rpm` over the old one — same package name (`sorai-toolkit`), so it upgrades in place.
+Download the file for your system from the [latest release](https://github.com/chchee3300/downco/releases/latest).
 
-## How it works
+| System | File | Notes |
+|---|---|---|
+| Windows | `downco_*_x64-setup.exe` | Installs for the current user into `%LOCALAPPDATA%\downco\`, without an administrator prompt. |
+| macOS (Apple Silicon) | `downco_*_mac_arm64.dmg` | Drag the app into Applications. The app isn't code-signed, so the first launch needs right-click → Open, or System Settings → Privacy & Security → Open Anyway. |
+| macOS (Intel) | `downco_*_mac_x64.dmg` | Same as above. |
+| Debian / Ubuntu | `downco_*_amd64.deb` | `sudo apt install ./downco_*_amd64.deb` |
+| Fedora | `downco-*.x86_64.rpm` | `sudo dnf install ./downco-*.x86_64.rpm` |
 
-The UI (React + Vite, in `src/`) runs in the system webview of a [Tauri](https://tauri.app/) app (`src-tauri/`). The hub's Rust side registers the two tool plugins and the shell features (single instance, updater, dialogs, notifications, tray); each tool's Rust plugin runs the bundled command-line tools as Tauri sidecars:
+The app checks for updates when it starts. Official builds install an update after you confirm it. On Linux this asks for your password.
 
-- [`ffmpeg`](https://ffmpeg.org/) — video/image/audio conversion (Converter) and stream merging (Downloader, via `--ffmpeg-location`). Bundled on every platform.
-- [`yt-dlp`](https://github.com/yt-dlp/yt-dlp) — video metadata/download (Downloader). Bundled on every platform, fetched live from yt-dlp's own GitHub releases (not a pinned version, since it cuts releases often).
-- [`qpdf`](https://qpdf.readthedocs.io/) — PDF optimization (Converter). Bundled on Windows; on macOS/Linux it's a system-installed dependency (`brew`/`apt`/etc.).
-- [`img2pdf`](https://gitlab.mister-muffin.de/josch/img2pdf) — image-to-PDF conversion (Converter). Bundled on Windows; on macOS/Linux it's a system-installed dependency (`pip`).
+On macOS and Linux, the PDF features need `qpdf` and `img2pdf` from your system (`brew install qpdf` or `sudo apt install qpdf`, and `pip install img2pdf`). The `.deb` and `.rpm` packages install them for you. ffmpeg and yt-dlp come with the app on every system. On Linux they live in `/usr/lib/downco/`, so the app doesn't replace your distribution's copies.
 
-`setup.mjs` downloads these into per-platform folders under `binaries/` (`win_x64/`, `mac_x64/`, `mac_arm64/`, `linux_x64/`); `scripts/copy-sidecars.mjs` copies them into `src-tauri/binaries/` under the names Tauri's `externalBin` expects, before every `tauri dev`/`tauri build`.
+### Third-party software
 
-Inter and Noto Sans TC (思源黑體) are bundled locally as `@font-face` woff2 files under `resources/fonts/` (so Traditional Chinese UI text renders consistently even fully offline); JetBrains Mono still loads from Google Fonts.
+Settings → Third-party software lists the tools downco uses. It shows each tool's version and license, and can check for newer versions of the bundled ones.
 
-## Requirements
+| Tool | Used for | How you get it |
+|---|---|---|
+| ffmpeg | Converting video, audio and images, and merging downloaded streams | Included |
+| yt-dlp | Downloading | Included |
+| qpdf, img2pdf | PDF operations, images to PDF | Included on Windows, system packages elsewhere |
+| Ghostscript | Smaller PDFs when compressing (downco keeps whichever result is smaller) | Optional download on Windows |
+| WordCraft | Converting Word documents (alpha) | Optional download on Windows |
+| Deno | Lets yt-dlp see every YouTube format | Optional download on Windows |
+| oxipng | Shrinks PNG output without losing quality | Optional download on Windows |
 
-Building from source needs:
+On macOS and Linux the app doesn't download the optional tools. Settings shows how to install each one yourself: a `brew` or `apt` command, or for WordCraft a link to its releases.
 
-- [Node.js](https://nodejs.org/) and a [Rust toolchain](https://rustup.rs/) (see Tauri's [prerequisites](https://tauri.app/start/prerequisites/) for the per-OS system packages, e.g. webkit2gtk on Linux)
-- Windows, macOS, or Linux
-- **macOS/Linux only**: `qpdf` and `img2pdf` must be installed system-wide for Converter's PDF features (`brew install qpdf` / `sudo apt install qpdf`, and `pip install img2pdf`) — ffmpeg and yt-dlp are bundled on every platform. This applies whether you built from source or installed a pre-built `.deb`/`.rpm`/`.dmg`.
+### Upgrading from SORAI Toolkit
 
-## Setup
+Update as usual, either inside the app or by running the new installer.
 
-```bash
-npm ci
-npm run setup     # node setup.mjs: downloads ffmpeg + yt-dlp (all platforms) into binaries/, plus
-                  # qpdf/img2pdf on Windows; on macOS/Linux it checks for system qpdf/img2pdf
-```
+- **Windows:** the installer moves your presets, settings and downloaded tools to downco's folders. It then uninstalls SORAI Toolkit, including its Start menu entry, right-click menu and install folder.
+- **Linux:** the `downco` package replaces the `sorai-toolkit` package.
+- **macOS:** drag downco into Applications and delete SORAI Toolkit. downco picks up the old settings the first time it starts.
 
-`npm ci` also triggers each tool repo's own `prepare` script (via its git dependency), building `sorai-toolkit-converter`/`sorai-toolkit-downloader`'s `dist/index.js`.
+### Upgrading from 1.x
+
+Versions 1.x can't install a newer version through their built-in updater, so install it by hand once.
+
+- **Windows:** uninstall the old version first (Settings → Apps → SORAI Toolkit), then run the installer. Uninstalling the old version afterwards would delete the new version's right-click menu. Reinstalling downco brings it back.
+- **macOS:** replace the old app in Applications.
+- **Linux:** install the new package over the old one.
 
 ## Development
 
-```bash
-npm run tauri:dev   # Vite dev server + tauri dev, one command
-```
+This is the hub repository: the app window, home screen, settings, tray, right-click menu, updater, installers and release pipeline. The Converter and Downloader each live in their own repository as a Tauri plugin (a Rust crate plus a React UI). The hub installs them as npm git dependencies. Their npm package names are still `sorai-toolkit-converter` and `sorai-toolkit-downloader`.
 
-If `sorai-toolkit-converter`/`sorai-toolkit-downloader` are checked out as sibling folders next to this one (override the paths with `CONVERTER_REPO`/`DOWNLOADER_REPO`), dev mode uses them instead of `node_modules`: their `src/` hot-reloads through Vite and edits to their `plugin/` crate rebuild and restart the app. Without siblings it uses the npm git dependency's copy.
-
-Other env vars: `VITE_PORT` (default 5173) and `CDP_PORT` (default 9229, the WebView2 remote-debugging port the E2E tests connect to) — set both to run several checkouts side by side.
-
-## Project structure
-
-```
-src/                 Hub UI (main menu, hamburger menu, settings, about, update banner)
-src-tauri/           Tauri app: Rust entry (lib.rs, self_install.rs), tauri*.conf.json, capabilities, icons
-resources/           Stylesheet, fonts, icons, and the UI-only runtime globals both tools use
-                      (liquid-glass.js, lib/i18n.js, lib/range-fill.js)
-binaries/            Bundled third-party binaries, per platform (fetched by setup.mjs, gitignored):
-                       win_x64/    ffmpeg.exe, yt-dlp.exe, qpdf.exe, img2pdf.exe + runtime DLLs
-                       mac_x64/    ffmpeg, yt-dlp
-                       mac_arm64/  ffmpeg, yt-dlp
-                       linux_x64/  ffmpeg, yt-dlp
-tests/e2e/           End-to-end tests against the real Tauri window (fixtures in tests/fixtures/)
-packaging/           Windows NSIS installer hooks, KDE ServiceMenu generator
-scripts/             Dev/build helpers (tauri-dev, siblings, copy-sidecars, version stamping, updater manifest)
-setup.mjs            Downloads the third-party binaries (cross-platform)
-```
-
-## Testing
+You need [Node.js](https://nodejs.org/), a [Rust toolchain](https://rustup.rs/) and Tauri's [system prerequisites](https://tauri.app/start/prerequisites/). On macOS and Linux you also need the system `qpdf` and `img2pdf` mentioned above.
 
 ```bash
-npm run test:e2e                  # every tests/e2e/*.test.mjs
-npm run test:e2e -- converter     # only files whose name contains "converter"
-(cd src-tauri && cargo test)      # hub Rust (self-install file generation)
+npm ci              # also builds the Converter and Downloader packages
+npm run setup       # downloads ffmpeg, yt-dlp (and on Windows qpdf, img2pdf) into binaries/
+npm run tauri:dev   # Vite dev server and the app in one command
 ```
 
-`test:e2e` starts `tauri dev` with a fresh WebView2 profile, connects Playwright over CDP to the real window, and runs real conversions/downloads (the Downloader tests need network). Each tool's pure logic is tested in its own repo with `cd plugin && cargo test`. Drag-and-drop, the tray, and right-click menus need a real mouse and aren't automated.
+If the tool repositories are checked out next to this one (`../sorai-toolkit-converter`, `../sorai-toolkit-downloader`, or the paths in `CONVERTER_REPO` and `DOWNLOADER_REPO`), dev mode uses those checkouts. Changes to their `src/` reload in place, and changes to their Rust crate rebuild and restart the app. Without them, dev mode uses the copies in `node_modules`.
 
-## Releases
+To run several checkouts at once, give each its own `VITE_PORT` (default 5173) and `CDP_PORT` (default 9229, the WebView2 debugging port the tests connect to).
 
-Versioning and GitHub Releases are automated with [semantic-release](https://semantic-release.gitbook.io/), driven by [Conventional Commits](https://www.conventionalcommits.org/) on `master`:
+```
+src/            Hub UI: home screen, settings, About, update banner, progress window
+src-tauri/      Tauri app: Rust code (menu, migration, self-install), configs, icons
+resources/      Shared stylesheet, fonts, icons, brand assets (resources/brand/)
+packaging/      Windows installer hooks, KDE menu generator
+scripts/        Dev and build helpers (dev server, sidecars, version stamping, updater manifest)
+tests/e2e/      End-to-end tests against the real app window
+binaries/       Third-party programs per platform (downloaded by setup.mjs, not committed)
+```
 
-- `fix: ...` → patch release
-- `feat: ...` → minor release
-- `feat: ...` + a `BREAKING CHANGE:` footer (or `!` after the type, e.g. `feat!: ...`) → major release
-- Other prefixes (`chore:`, `docs:`, `refactor:`, `test:`, etc.) don't trigger a release
+### Tests
 
-Every push to `master` runs `.github/workflows/release.yml`, which:
-1. Computes whether a release is warranted and, if so, the next version (`scripts/get-next-version.mjs`, semantic-release in dry-run).
-2. Runs `tauri build` for Windows (NSIS), Linux (`.deb` + `.rpm`), and macOS (`.dmg` + updater `.app.tar.gz`, Intel and Apple Silicon) in parallel, signing every updater payload with the updater key.
-3. Writes `latest.json` (`scripts/updater-manifest.mjs`) and publishes the GitHub Release with the packages and `latest.json` attached, and updates `CHANGELOG.md`.
+```bash
+npm run test:e2e                # every tests/e2e/*.test.mjs
+npm run test:e2e -- converter   # only files whose name contains "converter"
+(cd src-tauri && cargo test)    # hub Rust tests
+```
 
-No manual version bumping or tagging — the version number lives entirely in git tags/GitHub Releases, driven by commit messages. `scripts/write-version.mjs` stamps the computed version into `src/version.json` (the update checker's baseline) and `src-tauri/tauri.conf.json` before each build, and the release commit writes both back.
+The end-to-end tests start the app with a fresh WebView2 profile, connect Playwright to the real window, and run real conversions and downloads. The download tests need a network connection. Each tool repository has its own Rust tests (`cd plugin && cargo test`). Drag and drop, the tray and the right-click menus need a real mouse, so they are checked by hand.
 
-**Dry run** (no signing key needed, publishes nothing): Actions → Release → Run workflow on any branch with `dry_run` checked. It builds all four packages unsigned as version `0.0.<run number>` and keeps them as workflow artifacts for a week.
+### Releases
 
-#### Updater signing key (maintainer, one-time)
+Every push to `master` runs `.github/workflows/release.yml`. [semantic-release](https://semantic-release.gitbook.io/) reads the [Conventional Commits](https://www.conventionalcommits.org/) since the last release:
 
-1. `npx tauri signer generate -w ~/.tauri/sorai-toolkit.key` — pick a password. Keep the private key out of the repo.
-2. Repo Settings → Secrets and variables → Actions: `TAURI_SIGNING_PRIVATE_KEY` = contents of `sorai-toolkit.key`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` = the password.
-3. Paste the contents of `sorai-toolkit.key.pub` into `src-tauri/tauri.conf.json` → `plugins.updater.pubkey` (replacing the `PLACEHOLDER-…` string) and commit. The workflow refuses to release while the placeholder is still there.
+- `fix:` makes a patch release and `feat:` a minor release.
+- `feat!:` or a `BREAKING CHANGE:` footer makes a major release.
+- Other types (`docs:`, `chore:`, `refactor:`, `test:`) don't release.
 
-Losing the private key means installed apps can never verify another update — back it up.
+When a release is due, the workflow builds the Windows installer, `.deb` and `.rpm`, and the macOS `.dmg` files for Intel and Apple Silicon. It signs the update packages, writes `latest.json`, publishes the GitHub release and updates `CHANGELOG.md`. Version numbers come from git tags, so nothing is bumped by hand.
 
-To build packages locally: `npx tauri build` (after `npm ci` and `node setup.mjs`). Local builds are unsigned — `createUpdaterArtifacts` is only switched on in CI via `src-tauri/tauri.release.conf.json`. Output lands in `src-tauri/target/release/bundle/`.
+To try the build without publishing, open Actions → Release → Run workflow and tick `dry_run`. It builds unsigned packages and keeps them as workflow artifacts for a week. For a local build, run `npx tauri build`. The output goes to `src-tauri/target/release/bundle/` and isn't signed.
 
-### In-app updates
-
-On launch, the app checks `GET /repos/chchee3300/downco/releases/latest` and compares it against `src/version.json`. If a newer version is available (`src/hooks/useUpdateChecker.js`, `src/components/UpdateBanner.jsx`):
-
-- **Official builds** (built by the workflow, `VITE_OFFICIAL_BUILD=true`): a toast offers "Update now", which hands off to the Tauri updater plugin — it fetches `latest.json`, verifies the signature, installs, and relaunches. Windows runs the NSIS installer in passive mode; Linux runs `dpkg -i` or `rpm -U` behind a pkexec/sudo password prompt (whichever format is installed); macOS replaces the `.app`.
-- **Self-built copies**: only a badge in the menu and About; clicking it opens the release page.
+The updater signing key lives in the repository secrets `TAURI_SIGNING_PRIVATE_KEY` and `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, and the matching public key is in `src-tauri/tauri.conf.json`. Back the key up: without it, installed copies can't verify another update.
 
 ## License
 
-[MIT](LICENSE) for this repo's own code (and Converter's/Downloader's — see their own repos). The bundled third-party binaries and fonts keep their own licenses, including a GPL-licensed ffmpeg build on Windows/macOS — see [`THIRD-PARTY-LICENSES.md`](THIRD-PARTY-LICENSES.md) for the full breakdown and why bundling it this way (invoked as a subprocess, never linked) doesn't require this app's own code to be GPL.
+downco's own code, including the Converter and Downloader, is [MIT](LICENSE). The bundled programs and fonts keep their own licenses. This includes a GPL build of ffmpeg on Windows and macOS, which downco runs as a separate program and doesn't link. [`THIRD-PARTY-LICENSES.md`](THIRD-PARTY-LICENSES.md) has the details.
