@@ -25,10 +25,10 @@ const gsDir = join(dir, 'gs 假')
 const fakeGs = join(gsDir, 'gswin64c.exe')
 const gsOutput = join(gsDir, 'gs-output.pdf')
 // Tauri's app_config_dir for the dev identifier (Windows).
-const enginesJson = join(process.env.APPDATA, `com.soraitoolkit.hub.dev${process.env.CDP_PORT || 9229}`, 'engines.json')
+const enginesJson = join(process.env.APPDATA, `com.downco.hub.dev${process.env.CDP_PORT || 9229}`, 'engines.json')
 
 // Tauri's app_local_data_dir: the app's own copy lives in engines/ghostscript.
-const enginesDir = join(process.env.LOCALAPPDATA, `com.soraitoolkit.hub.dev${process.env.CDP_PORT || 9229}`, 'engines')
+const enginesDir = join(process.env.LOCALAPPDATA, `com.downco.hub.dev${process.env.CDP_PORT || 9229}`, 'engines')
 const listEngines = () => (existsSync(enginesDir) ? readdirSync(enginesDir) : [])
 
 const set = (page, selector, value) =>

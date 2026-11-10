@@ -1,7 +1,7 @@
 [package]
-name = "sorai-toolkit"
+name = "downco"
 version = "0.1.0"
-description = "SORAI Toolkit"
+description = "downco: download and convert media files locally"
 authors = ["chchee3300"]
 license = "MIT"
 repository = "https://github.com/chchee3300/sorai-toolkit"

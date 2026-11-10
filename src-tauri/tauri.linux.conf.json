@@ -1,17 +1,42 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "bundle": {
-    "targets": ["deb", "rpm"],
+    "targets": [
+      "deb",
+      "rpm"
+    ],
     "externalBin": [],
-    "resources": { "binaries/linux/ffmpeg": "ffmpeg", "binaries/linux/yt-dlp": "yt-dlp" },
+    "resources": {
+      "binaries/linux/ffmpeg": "ffmpeg",
+      "binaries/linux/yt-dlp": "yt-dlp"
+    },
     "linux": {
       "deb": {
-        "depends": ["qpdf", "img2pdf"],
-        "files": { "/usr/share/kio/servicemenus": "../packaging/linux/context-menu.generated" }
+        "depends": [
+          "qpdf",
+          "img2pdf"
+        ],
+        "files": {
+          "/usr/share/kio/servicemenus": "../packaging/linux/context-menu.generated"
+        },
+        "conflicts": [
+          "sorai-toolkit"
+        ],
+        "replaces": [
+          "sorai-toolkit"
+        ]
       },
       "rpm": {
-        "depends": ["/usr/bin/qpdf", "/usr/bin/img2pdf"],
-        "files": { "/usr/share/kio/servicemenus": "../packaging/linux/context-menu.generated" }
+        "depends": [
+          "/usr/bin/qpdf",
+          "/usr/bin/img2pdf"
+        ],
+        "files": {
+          "/usr/share/kio/servicemenus": "../packaging/linux/context-menu.generated"
+        },
+        "obsoletes": [
+          "sorai-toolkit"
+        ]
       }
     }
   }

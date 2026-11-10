@@ -13,7 +13,7 @@ import { fileURLToPath } from 'node:url'
 import { appCount, invoke } from './helpers.mjs'
 
 const hub = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const exe = join(hub, 'src-tauri', 'target', 'debug', 'sorai-toolkit.exe')
+const exe = join(hub, 'src-tauri', 'target', 'debug', 'downco.exe')
 const FFMPEG = join(hub, 'binaries', 'win_x64', 'ffmpeg.exe')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 

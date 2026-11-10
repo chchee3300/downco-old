@@ -45,21 +45,21 @@ fn services() -> Vec<Service> {
     .into_iter()
     .map(|(key, label, uti)| Service {
       slug: format!("convert-{key}"),
-      name: format!("SORAI Toolkit - 轉檔（{label}）"),
+      name: format!("downco - 轉檔（{label}）"),
       uti,
       exec_args: "--sorai-convert-to=".into(),
     })
     .collect();
   v.push(Service {
     slug: "compress-pdf".into(),
-    name: "SORAI Toolkit - 壓縮 PDF".into(),
+    name: "downco - 壓縮 PDF".into(),
     uti: "com.adobe.pdf",
     exec_args: "--sorai-quick-action=compress-pdf".into(),
   });
   for mb in TARGET_SIZE_PRESETS_MB {
     v.push(Service {
       slug: format!("quick-compress-{mb}mb"),
-      name: format!("SORAI Toolkit - 快速壓縮到 {mb}MB 以下"),
+      name: format!("downco - 快速壓縮到 {mb}MB 以下"),
       uti: "public.movie",
       exec_args: format!("--sorai-quick-action=compress-under:{mb}"),
     });
@@ -83,7 +83,7 @@ fn uuid(seed: &str) -> String {
 // `open -n` forces a new process, which the single-instance plugin then
 // forwards to the running one -- same path as a Windows/Linux launch.
 fn mac_command(s: &Service) -> String {
-  format!(r#"open -n -a "SORAI Toolkit" --args {} "$@""#, s.exec_args)
+  format!(r#"open -n -a "downco" --args {} "$@""#, s.exec_args)
 }
 
 fn info_plist(s: &Service) -> String {
@@ -94,7 +94,7 @@ fn info_plist(s: &Service) -> String {
 <plist version="1.0">
 <dict>
 	<key>CFBundleIdentifier</key>
-	<string>com.soraitoolkit.hub.quickaction.{slug}</string>
+	<string>com.downco.hub.quickaction.{slug}</string>
 	<key>CFBundleName</key>
 	<string>{name}</string>
 	<key>NSServices</key>
@@ -257,7 +257,7 @@ const NAUTILUS_CATEGORIES: [(&str, &[&str]); 3] = [
 // expansion, and the variable is deliberately UNQUOTED so it splits into one
 // argument per selected path (filenames with spaces stay whole).
 fn script_body(exec_args: &str) -> String {
-  format!("#!/bin/sh\nIFS='\n'\nset -f\nexec /usr/bin/sorai-toolkit {exec_args} $NAUTILUS_SCRIPT_SELECTED_FILE_PATHS\n")
+  format!("#!/bin/sh\nIFS='\n'\nset -f\nexec /usr/bin/downco {exec_args} $NAUTILUS_SCRIPT_SELECTED_FILE_PATHS\n")
 }
 
 pub fn nautilus_scripts() -> Vec<Entry> {
@@ -272,7 +272,7 @@ pub fn nautilus_scripts() -> Vec<Entry> {
   }
   leaves.push(("PDF", "壓縮 PDF".into(), "--sorai-quick-action=compress-pdf".into()));
 
-  let root = Path::new(".local/share/nautilus/scripts/SORAI Toolkit");
+  let root = Path::new(".local/share/nautilus/scripts/downco");
   leaves
     .into_iter()
     .map(|(category, name, args)| Entry { path: root.join(category).join(name), contents: script_body(&args), executable: true })
@@ -313,7 +313,14 @@ pub fn install() {
     return;
   };
   let Some(home) = std::env::var_os("HOME") else { return };
-  if let Err(e) = write_all(Path::new(&home), &entries) {
+  let home = Path::new(&home);
+  // Entries written before the rename (SORAI Toolkit -> downco).
+  let _ = std::fs::remove_dir_all(home.join(".local/share/nautilus/scripts/SORAI Toolkit"));
+  for s in services() {
+    let old = format!("{}.workflow", s.name.replacen("downco", "SORAI Toolkit", 1));
+    let _ = std::fs::remove_dir_all(home.join("Library/Services").join(old));
+  }
+  if let Err(e) = write_all(home, &entries) {
     log::warn!("self-install of context-menu entries failed: {e}");
   }
 }
@@ -331,10 +338,10 @@ mod tests {
     let e = finder_services();
     let p = paths(&e);
     assert_eq!(p.len(), 14);
-    assert_eq!(p[0], "Library/Services/SORAI Toolkit - 轉檔（影片）.workflow/Contents/Info.plist");
-    assert_eq!(p[1], "Library/Services/SORAI Toolkit - 轉檔（影片）.workflow/Contents/document.wflow");
+    assert_eq!(p[0], "Library/Services/downco - 轉檔（影片）.workflow/Contents/Info.plist");
+    assert_eq!(p[1], "Library/Services/downco - 轉檔（影片）.workflow/Contents/document.wflow");
     for name in ["轉檔（圖片）", "轉檔（音訊）", "壓縮 PDF", "快速壓縮到 5MB 以下", "快速壓縮到 25MB 以下", "快速壓縮到 50MB 以下"] {
-      assert!(p.contains(&format!("Library/Services/SORAI Toolkit - {name}.workflow/Contents/Info.plist")), "{name}");
+      assert!(p.contains(&format!("Library/Services/downco - {name}.workflow/Contents/Info.plist")), "{name}");
     }
     assert!(e.iter().all(|e| !e.executable));
   }
@@ -345,13 +352,13 @@ mod tests {
     let wflow = |i: usize| &e[i * 2 + 1].contents;
     let plist = |i: usize| &e[i * 2].contents;
     // empty --sorai-convert-to= on purpose (see services())
-    assert!(wflow(0).contains(r#"<string>open -n -a "SORAI Toolkit" --args --sorai-convert-to= "$@"</string>"#));
+    assert!(wflow(0).contains(r#"<string>open -n -a "downco" --args --sorai-convert-to= "$@"</string>"#));
     assert!(plist(0).contains("<string>public.movie</string>"));
     assert!(plist(1).contains("<string>public.image</string>"));
     assert!(plist(3).contains("<string>com.adobe.pdf</string>"));
     assert!(wflow(3).contains("--args --sorai-quick-action=compress-pdf \"$@\""));
     assert!(wflow(5).contains("--args --sorai-quick-action=compress-under:25 \"$@\""));
-    assert!(plist(5).contains("com.soraitoolkit.hub.quickaction.quick-compress-25mb"));
+    assert!(plist(5).contains("com.downco.hub.quickaction.quick-compress-25mb"));
     // deterministic -> idempotent rewrites; UUIDs distinct within a bundle
     assert_eq!(wflow(0), &finder_services()[1].contents);
     let u: Vec<&str> = wflow(0).match_indices("UUID</key>\n\t\t\t\t<string>").map(|(i, m)| &wflow(0)[i + m.len()..i + m.len() + 36]).collect();
@@ -365,11 +372,11 @@ mod tests {
     let p = paths(&e);
     assert_eq!(p.len(), 6 + 6 + 6 + 3 + 1);
     assert!(e.iter().all(|e| e.executable));
-    let root = ".local/share/nautilus/scripts/SORAI Toolkit";
+    let root = ".local/share/nautilus/scripts/downco";
     let body = |rel: &str| &e[p.iter().position(|x| x == &format!("{root}/{rel}")).unwrap_or_else(|| panic!("{rel}"))].contents;
     assert_eq!(
       body("影片/轉成 MP4"),
-      "#!/bin/sh\nIFS='\n'\nset -f\nexec /usr/bin/sorai-toolkit --sorai-convert-to=.mp4 $NAUTILUS_SCRIPT_SELECTED_FILE_PATHS\n"
+      "#!/bin/sh\nIFS='\n'\nset -f\nexec /usr/bin/downco --sorai-convert-to=.mp4 $NAUTILUS_SCRIPT_SELECTED_FILE_PATHS\n"
     );
     assert!(body("影片/轉成 MP3").contains(" --sorai-convert-to=.mp3 $NAUTILUS"));
     assert!(body("圖片/轉成 PDF").contains(" --sorai-convert-to=.pdf $NAUTILUS"));

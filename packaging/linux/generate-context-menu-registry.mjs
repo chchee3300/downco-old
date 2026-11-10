@@ -9,15 +9,15 @@
 // extension needs a different target-format list (its own format excluded)
 // plus a different MimeType, so one file per extension avoids needing any
 // per-action MIME gating inside a single file (which ServiceMenus don't
-// support). Each file's X-KDE-Submenu=SORAI Toolkit groups that file's own
-// actions under one "SORAI Toolkit" cascading entry in Dolphin's context
+// support). Each file's X-KDE-Submenu=downco groups that file's own
+// actions under one "downco" cascading entry in Dolphin's context
 // menu -- this is the single documented/reliable nesting KDE ServiceMenus
-// provide. A DEEPER second-level submenu (e.g. "SORAI Toolkit -> 轉檔 ->
+// provide. A DEEPER second-level submenu (e.g. "downco -> 轉檔 ->
 // 轉成 X", matching the Windows registry's 3-level shell tree) is NOT
 // attempted here because there is no confirmed-working syntax for it
 // without a real KDE/Dolphin environment to test against -- this is an
 // explicit unverified spike item (see the plan doc). What ships here is
-// the safe fallback: one flat "SORAI Toolkit" submenu per file containing
+// the safe fallback: one flat "downco" submenu per file containing
 // that extension's full target-format matrix + (video only) quick-compress
 // + (pdf only) compress-pdf, which is guaranteed to work by the single-
 // level X-KDE-Submenu mechanism regardless of how the deeper-nesting
@@ -101,19 +101,19 @@ function buildDesktopFile(ext, category) {
 
   function addAction(id, name, exec) {
     actionIds.push(id)
-    actionBlocks.push(`[Desktop Action ${id}]\nName=${name}\nIcon=sorai-toolkit\nExec=${exec}\n`)
+    actionBlocks.push(`[Desktop Action ${id}]\nName=${name}\nIcon=downco\nExec=${exec}\n`)
   }
 
   if (category === 'pdf') {
-    addAction('CompressPdf', '壓縮 PDF', '/usr/bin/sorai-toolkit --sorai-quick-action=compress-pdf %f')
+    addAction('CompressPdf', '壓縮 PDF', '/usr/bin/downco --sorai-quick-action=compress-pdf %f')
   } else {
     for (const targetFormat of targetFormatsFor(ext, category)) {
       const label = FORMAT_LABELS[targetFormat] || targetFormat.slice(1).toUpperCase()
-      addAction(`ConvertTo_${targetFormat.slice(1)}`, `轉成 ${label}`, `/usr/bin/sorai-toolkit --sorai-convert-to=${targetFormat} %f`)
+      addAction(`ConvertTo_${targetFormat.slice(1)}`, `轉成 ${label}`, `/usr/bin/downco --sorai-convert-to=${targetFormat} %f`)
     }
     if (category === 'video') {
       for (const mb of TARGET_SIZE_PRESETS_MB) {
-        addAction(`QuickCompress_${mb}MB`, `快速壓縮到 ${mb}MB 以下`, `/usr/bin/sorai-toolkit --sorai-quick-action=compress-under:${mb} %f`)
+        addAction(`QuickCompress_${mb}MB`, `快速壓縮到 ${mb}MB 以下`, `/usr/bin/downco --sorai-quick-action=compress-under:${mb} %f`)
       }
     }
   }
@@ -123,8 +123,8 @@ function buildDesktopFile(ext, category) {
     'Type=Service',
     'X-KDE-ServiceTypes=KonqPopupMenu/Plugin',
     `MimeType=${mime};`,
-    'X-KDE-Submenu=SORAI Toolkit',
-    'Icon=sorai-toolkit',
+    'X-KDE-Submenu=downco',
+    'Icon=downco',
     `Actions=${actionIds.join(';')};`,
     '',
   ].join('\n')
@@ -139,7 +139,7 @@ let fileCount = 0
 for (const [category, exts] of Object.entries(INPUT_EXTENSIONS)) {
   for (const ext of exts) {
     const content = buildDesktopFile(ext, category)
-    const outPath = path.join(OUT_DIR, `sorai-toolkit-${ext}.desktop`)
+    const outPath = path.join(OUT_DIR, `downco-${ext}.desktop`)
     fs.writeFileSync(outPath, content, 'utf8')
     fileCount++
   }

@@ -1002,6 +1002,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "downco"
+version = "0.1.0"
+dependencies = [
+ "log",
+ "notify-rust",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-log",
+ "tauri-plugin-notification",
+ "tauri-plugin-opener",
+ "tauri-plugin-process",
+ "tauri-plugin-shell",
+ "tauri-plugin-single-instance",
+ "tauri-plugin-sorai-converter",
+ "tauri-plugin-sorai-downloader",
+ "tauri-plugin-updater",
+ "windows-sys 0.60.2",
+ "winreg 0.55.0",
+]
+
+[[package]]
 name = "dpi"
 version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3910,30 +3934,6 @@ dependencies = [
  "wasm-bindgen",
  "web-sys",
  "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "sorai-toolkit"
-version = "0.1.0"
-dependencies = [
- "log",
- "notify-rust",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-log",
- "tauri-plugin-notification",
- "tauri-plugin-opener",
- "tauri-plugin-process",
- "tauri-plugin-shell",
- "tauri-plugin-single-instance",
- "tauri-plugin-sorai-converter",
- "tauri-plugin-sorai-downloader",
- "tauri-plugin-updater",
- "windows-sys 0.60.2",
- "winreg 0.55.0",
 ]
 
 [[package]]

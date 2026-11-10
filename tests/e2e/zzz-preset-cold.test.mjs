@@ -18,7 +18,7 @@ import { appCount, invoke } from './helpers.mjs'
 import { killTree, ports, webview2Args } from '../../scripts/tauri-dev.mjs'
 
 const hub = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
-const exe = join(hub, 'src-tauri', 'target', 'debug', 'sorai-toolkit.exe')
+const exe = join(hub, 'src-tauri', 'target', 'debug', 'downco.exe')
 const FFMPEG = join(hub, 'binaries', 'win_x64', 'ffmpeg.exe')
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
 const up = (url) => fetch(url).then((r) => r.ok, () => false)
@@ -34,7 +34,7 @@ async function until(what, fn, timeout = 30_000) {
 }
 
 const devTreeExists = (cdpPort) =>
-  spawnSync('reg', ['query', `HKCU\\Software\\SORAI Toolkit Dev\\com.soraitoolkit.hub.dev${cdpPort}`], { stdio: 'ignore' }).status === 0
+  spawnSync('reg', ['query', `HKCU\\Software\\downco Dev\\com.downco.hub.dev${cdpPort}`], { stdio: 'ignore' }).status === 0
 
 const exited = (p) => p.exitCode !== null ? Promise.resolve(p.exitCode) : new Promise((r) => p.on('exit', r))
 

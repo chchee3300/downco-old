@@ -16,7 +16,7 @@ import logoLight from '../../resources/icons/appIcon-light.png'
 // names.
 export default function Header({ toolLabel, showBackToHub, onBackToHub, theme, onToggleTheme, updater, closeBehavior, presetsRequest, onEditPreset }) {
   const { t } = useTranslation()
-  // Only the mark itself is the click target -- "Toolkit" / the breadcrumb
+  // Only the mark itself is the click target -- "downco" / the breadcrumb
   // text next to it reads as a label, not a button, so it stays a plain
   // <span> even when showBackToHub is true. Used to be the whole .logo row
   // (text included); narrowed after feedback that the wider hit area read
@@ -46,7 +46,7 @@ export default function Header({ toolLabel, showBackToHub, onBackToHub, theme, o
           ) : (
             mark
           )}
-          <span className="logo-text">Toolkit</span>
+          <span className="logo-text">downco</span>
           <span className={toolLabel ? 'logo-sep' : 'logo-sep hidden'}>&nbsp;/&nbsp;</span>
           <span className="logo-type">{toolLabel || ''}</span>
         </div>

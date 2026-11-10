@@ -1,7 +1,7 @@
 // The app-written Explorer menu (src-tauri/src/context_menu.rs) and the
 // --sorai-open / --sorai-presets / --sorai-register-menu launches. A dev
 // build's identifier isn't the production one, so every write here lands in
-// HKCU\Software\SORAI Toolkit Dev\<identifier>\Classes, never the real menu.
+// HKCU\Software\downco Dev\<identifier>\Classes, never the real menu.
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { copyFileSync, mkdtempSync, rmSync } from 'node:fs'
@@ -42,7 +42,7 @@ export const tests = {
       rmSync(join(process.env.APPDATA, identifier, 'menu-lang.txt'))
       assert.equal(await run(['--sorai-register-menu']), 0)
       await expectRegistryMatches(page, 'zh-TW')
-      const muiverb = readRegistry(root).find((v) => v.key === 'SystemFileAssociations\\.mp3\\shell\\SORAIToolkit\\shell\\001' && v.name === 'MUIVerb')
+      const muiverb = readRegistry(root).find((v) => v.key === 'SystemFileAssociations\\.mp3\\shell\\downco\\shell\\001' && v.name === 'MUIVerb')
       assert.equal(muiverb.data, '轉成 WAV')
     } finally {
       await setLang('en')

@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "SORAI Toolkit",
+  "productName": "downco",
   "version": "2.2.0",
-  "identifier": "com.soraitoolkit.hub",
+  "identifier": "com.downco.hub",
   "build": {
     "frontendDist": "../web-dist",
     "devUrl": "http://localhost:5173",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "SORAI Toolkit",
+        "title": "downco",
         "width": 1060,
         "height": 700,
         "minWidth": 660,

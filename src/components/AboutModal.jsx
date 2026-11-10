@@ -90,7 +90,7 @@ export default function AboutModal({ open, onClose, theme, updater }) {
           <div className="about-modal-header">
             <img src={theme === 'light' ? logoLight : logoDark} alt="" className="about-modal-icon" />
             <div>
-              <h3 id="about-modal-title" className="about-modal-title">SORAI Toolkit</h3>
+              <h3 id="about-modal-title" className="about-modal-title">downco</h3>
               <p className="about-modal-tagline">{t('about.tagline')}</p>
             </div>
           </div>

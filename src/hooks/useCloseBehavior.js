@@ -59,7 +59,7 @@ export function useCloseBehavior() {
         id: TRAY_ID,
         icon: await trayIcon(),
         iconAsTemplate: true, // macOS only
-        tooltip: 'SORAI Toolkit',
+        tooltip: 'downco',
         menu: await buildTrayMenu(),
         showMenuOnLeftClick: false,
         action: (e) => {

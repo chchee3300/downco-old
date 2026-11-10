@@ -111,15 +111,15 @@ export const dict = {
     'settings.engines.downloading': ({ percent }) => `Downloading… ${percent}%`,
     'settings.close': 'Close',
 
-    'closeConfirm.title': 'Close SORAI Toolkit?',
+    'closeConfirm.title': 'Close downco?',
     'closeConfirm.body': 'You can keep it running in the background, or quit completely.',
     'closeConfirm.rememberChoice': 'Remember my choice (change anytime in Settings)',
     'closeConfirm.minimizeToTray': 'Minimize to tray',
     'closeConfirm.quit': 'Quit',
 
-    'tray.open': 'Open SORAI Toolkit',
+    'tray.open': 'Open downco',
     'tray.quit': 'Quit',
-    'tray.notifyTitle': 'SORAI Toolkit is still running',
+    'tray.notifyTitle': 'downco is still running',
     'tray.notifyBody': "It's now in the background — click the tray icon to bring it back.",
 
     'updateBanner.available': ({ version }) => `Update available — v${version}`,
@@ -135,7 +135,7 @@ export const dict = {
     'updateBanner.upToDate': ({ version }) => `You're up to date — v${version}`,
 
     'about.title': 'About',
-    'about.tagline': 'A local, no-upload file toolkit',
+    'about.tagline': 'Download and convert, all on your own machine',
     'about.updateAvailable': ({ version }) => `New version available — v${version}`,
     'about.updateNow': 'Update now',
     'about.viewOnGithub': 'View on GitHub',
@@ -143,7 +143,7 @@ export const dict = {
     'about.developer': 'Developer',
     'about.license': 'License',
     'about.homepage': 'Homepage',
-    'about.description': 'SORAI Toolkit is a desktop suite of local file tools — currently a video/image/audio/PDF Converter and a video Downloader — built with Tauri and React. Everything runs on your own machine; no file is ever uploaded anywhere.',
+    'about.description': 'downco is a desktop app that downloads videos and converts video, image, audio, PDF and document files, built with Tauri and React. Everything runs on your own machine; no file is ever uploaded anywhere.',
     'about.thirdPartyHeading': 'Third-party software',
     'about.viewFullLicenses': 'View full third-party license details',
     'about.close': 'Close',
@@ -243,15 +243,15 @@ export const dict = {
     'settings.engines.downloading': ({ percent }) => `下載中… ${percent}%`,
     'settings.close': '關閉',
 
-    'closeConfirm.title': '要關閉 SORAI Toolkit 嗎？',
+    'closeConfirm.title': '要關閉 downco 嗎？',
     'closeConfirm.body': '你可以讓它繼續在背景執行，或是直接結束程式。',
     'closeConfirm.rememberChoice': '記住我的選擇（之後可以在設定裡改）',
     'closeConfirm.minimizeToTray': '縮到背景執行',
     'closeConfirm.quit': '結束程式',
 
-    'tray.open': '開啟 SORAI Toolkit',
+    'tray.open': '開啟 downco',
     'tray.quit': '結束程式',
-    'tray.notifyTitle': 'SORAI Toolkit 仍在執行中',
+    'tray.notifyTitle': 'downco 仍在執行中',
     'tray.notifyBody': '已縮到背景執行，點擊系統匣圖示即可開啟。',
 
     'updateBanner.available': ({ version }) => `有可用更新－v${version}`,
@@ -267,7 +267,7 @@ export const dict = {
     'updateBanner.upToDate': ({ version }) => `目前已是最新版本－v${version}`,
 
     'about.title': '關於',
-    'about.tagline': '本機、免上傳的檔案工具箱',
+    'about.tagline': '下載與轉檔，全部在你自己的電腦上完成',
     'about.updateAvailable': ({ version }) => `有新版本可用－v${version}`,
     'about.updateNow': '立即更新',
     'about.viewOnGithub': '在 GitHub 上查看',
@@ -275,7 +275,7 @@ export const dict = {
     'about.developer': '軟體開發者',
     'about.license': '授權方式',
     'about.homepage': '專案首頁',
-    'about.description': 'SORAI Toolkit 是一套本機檔案工具箱，目前包含影片/圖片/音訊/PDF 轉檔工具與影片下載工具，使用 Tauri 與 React 打造。所有處理都在你自己的電腦上完成，不會上傳任何檔案。',
+    'about.description': 'downco 是一個下載影片、轉換影片/圖片/音訊/PDF/文件檔的桌面 app，使用 Tauri 與 React 打造。所有處理都在你自己的電腦上完成，不會上傳任何檔案。',
     'about.thirdPartyHeading': '第三方軟體',
     'about.viewFullLicenses': '查看完整第三方授權內容',
     'about.close': '關閉',

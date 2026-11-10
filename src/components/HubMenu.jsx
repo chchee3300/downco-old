@@ -16,20 +16,22 @@ import { useTranslation } from '../hooks/useTranslation.js'
 // languages actually re-renders this list. App.jsx's header breadcrumb
 // reuses these same `hub.tool.<id>.label` keys instead of duplicating the
 // strings a second time.
+// The two tool icons are the downco logo split in two (geometry: resources/brand/source/tool-icons.py,
+// paths copied from its output): the Converter is its loop with both
+// arrowheads, the Downloader its drop (turn, stem, arrowhead) onto a line.
 const ConverterIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M4 12a8 8 0 0 1 14-5.3" />
-    <path d="M20 12a8 8 0 0 1-14 5.3" />
-    <path d="M18 3v4h-4" />
-    <path d="M6 21v-4h4" />
+    <path d="M5.5 15.35A7.5 7.5 0 1 1 15.75 18.1" />
+    <path d="M16.63 14.81l-.88 3.29 3.28.88" />
+    <path d="M2.22 14.47l3.28.88.88-3.28" />
   </svg>
 )
 
 const DownloaderIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M12 4v12" />
-    <path d="M7 12l5 5 5-5" />
-    <path d="M4 20h16" />
+    <path d="M18.5 4A6.5 6.5 0 0 0 12 10.5v7" />
+    <path d="M9.03 14.53L12 17.5l2.97-2.97" />
+    <path d="M5 20.5h14" />
   </svg>
 )
 

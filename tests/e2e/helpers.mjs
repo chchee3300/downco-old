@@ -17,17 +17,17 @@ export const stubDialogs = (page, results) =>
     for (const [name, value] of Object.entries(r)) window.SoraiDialogs[name] = async () => value
   }, results)
 
-// How many of this worktree's app exes (src-tauri/target/**/sorai-toolkit.exe)
+// How many of this worktree's app exes (src-tauri/target/**/downco.exe)
 // are running? Scoped by path so other worktrees' windows don't count. Windows only.
 export function appCount() {
   const target = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src-tauri', 'target').replace(/'/g, "''")
-  const ps = `@(Get-CimInstance Win32_Process -Filter "Name='sorai-toolkit.exe'" | ? { $_.ExecutablePath -like '${target}\*' }).Count`
+  const ps = `@(Get-CimInstance Win32_Process -Filter "Name='downco.exe'" | ? { $_.ExecutablePath -like '${target}\*' }).Count`
   return Number(execFileSync('powershell', ['-NoProfile', '-Command', ps], { encoding: 'utf8' }).trim())
 }
 export const appRunning = () => appCount() > 0
 
 // Run the debug exe with args (a second instance forwards and exits) -> exit code.
-export const exe = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src-tauri', 'target', 'debug', 'sorai-toolkit.exe')
+export const exe = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src-tauri', 'target', 'debug', 'downco.exe')
 export function runExe(args) {
   const p = spawn(exe, args, { stdio: 'ignore' })
   return new Promise((resolve, reject) => {

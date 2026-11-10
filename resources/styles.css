@@ -275,7 +275,7 @@ body {
   margin-right: 0.5rem;
 }
 
-.logo-text  { color: var(--text-primary); }
+.logo-text  { color: var(--text-primary); text-transform: none; letter-spacing: 0.02em; }
 
 .logo-sep   {
   color: var(--text-dim);
@@ -753,7 +753,7 @@ body {
 .menu-preview-menu:first-child { flex: 0 0 128px; }
 .menu-preview-skel span { display: block; width: 70%; height: 6px; border-radius: 4px; background: var(--surface-3); }
 .menu-preview-skel:nth-child(even) span { width: 50%; }
-/* "SORAI Toolkit" as if hovered. */
+/* "downco" as if hovered. */
 .menu-preview-root { background: var(--surface-3); }
 .menu-preview-icon { width: 14px; height: 14px; flex: none; }
 [data-theme="light"] .menu-preview-icon.on-dark,

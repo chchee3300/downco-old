@@ -1,8 +1,8 @@
 //! Windows Explorer right-click menu, written by the app from the current
 //! presets and language: `entries()` is the pure part (what to write),
 //! `write()` the thin registry layer. Classic cascading verbs under
-//! `HKCU\<root>\SystemFileAssociations\.<ext>\shell\SORAIToolkit`: the presets that apply to the
-//! extension's type (list order), then (separator) "Open in SORAI Toolkit…"
+//! `HKCU\<root>\SystemFileAssociations\.<ext>\shell\downco`: the presets that apply to the
+//! extension's type (list order), then (separator) "Open in downco…"
 //! and "Manage presets…".
 
 use std::collections::HashMap;
@@ -21,7 +21,9 @@ pub const INPUT_EXTS: [(&str, &[&str]); 4] = [
   ("pdf", &["pdf"]),
 ];
 
-pub const MENU_KEY: &str = "SORAIToolkit";
+pub const MENU_KEY: &str = "downco";
+/// The key name before the rename to downco (2.2.0 and earlier); removed on every write.
+const OLD_MENU_KEY: &str = "SORAIToolkit";
 
 /// Where an extension's menu lives, relative to the classes root.
 /// `SystemFileAssociations` is read for every file of that extension;
@@ -32,18 +34,23 @@ pub fn ext_key(ext: &str) -> String {
   format!(r"SystemFileAssociations\.{ext}\shell\{MENU_KEY}")
 }
 
-/// 2.0.0 and pre-release builds wrote here; removed on every write.
-fn legacy_key(ext: &str) -> String {
-  format!(r".{ext}\shell\{MENU_KEY}")
+/// Everything earlier versions wrote for `ext`, removed on every write:
+/// `.<ext>\shell` (2.0.0 and pre-release builds) and the pre-rename key name.
+fn legacy_keys(ext: &str) -> [String; 3] {
+  [
+    format!(r".{ext}\shell\{MENU_KEY}"),
+    format!(r"SystemFileAssociations\.{ext}\shell\{OLD_MENU_KEY}"),
+    format!(r".{ext}\shell\{OLD_MENU_KEY}"),
+  ]
 }
-pub const PRODUCTION_ID: &str = "com.soraitoolkit.hub";
+pub const PRODUCTION_ID: &str = "com.downco.hub";
 /// Language `--sorai-register-menu` (installer/updater) falls back to when
 /// the app never wrote a menu (no `LANG_FILE` yet).
 pub const INSTALL_LANG: &str = "zh-TW";
 /// Beside presets.json: the language of the last menu written, so the
 /// installer/updater rewrite keeps the user's language.
 pub const LANG_FILE: &str = "menu-lang.txt";
-/// ECF_SEPARATORBEFORE: a separator above "Open in SORAI Toolkit…".
+/// ECF_SEPARATORBEFORE: a separator above "Open in downco…".
 const SEPARATOR_BEFORE: u32 = 0x20;
 
 // Single source of truth for these labels: the hub's dict.js imports the same file.
@@ -65,13 +72,13 @@ pub struct RegValue {
 }
 
 /// The real menu lives under `Software\Classes` only for the production
-/// identifier; dev/E2E builds (`com.soraitoolkit.hub.dev<port>`) write a
+/// identifier; dev/E2E builds (`com.downco.hub.dev<port>`) write a
 /// scoped tree Explorer never reads, so tests can't touch the installed app's menu.
 pub fn classes_root(identifier: &str) -> String {
   if identifier == PRODUCTION_ID {
     r"Software\Classes".into()
   } else {
-    format!(r"Software\SORAI Toolkit Dev\{identifier}\Classes")
+    format!(r"Software\downco Dev\{identifier}\Classes")
   }
 }
 
@@ -124,7 +131,7 @@ pub fn entries(presets: &[Preset], lang: &str, exe: &str) -> Vec<RegValue> {
   for (file_type, exts) in INPUT_EXTS {
     for ext in exts {
       let root = ext_key(ext);
-      put(&root, "MUIVerb", str("SORAI Toolkit"));
+      put(&root, "MUIVerb", str("downco"));
       put(&root, "Icon", RegData::Str(format!("\"{exe}\",0")));
       put(&root, "SubCommands", str(""));
       // Explorer orders static verbs by key name, hence the zero-padded index.
@@ -149,15 +156,15 @@ pub fn entries(presets: &[Preset], lang: &str, exe: &str) -> Vec<RegValue> {
   out
 }
 
-/// Deletes every extension's whole `SORAIToolkit` subtree (2.0.0's fixed menu
-/// included), then writes `values`. No diffing.
+/// Deletes every extension's whole menu subtree (2.0.0's fixed menu and the
+/// pre-rename `SORAIToolkit` one included), then writes `values`. No diffing.
 #[cfg(windows)]
 pub fn write(root: &str, values: &[RegValue]) -> std::io::Result<()> {
   use winreg::{RegKey, enums::HKEY_CURRENT_USER};
   let hkcu = RegKey::predef(HKEY_CURRENT_USER);
   for (_, exts) in INPUT_EXTS {
     for ext in exts {
-      for key in [ext_key(ext), legacy_key(ext)] {
+      for key in std::iter::once(ext_key(ext)).chain(legacy_keys(ext)) {
         match hkcu.delete_subkey_all(format!(r"{root}\{key}")) {
           Err(e) if e.kind() != std::io::ErrorKind::NotFound => return Err(e),
           _ => {}
@@ -190,8 +197,8 @@ pub fn remove_dev_tree(identifier: &str) {
     return;
   }
   let hkcu = RegKey::predef(HKEY_CURRENT_USER);
-  let _ = hkcu.delete_subkey_all(format!(r"Software\SORAI Toolkit Dev\{identifier}"));
-  let _ = hkcu.delete_subkey(r"Software\SORAI Toolkit Dev"); // only succeeds once empty
+  let _ = hkcu.delete_subkey_all(format!(r"Software\downco Dev\{identifier}"));
+  let _ = hkcu.delete_subkey(r"Software\downco Dev"); // only succeeds once empty
 }
 
 /// The language last written to the menu in `dir` (the presets folder), else `INSTALL_LANG`.
@@ -225,7 +232,7 @@ mod tests {
   use crate::presets::builtins;
   use serde_json::json;
 
-  const EXE: &str = r"C:\Users\A B\AppData\Local\SORAI Toolkit\sorai-toolkit.exe";
+  const EXE: &str = r"C:\Users\A B\AppData\Local\downco\downco.exe";
 
   fn get<'a>(v: &'a [RegValue], key: &str, name: &str) -> Option<&'a RegData> {
     v.iter().find(|r| r.key == key && r.name == name).map(|r| &r.data)
@@ -252,7 +259,7 @@ mod tests {
     let v = entries(&builtins(), "en", EXE);
     for ext in ["mp4", "mkv", "avi", "mov", "webm", "jpg", "jpeg", "png", "webp", "avif", "gif", "ico", "mp3", "wav", "aac", "m4a", "flac", "ogg", "pdf"] {
       let root = ext_key(ext);
-      assert_eq!(get(&v, &root, "MUIVerb"), s("SORAI Toolkit").as_ref(), "{ext}");
+      assert_eq!(get(&v, &root, "MUIVerb"), s("downco").as_ref(), "{ext}");
       assert_eq!(get(&v, &root, "SubCommands"), s("").as_ref());
       assert_eq!(get(&v, &root, "Icon"), s(&format!("\"{EXE}\",0")).as_ref());
     }
@@ -285,7 +292,7 @@ mod tests {
         ("Compress under 5 MB".into(), cmd("--sorai-preset=video-under-5mb")),
         ("Compress under 25 MB".into(), cmd("--sorai-preset=video-under-25mb")),
         ("Compress under 50 MB".into(), cmd("--sorai-preset=video-under-50mb")),
-        ("Open in SORAI Toolkit…".into(), cmd("--sorai-open")),
+        ("Open in downco…".into(), cmd("--sorai-open")),
         ("Manage presets…".into(), format!("\"{EXE}\" --sorai-presets")),
       ]
     );
@@ -298,14 +305,14 @@ mod tests {
   fn chinese_labels_and_types_follow_the_converter() {
     let v = entries(&builtins(), "zh-TW", EXE);
     let labels = |ext| items(&v, ext).into_iter().map(|(l, _)| l).collect::<Vec<_>>();
-    assert_eq!(labels("pdf"), ["壓縮 PDF", "在 SORAI Toolkit 中開啟…", "設定預設…"]);
+    assert_eq!(labels("pdf"), ["壓縮 PDF", "在 downco 中開啟…", "設定預設…"]);
     // .gif is an image input (not video); .jpeg drops "to JPG" like .jpg does.
-    assert_eq!(labels("gif"), ["轉成 JPG", "轉成 PNG", "轉成 WEBP", "轉成 AVIF", "轉成 ICO", "轉成 PDF", "在 SORAI Toolkit 中開啟…", "設定預設…"]);
+    assert_eq!(labels("gif"), ["轉成 JPG", "轉成 PNG", "轉成 WEBP", "轉成 AVIF", "轉成 ICO", "轉成 PDF", "在 downco 中開啟…", "設定預設…"]);
     assert_eq!(labels("jpeg")[0], "轉成 PNG");
     assert_eq!(labels("mov")[0], "轉成 MP4");
     assert_eq!(labels("mov")[5], "轉成 MP3");
     assert_eq!(labels("mov")[6], "快速壓縮到 5MB 以下");
-    assert_eq!(labels("ogg"), ["轉成 MP3", "轉成 WAV", "轉成 AAC", "轉成 M4A", "轉成 FLAC", "在 SORAI Toolkit 中開啟…", "設定預設…"]);
+    assert_eq!(labels("ogg"), ["轉成 MP3", "轉成 WAV", "轉成 AAC", "轉成 M4A", "轉成 FLAC", "在 downco 中開啟…", "設定預設…"]);
     // Unknown language falls back to English.
     assert_eq!(items(&entries(&builtins(), "fr", EXE), "pdf")[0].0, "Compress PDF");
   }
@@ -329,9 +336,9 @@ mod tests {
     let nsh = include_str!("../../packaging/windows/installer-hooks.nsh");
     for (_, exts) in INPUT_EXTS {
       for ext in exts {
-        for key in [ext_key(ext), legacy_key(ext)] {
+        for key in std::iter::once(ext_key(ext)).chain(legacy_keys(ext)) {
           assert!(nsh.contains(&format!(r#"DeleteRegKey HKCU "Software\Classes\{key}""#)), "{key}");
-          let shell = key.trim_end_matches(&format!(r"\{MENU_KEY}")).to_string();
+          let shell = key.rsplit_once('\\').unwrap().0;
           assert!(nsh.contains(&format!(r#"DeleteRegKey /ifempty HKCU "Software\Classes\{shell}""#)), "{shell}");
         }
       }
@@ -374,7 +381,7 @@ mod tests {
 
   #[test]
   fn only_the_production_build_writes_the_real_menu() {
-    assert_eq!(classes_root("com.soraitoolkit.hub"), r"Software\Classes");
-    assert_eq!(classes_root("com.soraitoolkit.hub.dev9249"), r"Software\SORAI Toolkit Dev\com.soraitoolkit.hub.dev9249\Classes");
+    assert_eq!(classes_root("com.downco.hub"), r"Software\Classes");
+    assert_eq!(classes_root("com.downco.hub.dev9249"), r"Software\downco Dev\com.downco.hub.dev9249\Classes");
   }
 }

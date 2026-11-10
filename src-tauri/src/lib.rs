@@ -1,4 +1,5 @@
 mod context_menu;
+mod migrate;
 mod presets;
 mod self_install;
 
@@ -194,7 +195,7 @@ async fn queue_background(app: tauri::AppHandle, preset_id: String, files: Vec<S
   // taskbar, whose right-click "Close window" closes it), translucent, in the
   // bottom-right corner of the monitor the user right-clicked on.
   let w = WebviewWindowBuilder::new(&app, PROGRESS, WebviewUrl::App("index.html".into()))
-    .title("SORAI Toolkit")
+    .title("downco")
     .inner_size(420.0, 300.0)
     .resizable(false)
     .decorations(false)
@@ -366,6 +367,8 @@ fn register_menu_and_exit(identifier: &str) -> i32 {
 pub fn run() {
   let cold_argv: Vec<String> = std::env::args_os().map(|a| a.to_string_lossy().into_owned()).collect();
   let context = tauri::generate_context!();
+  // Before anything reads or writes app data (the installer's menu step included).
+  migrate::run(&context.config().identifier);
   // The installer's post-install hook: write the menu (built-ins / saved
   // presets, the app's last menu language, else Chinese) and exit before any
   // window or plugin exists.

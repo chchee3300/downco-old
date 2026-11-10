@@ -2,7 +2,7 @@ const FORMAT_PREFIX = '--sorai-convert-to='
 const QUICK_ACTION_PREFIX = '--sorai-quick-action='
 // Right-click preset: converts in the progress window, main window untouched.
 const PRESET_PREFIX = '--sorai-preset='
-// "Open in SORAI Toolkit…": files into the Converter queue, nothing preset.
+// "Open in downco…": files into the Converter queue, nothing preset.
 const OPEN_FLAG = '--sorai-open'
 // "Manage presets…": settings' presets section; takes no files.
 const PRESETS_FLAG = '--sorai-presets'
@@ -15,9 +15,9 @@ const PRESETS_FLAG = '--sorai-presets'
 //
 // Every launch path this app controls places one of the two --sorai-*
 // flags first and the selected file paths after it:
-//   Windows registry:  "<app>\sorai-toolkit.exe" --sorai-convert-to=.ogg %1
-//   macOS Quick Action: open -n -a "SORAI Toolkit" --args --sorai-convert-to=.ogg "$@"
-//   Linux Dolphin:      /usr/bin/sorai-toolkit --sorai-convert-to=.ogg %f
+//   Windows registry:  "<app>\downco.exe" --sorai-convert-to=.ogg %1
+//   macOS Quick Action: open -n -a "downco" --args --sorai-convert-to=.ogg "$@"
+//   Linux Dolphin:      /usr/bin/downco --sorai-convert-to=.ogg %f
 // So file paths are "every non-flag token following the recognized
 // flag" -- not anything positional/heuristic about looking like a path.
 // This also naturally drops the binary's own argv[0] path and any

@@ -11,7 +11,7 @@ import { appCount } from './helpers.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const fixtures = join(here, '..', 'fixtures')
-const exe = join(here, '..', '..', 'src-tauri', 'target', 'debug', 'sorai-toolkit.exe')
+const exe = join(here, '..', '..', 'src-tauri', 'target', 'debug', 'downco.exe')
 const dir = mkdtempSync(join(tmpdir(), 'sorai 啟動 '))
 const rows = (page) => page.locator('.file-item')
 

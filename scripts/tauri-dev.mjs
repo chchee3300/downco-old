@@ -45,7 +45,7 @@ export function tauriDev({ vitePort, cdpPort, userDataDir, stdio = 'inherit' }) 
   }
   return spawn(
     process.execPath,
-    [join(root, 'node_modules', '@tauri-apps', 'cli', 'tauri.js'), 'dev', '--config', JSON.stringify({ identifier: `com.soraitoolkit.hub.dev${cdpPort}`, build: { devUrl }, app }), ...watch],
+    [join(root, 'node_modules', '@tauri-apps', 'cli', 'tauri.js'), 'dev', '--config', JSON.stringify({ identifier: `com.downco.hub.dev${cdpPort}`, build: { devUrl }, app }), ...watch],
     {
       cwd: root,
       stdio,

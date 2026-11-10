@@ -1,6 +1,6 @@
-# SORAI Toolkit
+# downco
 
-A desktop suite of local, no-upload file tools, built with [Tauri v2](https://tauri.app/) and React. This is the **hub repo**: the installable app itself — window shell, main-menu hub, tray, single instance, theme, in-app updates, packaging — composing individual tools that each live in their own repo.
+Download and convert media on your own machine, no uploads. A desktop app, built with [Tauri v2](https://tauri.app/) and React. This is the **hub repo**: the installable app itself — window shell, main-menu hub, tray, single instance, theme, in-app updates, packaging — composing individual tools that each live in their own repo.
 
 ## Tools
 
@@ -14,10 +14,18 @@ Each tool repo is a Tauri plugin: a Rust crate (`plugin/`, the command building,
 Pick one:
 
 - **Download a pre-built package** — grab the file for your OS from the [latest release](https://github.com/chchee3300/sorai-toolkit/releases/latest):
-  - **Windows** — `sorai-toolkit_*_x64-setup.exe`. Per-user install into `%LOCALAPPDATA%\SORAI Toolkit\`, no admin prompt; adds the Explorer right-click menu: **SORAI Toolkit** → your presets for that file type, *Open in SORAI Toolkit…*, *Manage presets…*. The menu follows the app's language and is rewritten on every start. Windows hides static right-click items when more than 15 files are selected; for bigger batches, drag the files into the app instead.
-  - **macOS** — `sorai-toolkit_*_mac_x64.dmg` (Intel) or `*_mac_arm64.dmg` (Apple Silicon). Open it and drag the app into Applications. These builds aren't code-signed, so the first launch needs right-click → Open (or System Settings → Privacy & Security → "Open Anyway") to get past Gatekeeper.
-  - **Linux** — `sorai-toolkit_*_amd64.deb` (`sudo apt install ./sorai-toolkit_*_amd64.deb`) or `sorai-toolkit-*.x86_64.rpm` (`sudo dnf install ./sorai-toolkit-*.x86_64.rpm`). Both pull in `qpdf`, `img2pdf`, webkit2gtk and gtk3, and install the KDE Dolphin right-click menu. They ship their own `ffmpeg` and `yt-dlp` in `/usr/lib/SORAI Toolkit/` (not on `PATH`), so a distro `ffmpeg`/`yt-dlp` package is left alone.
+  - **Windows** — `downco_*_x64-setup.exe`. Per-user install into `%LOCALAPPDATA%\downco\`, no admin prompt; adds the Explorer right-click menu: **downco** → your presets for that file type, *Open in downco…*, *Manage presets…*. The menu follows the app's language and is rewritten on every start. Windows hides static right-click items when more than 15 files are selected; for bigger batches, drag the files into the app instead.
+  - **macOS** — `downco_*_mac_x64.dmg` (Intel) or `*_mac_arm64.dmg` (Apple Silicon). Open it and drag the app into Applications. These builds aren't code-signed, so the first launch needs right-click → Open (or System Settings → Privacy & Security → "Open Anyway") to get past Gatekeeper.
+  - **Linux** — `downco_*_amd64.deb` (`sudo apt install ./downco_*_amd64.deb`) or `downco-*.x86_64.rpm` (`sudo dnf install ./downco-*.x86_64.rpm`). Both pull in `qpdf`, `img2pdf`, webkit2gtk and gtk3, and install the KDE Dolphin right-click menu. They ship their own `ffmpeg` and `yt-dlp` in `/usr/lib/downco/` (not on `PATH`), so a distro `ffmpeg`/`yt-dlp` package is left alone.
 - **Build it yourself from source** — see [Setup](#setup) below.
+
+### Upgrading from SORAI Toolkit (2.2.0 and earlier)
+
+downco was called SORAI Toolkit. Updating from it works like any other update (in-app or by running the new installer):
+
+- **Windows**: the installer moves your presets, settings and downloaded engines to downco's folders, then removes SORAI Toolkit (its Start-menu entry, right-click menu and install folder).
+- **Linux**: the `downco` package replaces `sorai-toolkit`.
+- **macOS**: drag downco into Applications and delete SORAI Toolkit; downco picks up its settings on first launch.
 
 ### Upgrading from 1.x (the Neutralino builds)
 

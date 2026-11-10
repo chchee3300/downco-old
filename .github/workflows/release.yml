@@ -159,8 +159,8 @@ jobs:
           VITE_OFFICIAL_BUILD: 'true'
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-      # Tauri names bundles "SORAI Toolkit_<ver>_..."; GitHub would turn the
-      # space into a dot on upload, so copy them to fixed, space-free names
+      # Copy the bundles to fixed, space-free names (GitHub turns a space
+      # into a dot on upload; the pre-rename product name had one)
       # (scripts/updater-manifest.mjs + .releaserc.json rely on these).
       # The Windows name deliberately does NOT match the Neutralino-era
       # updater's /setup.*win_x64\.exe$/ -- old installs must not silently
@@ -174,13 +174,13 @@ jobs:
           put() { cp "$1" "release-assets/$2"; if [ -f "$1.sig" ]; then cp "$1.sig" "release-assets/$2.sig"; fi; }
           case "${{ matrix.name }}" in
             windows)
-              for f in "$B"/nsis/*-setup.exe; do put "$f" "sorai-toolkit_${VERSION}_x64-setup.exe"; done ;;
+              for f in "$B"/nsis/*-setup.exe; do put "$f" "downco_${VERSION}_x64-setup.exe"; done ;;
             linux)
-              for f in "$B"/deb/*.deb; do put "$f" "sorai-toolkit_${VERSION}_amd64.deb"; done
-              for f in "$B"/rpm/*.rpm; do put "$f" "sorai-toolkit-${VERSION}.x86_64.rpm"; done ;;
+              for f in "$B"/deb/*.deb; do put "$f" "downco_${VERSION}_amd64.deb"; done
+              for f in "$B"/rpm/*.rpm; do put "$f" "downco-${VERSION}.x86_64.rpm"; done ;;
             mac_*)
-              for f in "$B"/dmg/*.dmg; do put "$f" "sorai-toolkit_${VERSION}_${{ matrix.name }}.dmg"; done
-              for f in "$B"/macos/*.app.tar.gz; do put "$f" "sorai-toolkit_${VERSION}_${{ matrix.name }}.app.tar.gz"; done ;;
+              for f in "$B"/dmg/*.dmg; do put "$f" "downco_${VERSION}_${{ matrix.name }}.dmg"; done
+              for f in "$B"/macos/*.app.tar.gz; do put "$f" "downco_${VERSION}_${{ matrix.name }}.app.tar.gz"; done ;;
           esac
           ls -la release-assets
       - uses: actions/upload-artifact@v4

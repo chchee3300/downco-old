@@ -12,7 +12,7 @@ import { fileURLToPath } from 'node:url'
 import { invoke } from './helpers.mjs'
 
 const fixtures = join(dirname(fileURLToPath(import.meta.url)), '..', 'fixtures')
-const enginesJson = join(process.env.APPDATA, `com.soraitoolkit.hub.dev${process.env.CDP_PORT || 9229}`, 'engines.json')
+const enginesJson = join(process.env.APPDATA, `com.downco.hub.dev${process.env.CDP_PORT || 9229}`, 'engines.json')
 const prompted = () => JSON.parse(readFileSync(enginesJson, 'utf8')).prompted === true
 const prompt = '#engine-prompt .modal-content'
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms))

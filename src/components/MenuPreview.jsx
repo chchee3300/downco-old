@@ -5,10 +5,10 @@ import logoDark from '../../resources/icons/appIcon-dark.png'
 import logoLight from '../../resources/icons/appIcon-light.png'
 
 export const IS_WINDOWS = navigator.userAgent.includes('Windows')
-const MENU = 'SORAIToolkit'
+const MENU = 'downco'
 
 // Beside PresetManager's list (#settings-presets): what right-clicking a file
-// of the picked extension and hovering "SORAI Toolkit" shows in Explorer.
+// of the picked extension and hovering "downco" shows in Explorer.
 // Drawn from context_menu_entries -- the exact values register_context_menu
 // writes -- so it can't drift from the real menu. Refetched whenever the
 // preset list (`list`) or the language changes. Windows only (macOS / GNOME
@@ -83,7 +83,7 @@ export default function MenuPreview({ list, pick, onPick }) {
               <li className="menu-preview-root">
                 <img className="menu-preview-icon on-dark" src={logoDark} alt="" />
                 <img className="menu-preview-icon on-light" src={logoLight} alt="" />
-                SORAI Toolkit
+                downco
                 <span className="menu-preview-arrow">›</span>
               </li>
               <li className="menu-preview-skel"><span></span></li>

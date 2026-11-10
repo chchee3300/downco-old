@@ -19,11 +19,11 @@ const dir = 'release-assets';
 
 // Asset names are set by the "Collect" step in .github/workflows/release.yml.
 const ASSETS = {
-  [`sorai-toolkit_${version}_x64-setup.exe`]: ['windows-x86_64-nsis', 'windows-x86_64'],
-  [`sorai-toolkit_${version}_amd64.deb`]: ['linux-x86_64-deb'],
-  [`sorai-toolkit-${version}.x86_64.rpm`]: ['linux-x86_64-rpm'],
-  [`sorai-toolkit_${version}_mac_x64.app.tar.gz`]: ['darwin-x86_64'],
-  [`sorai-toolkit_${version}_mac_arm64.app.tar.gz`]: ['darwin-aarch64'],
+  [`downco_${version}_x64-setup.exe`]: ['windows-x86_64-nsis', 'windows-x86_64'],
+  [`downco_${version}_amd64.deb`]: ['linux-x86_64-deb'],
+  [`downco-${version}.x86_64.rpm`]: ['linux-x86_64-rpm'],
+  [`downco_${version}_mac_x64.app.tar.gz`]: ['darwin-x86_64'],
+  [`downco_${version}_mac_arm64.app.tar.gz`]: ['darwin-aarch64'],
 };
 
 const platforms = {};

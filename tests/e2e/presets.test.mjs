@@ -26,7 +26,7 @@ const until = async (page, what, fn, timeout = 30_000) => {
 }
 // MUIVerb of each item in the .mp3 cascade, in menu order.
 const mp3Menu = (reg) =>
-  reg.filter((v) => /^SystemFileAssociations\\\.mp3\\shell\\SORAIToolkit\\shell\\\d{3}$/.test(v.key) && v.name === 'MUIVerb')
+  reg.filter((v) => /^SystemFileAssociations\\\.mp3\\shell\\downco\\shell\\\d{3}$/.test(v.key) && v.name === 'MUIVerb')
     .sort((a, b) => a.key.localeCompare(b.key)).map((v) => v.data)
 
 // GlassSelect's hidden <select>: native setter + events.
@@ -110,7 +110,7 @@ export const tests = {
       await until(page, 'user-1 at 20', async () => { const l = await ids(page); return l.indexOf('user-1') === 20 && l[22] === 'audio-to-ogg' })
       await until(page, 'the list to follow', async () => (await shownIds()).at(-2) === 'user-1')
       await expectRegistryMatches(page, 'en')
-      assert.deepEqual(mp3Menu(readRegistry(regRoot)), ['Convert to WAV', 'Convert to AAC', 'Convert to M4A', 'Convert to FLAC', 'Renamed', 'Convert to OGG', 'Open in SORAI Toolkit…', 'Manage presets…'])
+      assert.deepEqual(mp3Menu(readRegistry(regRoot)), ['Convert to WAV', 'Convert to AAC', 'Convert to M4A', 'Convert to FLAC', 'Renamed', 'Convert to OGG', 'Open in downco…', 'Manage presets…'])
       // The preview draws the same submenu (separator above "Open in…"); a
       // built-in "convert to X" isn't on an X file.
       await until(page, 'the preview to match the menu', async () => JSON.stringify(await menuItems()) === JSON.stringify(mp3Menu(readRegistry(regRoot))))
