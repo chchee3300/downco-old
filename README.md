@@ -4,8 +4,8 @@ Download and convert media on your own machine, no uploads. A desktop app, built
 
 ## Tools
 
-- **Converter** ([`sorai-toolkit-converter`](https://github.com/chchee3300/sorai-toolkit-converter)) — convert video, image, audio, and PDF files locally.
-- **Downloader** ([`sorai-toolkit-downloader`](https://github.com/chchee3300/sorai-toolkit-downloader)) — download a video from a URL, pick a format, and save it locally (via `yt-dlp`).
+- **Converter** ([`downco-co`](https://github.com/chchee3300/downco-co)) — convert video, image, audio, and PDF files locally.
+- **Downloader** ([`downco-down`](https://github.com/chchee3300/downco-down)) — download a video from a URL, pick a format, and save it locally (via `yt-dlp`).
 
 Each tool repo is a Tauri plugin: a Rust crate (`plugin/`, the command building, output parsing and process running) plus a React UI package. Both halves come from one npm git dependency (`package.json`'s `dependencies`, built by the tool's own `prepare` script on `npm install`); `src-tauri/Cargo.toml` points at the crate inside it through a link that `scripts/siblings.mjs` generates.
 
@@ -13,7 +13,7 @@ Each tool repo is a Tauri plugin: a Rust crate (`plugin/`, the command building,
 
 Pick one:
 
-- **Download a pre-built package** — grab the file for your OS from the [latest release](https://github.com/chchee3300/sorai-toolkit/releases/latest):
+- **Download a pre-built package** — grab the file for your OS from the [latest release](https://github.com/chchee3300/downco/releases/latest):
   - **Windows** — `downco_*_x64-setup.exe`. Per-user install into `%LOCALAPPDATA%\downco\`, no admin prompt; adds the Explorer right-click menu: **downco** → your presets for that file type, *Open in downco…*, *Manage presets…*. The menu follows the app's language and is rewritten on every start. Windows hides static right-click items when more than 15 files are selected; for bigger batches, drag the files into the app instead.
   - **macOS** — `downco_*_mac_x64.dmg` (Intel) or `*_mac_arm64.dmg` (Apple Silicon). Open it and drag the app into Applications. These builds aren't code-signed, so the first launch needs right-click → Open (or System Settings → Privacy & Security → "Open Anyway") to get past Gatekeeper.
   - **Linux** — `downco_*_amd64.deb` (`sudo apt install ./downco_*_amd64.deb`) or `downco-*.x86_64.rpm` (`sudo dnf install ./downco-*.x86_64.rpm`). Both pull in `qpdf`, `img2pdf`, webkit2gtk and gtk3, and install the KDE Dolphin right-click menu. They ship their own `ffmpeg` and `yt-dlp` in `/usr/lib/downco/` (not on `PATH`), so a distro `ffmpeg`/`yt-dlp` package is left alone.
@@ -134,7 +134,7 @@ To build packages locally: `npx tauri build` (after `npm ci` and `node setup.mjs
 
 ### In-app updates
 
-On launch, the app checks `GET /repos/chchee3300/sorai-toolkit/releases/latest` and compares it against `src/version.json`. If a newer version is available (`src/hooks/useUpdateChecker.js`, `src/components/UpdateBanner.jsx`):
+On launch, the app checks `GET /repos/chchee3300/downco/releases/latest` and compares it against `src/version.json`. If a newer version is available (`src/hooks/useUpdateChecker.js`, `src/components/UpdateBanner.jsx`):
 
 - **Official builds** (built by the workflow, `VITE_OFFICIAL_BUILD=true`): a toast offers "Update now", which hands off to the Tauri updater plugin — it fetches `latest.json`, verifies the signature, installs, and relaunches. Windows runs the NSIS installer in passive mode; Linux runs `dpkg -i` or `rpm -U` behind a pkexec/sudo password prompt (whichever format is installed); macOS replaces the `.app`.
 - **Self-built copies**: only a badge in the menu and About; clicking it opens the release page.

@@ -6,7 +6,7 @@ import versionInfo from '../version.json'
 import { isBackgroundLaunch } from '../lib/mainWindow.js'
 
 // GitHub owner/repo this app is published from -- see .github/workflows/release.yml.
-const REPO = 'chchee3300/sorai-toolkit'
+const REPO = 'chchee3300/downco'
 const LATEST_RELEASE_URL = `https://api.github.com/repos/${REPO}/releases/latest`
 
 // True only for builds produced by .github/workflows/release.yml (which

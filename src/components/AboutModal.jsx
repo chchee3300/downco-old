@@ -5,7 +5,7 @@ import logoDark from '../../resources/icons/appIcon-dark.png'
 import logoLight from '../../resources/icons/appIcon-light.png'
 import { openUrl } from '@tauri-apps/plugin-opener'
 
-const HOMEPAGE_URL = 'https://github.com/chchee3300/sorai-toolkit'
+const HOMEPAGE_URL = 'https://github.com/chchee3300/downco'
 
 // Proper nouns + license identifiers -- not translated, same reasoning
 // HamburgerMenu's own language-name entries use (a license abbreviation
@@ -21,7 +21,7 @@ const THIRD_PARTY_LINKS = [
   { name: 'React', note: 'MIT', url: 'https://github.com/facebook/react/blob/main/LICENSE' },
 ]
 
-const FULL_LICENSES_URL = 'https://github.com/chchee3300/sorai-toolkit/blob/master/THIRD-PARTY-LICENSES.md'
+const FULL_LICENSES_URL = 'https://github.com/chchee3300/downco/blob/master/THIRD-PARTY-LICENSES.md'
 
 // Used to be a liquid-glass-react panel (this file's git history has the
 // full LiquidGlass version). Removed the library entirely, not just its

@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "downco: download and convert media files locally"
 authors = ["chchee3300"]
 license = "MIT"
-repository = "https://github.com/chchee3300/sorai-toolkit"
+repository = "https://github.com/chchee3300/downco"
 edition = "2024"
 rust-version = "1.90"
 

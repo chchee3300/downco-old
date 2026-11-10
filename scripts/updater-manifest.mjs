@@ -14,7 +14,7 @@ if (!version) {
   console.error('Usage: node scripts/updater-manifest.mjs <version>');
   process.exit(1);
 }
-const REPO = 'chchee3300/sorai-toolkit';
+const REPO = 'chchee3300/downco';
 const dir = 'release-assets';
 
 // Asset names are set by the "Collect" step in .github/workflows/release.yml.

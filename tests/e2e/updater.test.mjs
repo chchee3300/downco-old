@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 
-const API = 'https://api.github.com/repos/chchee3300/sorai-toolkit/releases/latest'
+const API = 'https://api.github.com/repos/chchee3300/downco/releases/latest'
 const IPC_OPEN = 'http://ipc.localhost/plugin%3Aopener%7Copen_url'
-const RELEASE_URL = 'https://github.com/chchee3300/sorai-toolkit/releases/tag/v999.0.0'
+const RELEASE_URL = 'https://github.com/chchee3300/downco/releases/tag/v999.0.0'
 
 export const tests = {
   // Dev builds never set VITE_OFFICIAL_BUILD, so this is the self-built path.
