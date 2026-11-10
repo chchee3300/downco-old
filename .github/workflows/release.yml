@@ -218,6 +218,13 @@ jobs:
       # in *this* checkout so @semantic-release/git (.releaserc.json) commits
       # them back as part of the "chore(release)" commit.
       - run: node scripts/write-version.mjs "${{ needs.get-next-version.outputs.version }}"
+      # The "chore(release)" commit is authored as the repo owner (noreply
+      # address), not semantic-release-bot: the owner wants to be the only
+      # contributor listed.
       - run: npx semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GIT_AUTHOR_NAME: CometCafe
+          GIT_AUTHOR_EMAIL: 84435341+chchee3300@users.noreply.github.com
+          GIT_COMMITTER_NAME: CometCafe
+          GIT_COMMITTER_EMAIL: 84435341+chchee3300@users.noreply.github.com
