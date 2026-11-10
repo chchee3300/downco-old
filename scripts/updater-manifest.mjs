@@ -20,10 +20,9 @@ const dir = 'release-assets';
 // Asset names are set by the "Collect" step in .github/workflows/release.yml.
 const ASSETS = {
   [`downco_${version}_x64-setup.exe`]: ['windows-x86_64-nsis', 'windows-x86_64'],
-  [`downco_${version}_amd64.deb`]: ['linux-x86_64-deb'],
-  [`downco-${version}.x86_64.rpm`]: ['linux-x86_64-rpm'],
-  [`downco_${version}_mac_x64.app.tar.gz`]: ['darwin-x86_64'],
-  [`downco_${version}_mac_arm64.app.tar.gz`]: ['darwin-aarch64'],
+  // Windows only for now; macOS/Linux were: downco_<v>_amd64.deb (linux-x86_64-deb),
+  // downco-<v>.x86_64.rpm (linux-x86_64-rpm), downco_<v>_mac_{x64,arm64}.app.tar.gz
+  // (darwin-x86_64 / darwin-aarch64).
 };
 
 const platforms = {};

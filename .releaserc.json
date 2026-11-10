@@ -9,12 +9,6 @@
       {
         "assets": [
           { "path": "release-assets/*_x64-setup.exe", "label": "Windows installer (x86_64)" },
-          { "path": "release-assets/*_mac_arm64.dmg", "label": "macOS installer (Apple Silicon)" },
-          { "path": "release-assets/*_mac_x64.dmg", "label": "macOS installer (Intel)" },
-          { "path": "release-assets/*.deb", "label": "Linux .deb (Ubuntu/Debian, x86_64)" },
-          { "path": "release-assets/*.rpm", "label": "Linux .rpm (Fedora, x86_64)" },
-          { "path": "release-assets/*_mac_arm64.app.tar.gz", "label": "macOS app update (Apple Silicon)" },
-          { "path": "release-assets/*_mac_x64.app.tar.gz", "label": "macOS app update (Intel)" },
           { "path": "release-assets/latest.json", "label": "latest.json" }
         ]
       }

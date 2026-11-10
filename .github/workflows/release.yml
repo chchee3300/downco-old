@@ -5,7 +5,7 @@ name: Release
 # published as a GitHub Release with latest.json.
 #
 # Manual run (Actions -> Release -> Run workflow, any branch) with dry_run
-# checked (the default): builds all four packages UNSIGNED under the fake
+# checked (the default): builds the Windows installer UNSIGNED under the fake
 # version 0.0.<run number> and uploads them as workflow artifacts only -- no
 # signing secrets needed, no tag, no release. Uncheck dry_run on master to
 # force a real release run.
@@ -84,10 +84,12 @@ jobs:
       matrix:
         include:
           - { name: windows, os: windows-latest, target: x86_64-pc-windows-msvc }
-          # 22.04 = oldest supported glibc/webkit2gtk-4.1 the packages then run on.
-          - { name: linux, os: ubuntu-22.04, target: x86_64-unknown-linux-gnu }
-          - { name: mac_arm64, os: macos-latest, target: aarch64-apple-darwin }
-          - { name: mac_x64, os: macos-latest, target: x86_64-apple-darwin }
+          # Windows only for now (2026-11-10). The macOS/Linux steps below stay
+          # and are skipped; to bring them back, restore these entries plus the
+          # assets in scripts/updater-manifest.mjs and .releaserc.json:
+          # - { name: linux, os: ubuntu-22.04, target: x86_64-unknown-linux-gnu }  # oldest supported glibc/webkit2gtk-4.1
+          # - { name: mac_arm64, os: macos-latest, target: aarch64-apple-darwin }
+          # - { name: mac_x64, os: macos-latest, target: x86_64-apple-darwin }
     runs-on: ${{ matrix.os }}
     defaults:
       run:
