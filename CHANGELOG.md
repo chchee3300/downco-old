@@ -1,3 +1,14 @@
+# [2.3.0](https://github.com/chchee3300/downco/compare/v2.2.0...v2.3.0) (2026-11-10)
+
+
+### Features
+
+* **brand:** downco logo, new app and tray icons ([1170528](https://github.com/chchee3300/downco/commit/1170528210b6c35cec3b30e8726794610340f147))
+* **engines:** optional Deno, oxipng and WordCraft in Third-party software ([7dc3659](https://github.com/chchee3300/downco/commit/7dc3659efbc62d19a69f000c1a85870ff86ed9ba))
+* rename the app to downco ([96ec92c](https://github.com/chchee3300/downco/commit/96ec92c360a219f4245fcb288d5764ddc9c4a505))
+* **settings:** check all third-party software from the heading; list missing packages apart ([9996673](https://github.com/chchee3300/downco/commit/9996673d5539a915800693df5ed5ed891ee3004d))
+* **settings:** third-party software as a package list with a page per package ([b3bea10](https://github.com/chchee3300/downco/commit/b3bea10745f6a2a70b2b3b6f70234b506470fc2f))
+
 # [2.2.0](https://github.com/chchee3300/sorai-toolkit/compare/v2.1.0...v2.2.0) (2026-11-07)
 
 
