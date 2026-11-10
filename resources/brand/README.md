@@ -40,7 +40,7 @@
 - 把字標放在標誌左邊或上面。
 
 ## App 內的工具圖示
-主選單的轉檔與下載圖示是標誌拆成兩半：轉檔＝迴圈（兩端都有箭頭），下載＝轉折落下的箭頭＋底線。24 格線、線寬 1.4、圓頭，跟 app 其他線條圖示一致。`python source/tool-icons.py` 印出路徑，貼到 `src/components/HubMenu.jsx`。
+主選單的轉檔與下載圖示是標誌拆成兩半：轉檔＝迴圈（封閉的圓分成兩段、各帶箭頭），下載＝轉折落下的箭頭＋底線。24 格線、線寬 1.4、圓頭，跟 app 其他線條圖示一致。`python source/tool-icons.py` 印出路徑（轉檔是 `converter_closed()`），貼到 `src/components/HubMenu.jsx`。
 
 ## 尚未完成
 - 沒有做過商標檢索（建議上線前查一下台灣智慧財產局與 USPTO／EUIPO）。

@@ -21,6 +21,13 @@ def converter(cx=12, cy=11.6, r=7.5, start=150, end=60):
          chevron(a0, start - 90)]        # counter-clockwise tangent
     return d
 
+def converter_closed(c=(12, 12), r=7.5):
+    # The one in use: the loop closed into two arrowed halves (20 deg gaps).
+    def arc(a0, a1):
+        p0, p1 = on(c, r, a0), on(c, r, a1)
+        return [f'M{P(p0)} A{f(r)} {f(r)} 0 0 1 {P(p1)}', chevron(p1, a1 + 90, 3.2)]
+    return arc(195, 335) + arc(15, 155)
+
 def downloader(x=12, r=6.5, top=4, tip=17.5, tray=20.5):
     # The logo's drop: comes in from the loop (top right), turns straight down, lands.
     c = (x + r, top + r)
@@ -36,7 +43,7 @@ def svg(paths, sw=1.4):
 
 if __name__ == '__main__':
     import json
-    out = {'converter': converter(), 'downloader': downloader()}
+    out = {'converter': converter_closed(), 'downloader': downloader()}
     json.dump(out, open('icons.json', 'w'), indent=1)
     for k, v in out.items():
         open(f'{k}.svg', 'w').write(svg(v))

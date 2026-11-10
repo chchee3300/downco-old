@@ -17,13 +17,14 @@ import { useTranslation } from '../hooks/useTranslation.js'
 // reuses these same `hub.tool.<id>.label` keys instead of duplicating the
 // strings a second time.
 // The two tool icons are the downco logo split in two (geometry: resources/brand/source/tool-icons.py,
-// paths copied from its output): the Converter is its loop with both
-// arrowheads, the Downloader its drop (turn, stem, arrowhead) onto a line.
+// paths copied from its output): the Converter is its loop, closed into
+// two arrowed halves, the Downloader its drop (turn, stem, arrowhead) onto a line.
 const ConverterIcon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    <path d="M5.5 15.35A7.5 7.5 0 1 1 15.75 18.1" />
-    <path d="M16.63 14.81l-.88 3.29 3.28.88" />
-    <path d="M2.22 14.47l3.28.88.88-3.28" />
+    <path d="M4.76 10.06A7.5 7.5 0 0 1 18.8 8.83" />
+    <path d="M15.79 7.74l3.01 1.09 1.09-3.01" />
+    <path d="M19.24 13.94A7.5 7.5 0 0 1 5.2 15.17" />
+    <path d="M8.21 16.26l-3.01-1.09-1.09 3.01" />
   </svg>
 )
 
